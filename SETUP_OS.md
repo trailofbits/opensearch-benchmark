@@ -3,7 +3,8 @@
 ## Notes
 
 * Make sure your machine is compatible with their [OS requirements](https://opensearch.org/docs/latest/install-and-configure/os-comp/).
-  * Set up a Coder instance (e.g., `n2-standard-4`)
+  * **NOTE**: There is no support for macOS.
+  * Set up a Coder instance (e.g., `n2-standard-4`) with 250GB of disk space.
 * You can install OSB via pip.
   * Make sure you have 3.8 <= Python <= 3.10
 
@@ -47,13 +48,15 @@
   sudo systemctl restart opensearch
 
   # Test OSB (check for errors)
-  # NOTE(Evan): Ran the smaller 60GB test for now. Will run the 100GB test later (which is standard).
-  (env) opensearch-benchmark execute-test --distribution-version=2.16.0 --workload=big5 --workload-params corpus_size:60,number_of_replicas:0,target_throughput:"" --test-mode
+  (env) opensearch-benchmark execute-test --distribution-version=2.16.0 --workload=big5 --workload-params corpus_size:100,number_of_replicas:0,target_throughput:"" --test-mode
 
   # Update mapping file (not sure what this means yet)
 
   # Validate test: https://opensearch.org/docs/latest/benchmark/quickstart/#validating-the-test
   In the results returned by OpenSearch Benchmark, compare the workload.json file for your specific workload and verify that the document count matches the number of documents. For example, based on the percolator workload.json file, you should expect to see 2000000 documents in your cluster.
+
+  vim ~/.benchmark/benchmarks/workloads/default/big5/workload.json
+  curl -XGET "https://localhost:9200/_cat/indices?v" -u 'admin:<custom-admin-password>' --insecure
 
   # Run OSB for real
   (env) opensearch-benchmark execute-test --distribution-version=2.16.0 --workload=big5 --workload-params corpus_size:60,number_of_replicas:0,target_throughput:""
@@ -62,4 +65,30 @@
 
   # Run searches and Aggregate Results
 
+  ```
+
+* Initialize environment
+
+  ```shell
+  sudo ./scripts/init.sh
+  export OS_PASSWORD="<custom-admin-password>"
+  ```
+
+* Test and Run small benchmark
+
+  ```shell
+  ./scripts/percolator_os_test.sh
+  ./scripts/percolator_os_run.sh
+  ```
+
+* Test Benchmarks
+
+  ```shell
+  ./scripts/big5_os_test.sh
+  ```
+
+* Run Benchmarks
+
+  ```shell
+  ./scripts/big5_os_run.sh
   ```
