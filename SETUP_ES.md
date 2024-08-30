@@ -2,32 +2,32 @@
 
 Setup instructions for Elasticsearch.
 
-```shell
-wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+* ```shell
+  wget -qO - <https://artifacts.elastic.co/GPG-KEY-elasticsearch> | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
 
-sudo apt-get install apt-transport-https
+  sudo apt-get install apt-transport-https
 
-echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
+  echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] <https://artifacts.elastic.co/packages/8.x/apt> stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
 
-sudo apt-get update && sudo apt-get install elasticsearch
+  sudo apt-get update && sudo apt-get install elasticsearch
 
-export ELASTIC_PASSWORD="your_password"
+  export ELASTIC_PASSWORD="your_password"
 
-sudo /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
+  sudo /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
 
-In elasticsearch.yml:
-action.auto_create_index: .monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
+  In elasticsearch.yml:
+  action.auto_create_index: .monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
 
-sudo systemctl daemon-reload
-sudo systemctl enable elasticsearch.service
+  sudo systemctl daemon-reload
+  sudo systemctl enable elasticsearch.service
 
-sudo systemctl start elasticsearch.service
+  sudo systemctl start elasticsearch.service
 
-curl --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic:$ELASTIC_PASSWORD https://localhost:9200 
+  curl --cacert /etc/elasticsearch/certs/http_ca.crt -u elastic:$ELASTIC_PASSWORD <https://localhost:9200>
 
-export ES_JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
+  export ES_JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
 
-```
+  ```
 
 * Initialize environment
 
