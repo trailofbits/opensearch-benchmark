@@ -18,6 +18,8 @@ Setup instructions for Elasticsearch.
   In elasticsearch.yml:
   action.auto_create_index: .monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
 
+  Disable "http.host: 0.0.0.0"
+
   sudo systemctl daemon-reload
   sudo systemctl enable elasticsearch.service
 
@@ -32,6 +34,7 @@ Setup instructions for Elasticsearch.
 * Initialize environment
 
   ```shell
+  <kill os service. start es service.>
   sudo ./scripts/init.sh
   export ES_PASSWORD="<custom-admin-password>"
   ```
@@ -46,6 +49,6 @@ Setup instructions for Elasticsearch.
 * Test Benchmarks
 
   ```shell
-  cp big5_index_es.json ~/.benchmark/benchmarks/workloads/default/big5/index.json
+  cp ./index/big5_index_es.json ~/.benchmark/benchmarks/workloads/default/big5/index.json
   ./scripts/big5_es_test.sh
   ```

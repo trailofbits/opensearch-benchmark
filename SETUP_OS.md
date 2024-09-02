@@ -70,6 +70,7 @@
 * Initialize environment
 
   ```shell
+  <kill es service. start os service.>
   sudo ./scripts/init.sh
   export OS_PASSWORD="<custom-admin-password>"
   ```
