@@ -93,4 +93,9 @@
 
   ```shell
   ./scripts/big5_os_run.sh
+
+  # From https://github.com/IanHoang/opensearch-scripts
+  ./osb-scripts/run-workload.sh
+  python average-test-execution-results-v2.py -f ~/os-213/ -i os-123-output
+  python convert-results-to-csv.py -f os-123-output.json
   ```
