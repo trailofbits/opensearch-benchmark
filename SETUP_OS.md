@@ -74,6 +74,13 @@
   <kill es service. start os service.>
   sudo ./scripts/init.sh
   export OS_PASSWORD="<custom-admin-password>"
+
+  # Mount SSD
+  lsblk
+  sudo mkfs.xfs /dev/nvme1n1
+  sudo mount /dev/nvme1n1 /mnt
+  sudo chmod ugo+rwx /mnt
+  cd /mnt
   ```
 
 * Test and Run small benchmark
@@ -96,6 +103,8 @@
 
   # From https://github.com/IanHoang/opensearch-scripts
   ./osb-scripts/run-workload.sh
-  python average-test-execution-results-v2.py -f ~/os-213/ -i os-123-output
-  python convert-results-to-csv.py -f os-123-output.json
+  python average-test-execution-results-v2.py -f ~/os-213/ -i os-123-service
+  python convert-results-to-csv.py -f os-123-service.json
+  python average-test-execution-results-v2.py -f ~/os-213/ -i os-123-latency
+  python convert-results-to-csv.py -f os-123-latency.json
   ```
