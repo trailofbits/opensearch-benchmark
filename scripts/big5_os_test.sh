@@ -13,6 +13,7 @@ time opensearch-benchmark \
     --client-options="basic_auth_user:admin,basic_auth_password:${OS_PASSWORD},verify_certs:false" \
     --workload=big5 \
     --workload-params corpus_size:60,number_of_replicas:0,target_throughput:"" \
+    --results-file=/tmp/results \
     --kill-running-processes \
     --test-mode
 
