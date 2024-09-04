@@ -8,6 +8,8 @@ if [ $# -ne 1 ]; then
 fi
 
 ADMIN_PASSWORD=$1
+JVM_MIN_HEAP="-Xms4g"
+JVM_MAX_HEAP="-Xmx4g"
 
 sudo apt-get -y install python3-venv
 
@@ -45,8 +47,21 @@ apt show opensearch
 curl -X GET https://localhost:9200 -u "admin:$ADMIN_PASSWORD" --insecure
 curl -X GET https://localhost:9200/_cat/plugins?v -u "admin:$ADMIN_PASSWORD" --insecure
 
-# Modify opensearch.yml: https://opensearch.org/docs/latest/install-and-configure/install-opensearch/debian/#step-3-set-up-opensearch-in-your-environment
+# Modify configuration files https://opensearch.org/docs/latest/install-and-configure/install-opensearch/debian/#step-3-set-up-opensearch-in-your-environment
+echo "Modifying: /etc/opensearch/opensearch.yml"
+echo "### Begin user configuration ###" | sudo tee -a /etc/opensearch/opensearch.yml
+echo "discovery.type: single-node" | sudo tee -a /etc/opensearch/opensearch.yml
+echo "plugins.security.disabled: false" | sudo tee -a /etc/opensearch/opensearch.yml
+echo "### End user configuration ###" | sudo tee -a /etc/opensearch/opensearch.yml
+
+echo "Modifying: /etc/opensearch/jvm.options"
+sudo sed -i -e "s/^-Xms[0-9a-z]*$/$JVM_MIN_HEAP/g" /etc/opensearch/jvm.options
+sudo sed -i -e "s/^-Xmx[0-9a-z]*$/$JVM_MAX_HEAP/g" /etc/opensearch/jvm.options
+
 sudo systemctl restart opensearch
 
 # Test OSB (check for errors)
 opensearch-benchmark execute-test --distribution-version=2.16.0 --workload=big5 --workload-params corpus_size:100,number_of_replicas:0,target_throughput:"" --test-mode
+
+# stop opensearch service
+sudo systemctl stop opensearch
