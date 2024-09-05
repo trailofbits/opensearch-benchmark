@@ -39,22 +39,38 @@ resource "aws_internet_gateway" "gtw" {
   vpc_id = aws_vpc.vpc.id
 }
 
-resource "aws_security_group" "allow_ssh" {
-  name        = "${terraform.workspace}-allow-ssh"
-  description = "Allow SSH inbound traffic and all outbound traffic"
+resource "aws_security_group" "allow_osb" {
+  name        = "${terraform.workspace}-allow-osb"
+  description = "Allow ES/OS/OSB inbound traffic and all outbound traffic"
   vpc_id      = aws_vpc.vpc.id
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
-  security_group_id = aws_security_group.allow_ssh.id
+  security_group_id = aws_security_group.allow_osb.id
   cidr_ipv4         = "0.0.0.0/0"
   from_port         = 22
   ip_protocol       = "tcp"
   to_port           = 22
 }
 
+resource "aws_vpc_security_group_ingress_rule" "allow_es_cluster_traffic_9200" {
+  security_group_id = aws_security_group.allow_osb.id
+  cidr_ipv4         = "10.0.0.0/16"
+  from_port         = 9200
+  to_port           = 9200
+  ip_protocol       = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow_es_cluster_traffic_9300" {
+  security_group_id = aws_security_group.allow_osb.id
+  cidr_ipv4         = "10.0.0.0/16"
+  from_port         = 9300
+  to_port           = 9300
+  ip_protocol       = "tcp"
+}
+
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4" {
-  security_group_id = aws_security_group.allow_ssh.id
+  security_group_id = aws_security_group.allow_osb.id
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1" # semantically equivalent to all ports
 }
@@ -92,12 +108,11 @@ resource "aws_instance" "es-cluster" {
   ami             = data.aws_ami.ubuntu_ami.id
   instance_type   = "c5d.2xlarge"
   key_name        = aws_key_pair.ssh_key.key_name
-  security_groups = [aws_security_group.allow_ssh.id]
+  security_groups = [aws_security_group.allow_osb.id]
 
   associate_public_ip_address = true
 
-  subnet_id  = aws_subnet.subnet.id
-  depends_on = [aws_security_group.allow_ssh]
+  subnet_id = aws_subnet.subnet.id
 
   user_data = templatefile("${path.module}/scripts/init.sh", {
     hostname = "es-cluster"
@@ -116,12 +131,11 @@ resource "aws_instance" "load-generation" {
   ami             = data.aws_ami.ubuntu_ami.id
   instance_type   = "c5d.2xlarge"
   key_name        = aws_key_pair.ssh_key.key_name
-  security_groups = [aws_security_group.allow_ssh.id]
+  security_groups = [aws_security_group.allow_osb.id]
 
   associate_public_ip_address = true
 
-  subnet_id  = aws_subnet.subnet.id
-  depends_on = [aws_security_group.allow_ssh]
+  subnet_id = aws_subnet.subnet.id
 
   user_data = templatefile("${path.module}/scripts/init.sh", {
     hostname = "load-generation"
