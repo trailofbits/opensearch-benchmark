@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = var.aws_region
 
   default_tags {
     tags = {
@@ -32,7 +32,7 @@ resource "aws_vpc" "vpc" {
 resource "aws_subnet" "subnet" {
   cidr_block        = cidrsubnet(aws_vpc.vpc.cidr_block, 3, 1)
   vpc_id            = aws_vpc.vpc.id
-  availability_zone = "us-east-1a"
+  availability_zone = var.aws_subnet_zone
 }
 
 resource "aws_internet_gateway" "gtw" {
