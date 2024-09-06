@@ -104,7 +104,7 @@ data "aws_ami" "ubuntu_ami" {
   owners = ["099720109477"]
 }
 
-resource "aws_instance" "es-cluster" {
+resource "aws_instance" "target-cluster" {
   ami             = data.aws_ami.ubuntu_ami.id
   instance_type   = "c5d.2xlarge"
   key_name        = aws_key_pair.ssh_key.key_name
@@ -115,7 +115,7 @@ resource "aws_instance" "es-cluster" {
   subnet_id = aws_subnet.subnet.id
 
   user_data = templatefile("${path.module}/scripts/init.sh", {
-    hostname = "es-cluster"
+    hostname = "target-cluster"
   })
 
   private_dns_name_options {
@@ -123,7 +123,7 @@ resource "aws_instance" "es-cluster" {
   }
 
   tags = {
-    Name = "es-cluster"
+    Name = "target-cluster"
   }
 }
 
@@ -150,8 +150,8 @@ resource "aws_instance" "load-generation" {
   }
 }
 
-output "es-cluster-ip" {
-  value = aws_instance.es-cluster.public_dns
+output "target-cluster-ip" {
+  value = aws_instance.target-cluster.public_dns
 }
 
 output "load-generation-ip" {
