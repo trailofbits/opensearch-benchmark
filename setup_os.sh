@@ -18,6 +18,7 @@ fi
 
 JVM_MIN_HEAP="-Xms4g"
 JVM_MAX_HEAP="-Xmx4g"
+OPENSEARCH_VERSION="2.16.0"
 
 sudo apt-get update
 sudo apt-get -y install python3-venv
@@ -34,6 +35,14 @@ sudo apt-get -y install openjdk-17-jdk-headless
 update-alternatives --list java
 export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64/"
 
+# Test OSB (check for errors)
+opensearch-benchmark execute-test \
+    --distribution-version="$OPENSEARCH_VERSION" \
+    --pipeline=from-distribution \
+    --workload=big5 \
+    --workload-params corpus_size:100,number_of_replicas:0,target_throughput:"" \
+    --test-mode
+
 sudo sysctl -w vm.max_map_count=262144
 sudo sysctl -p
 
@@ -44,7 +53,7 @@ echo "deb [signed-by=/usr/share/keyrings/opensearch-keyring] https://artifacts.o
 
 sudo apt-get update
 sudo apt list -a opensearch
-sudo env OPENSEARCH_INITIAL_ADMIN_PASSWORD="$OS_PASSWORD" apt-get -y install opensearch=2.16.0
+sudo env OPENSEARCH_INITIAL_ADMIN_PASSWORD="$OS_PASSWORD" apt-get -y install opensearch="$OPENSEARCH_VERSION"
 
 # add user to opensearch group so they can read the config files
 sudo adduser $(whoami) opensearch
@@ -69,9 +78,3 @@ apt show opensearch
 
 curl -X GET https://$CLUSTER_IP:9200 -u "admin:$OS_PASSWORD" --insecure
 curl -X GET https://$CLUSTER_IP:9200/_cat/plugins?v -u "admin:$OS_PASSWORD" --insecure
-
-# Test OSB (check for errors)
-opensearch-benchmark execute-test --distribution-version=2.16.0 --workload=big5 --workload-params corpus_size:100,number_of_replicas:0,target_throughput:"" --test-mode
-
-# stop opensearch service
-sudo systemctl restart opensearch

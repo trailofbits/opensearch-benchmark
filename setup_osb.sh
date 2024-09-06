@@ -11,6 +11,17 @@ source env/bin/activate
 python -m pip install --upgrade pip
 
 # Install opensearch benchmark
-# Does not install JDK (osb dependency for deploying opensearch clusters)
 pip install opensearch-benchmark
 opensearch-benchmark -h
+
+sudo apt-get -y install openjdk-17-jdk-headless
+update-alternatives --list java
+export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64/"
+
+# Test OSB (check for errors)
+opensearch-benchmark execute-test \
+    --distribution-version="$OPENSEARCH_VERSION" \
+    --pipeline=from-distribution \
+    --workload=big5 \
+    --workload-params corpus_size:100,number_of_replicas:0,target_throughput:"" \
+    --test-mode
