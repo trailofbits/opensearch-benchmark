@@ -33,7 +33,7 @@ echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/' >> ~/.bashrc
 export BENCHMARK_HOME=/mnt
 echo 'export BENCHMARK_HOME=/mnt' >> ~/.bashrc
 
-curl -ku $ES_USER:$ES_PASSWORD $ES_HOST
+curl -ku "$ES_USER:$ES_PASSWORD" "$ES_HOST" || exit 1
 
 # NOTE: check this, how to download the workload without getting stuck?
 opensearch-benchmark execute-test \
@@ -48,8 +48,8 @@ opensearch-benchmark execute-test \
     '--include-tasks=""'
 
 # Replace workload index.json file with one for the correct ES version
-ES_VERSION=$(curl -ku $ES_USER:$ES_PASSWORD $ES_HOST | jq -r '.version.number')
-cp $SCRIPT_DIR/es_indexes/es_index_$ES_VERSION.json $BENCHMARK_HOME/.benchmark/benchmarks/workloads/default/$WORKLOAD/index.json
+ES_VERSION=$(curl -ku "$ES_USER:$ES_PASSWORD" "$ES_HOST" | jq -r '.version.number')
+cp "$SCRIPT_DIR/es_indexes/es_index_$ES_VERSION.json" "$BENCHMARK_HOME/.benchmark/benchmarks/workloads/default/$WORKLOAD/index.json"
 
 
 set -x
