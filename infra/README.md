@@ -21,12 +21,19 @@ TODO
 
 ### ElasticSearch
 #### Deployment from scratch
-You can run the `scripts/es_cluster.sh` script in the `target-cluster` host to
-install and configure ElasticSearch. The script will display the password for
-the `elastic` user on the cluster and it will write it into `/mnt/.es_pwd`.
+Copy the `scripts/es_cluster.sh` script in the `target-cluster` instance and run
+it to install and configure ElasticSearch. The script will display the password
+for the `elastic` user on the cluster and it will write it into `/mnt/.es_pwd`.
 
 #### Deployment from existing Snapshot
 TODO
 
 ## OpenSearch Benchmarking configuration (load-generation host)
-TODO
+Copy the `scripts/es_indexes` directory and the `scripts/es_load_generation.sh`
+script in the `load-generation` instance and run it to install OpenSearch
+Benchmark and configure it to run the benchmark against ElasticSearch.
+
+Run it like this:
+```shell
+./es_load_generation.sh https://ec2-100-26-242-217.compute-1.amazonaws.com:9200 elastic <password>
+```
