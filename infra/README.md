@@ -8,3 +8,4 @@
 - `terraform init`
 - `terraform apply -var ssh_pub_key=~/.ssh/id_rsa.pub` (or change the variable in `terraform.tfvars` and just run `terraform apply`)
 - connect to the VM with `ssh ubuntu@<ip>`
+- If you are done with the environment or you want to recreate it, you can destroy (and later recreate, if needed) with `terraform destroy`
