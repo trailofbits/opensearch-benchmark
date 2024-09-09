@@ -11,7 +11,7 @@ INSTALL_PATH=$INSTALL_ROOT/opensearch-$OPENSEARCH_VERSION
 mkdir -p $INSTALL_ROOT
 
 # Prerequisites
-sudo apt update && apt install -y python3-pip openjdk-17-jdk-headless
+sudo apt update && sudo apt install -y python3-pip openjdk-17-jdk-headless
 python3 --version || false
 pip --version || false
 git --version || false
