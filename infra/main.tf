@@ -18,6 +18,16 @@ provider "aws" {
   }
 }
 
+locals {
+  benchmark_subnet_cidr_block = cidrsubnet(aws_vpc.vpc.cidr_block, 3, 1)
+  datastore_cidr_blocks = [
+    cidrsubnet(aws_vpc.vpc.cidr_block, 3, 2),
+    cidrsubnet(aws_vpc.vpc.cidr_block, 3, 3),
+    cidrsubnet(aws_vpc.vpc.cidr_block, 3, 4)
+  ]
+  datastore_subnet_map = zipmap(var.aws_subnet_zones, local.datastore_cidr_blocks)
+}
+
 resource "aws_key_pair" "ssh_key" {
   key_name   = "${terraform.workspace}-ssh-key"
   public_key = file(var.ssh_pub_key)
@@ -30,9 +40,16 @@ resource "aws_vpc" "vpc" {
 }
 
 resource "aws_subnet" "subnet" {
-  cidr_block        = cidrsubnet(aws_vpc.vpc.cidr_block, 3, 1)
+  cidr_block        = local.benchmark_subnet_cidr_block
   vpc_id            = aws_vpc.vpc.id
-  availability_zone = var.aws_subnet_zone
+  availability_zone = var.aws_subnet_zones[0]
+}
+
+resource "aws_subnet" "datastore_subnets" {
+  for_each          = local.datastore_subnet_map
+  cidr_block        = each.value
+  vpc_id            = aws_vpc.vpc.id
+  availability_zone = each.key
 }
 
 resource "aws_internet_gateway" "gtw" {
@@ -85,6 +102,12 @@ resource "aws_route_table" "route-table-test-env" {
 
 resource "aws_route_table_association" "subnet-association" {
   subnet_id      = aws_subnet.subnet.id
+  route_table_id = aws_route_table.route-table-test-env.id
+}
+
+resource "aws_route_table_association" "datastore-subnet-associations" {
+  for_each       = aws_subnet.datastore_subnets
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.route-table-test-env.id
 }
 
