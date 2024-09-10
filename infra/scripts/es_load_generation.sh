@@ -8,7 +8,7 @@ ES_USER=$2
 ES_PASSWORD=$3
 
 WORKLOAD="big5"
-WORKLOAD_PARAMS="number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10,target_throughput:\"\""
+WORKLOAD_PARAMS="number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10,target_throughput:0"
 CLIENT_OPTIONS="basic_auth_user:$ES_USER,basic_auth_password:$ES_PASSWORD,use_ssl:true,verify_certs:false"
 
 INGESTION_RESULTS=/mnt/ingestion_results
