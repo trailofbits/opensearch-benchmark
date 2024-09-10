@@ -31,43 +31,57 @@ export BENCHMARK_HOME=/mnt/opensearch-bench
 
 # Download dataset
 echo "Download dataset"
-opensearch-benchmark execute-test \
---kill-running-processes \
---pipeline=benchmark-only \
---workload=$WORKLOAD \
---target-hosts=$CLUSTER_HOST \
---workload-params="number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10" \
---client-options="basic_auth_user:'admin',basic_auth_password:'$password',use_ssl:true,verify_certs:false" \
---distribution-version=$OPENSEARCH_VERSION \
---test-mode
+#opensearch-benchmark execute-test \
+#--kill-running-processes \
+#--pipeline=benchmark-only \
+#--workload=$WORKLOAD \
+#--target-hosts=$CLUSTER_HOST \
+#--workload-params="number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10" \
+#--client-options="basic_auth_user:'admin',basic_auth_password:'$password',use_ssl:true,verify_certs:false" \
+#--distribution-version=$OPENSEARCH_VERSION \
+#--test-mode
 
 
 # Ingest workload
 echo "Ingest workload"
+#opensearch-benchmark execute-test \
+#--pipeline=benchmark-only \
+#--workload=$WORKLOAD \
+#--target-hosts=$CLUSTER_HOST \
+#--workload-params="number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10" \
+#--client-options="basic_auth_user:'admin',basic_auth_password:'$password',use_ssl:true,verify_certs:false" \
+#--kill-running-processes \
+#--results-file=$RESULTS_FILE-ingest \
+#--test-execution-id=$TEST_EXECUTION_ID \
+#--distribution-version=$OPENSEARCH_VERSION \
+#--exclude-tasks="type:search"
+
+
+
+
+WORKLOAD_PARAMS="number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10,target_throughput:''"
+CLIENT_OPTIONS="basic_auth_user:'admin',basic_auth_password:$password,use_ssl:true,verify_certs:false"
+
+# Queries only
+echo "Running Queries Only"
+for i in 3 4 5
+do
+#opensearch-benchmark execute-test --pipeline=benchmark-only --workload=$WORKLOAD  --target-hosts=$CLUSTER_HOST --workload-params=$WORKLOAD_PARAMS --kill-running-processes --include-tasks="type:search" --results-file=$RESULTS_FILE-$i --test-execution-id=$TEST_EXECUTION_ID-$i --distribution-version=$OPENSEARCH_VERSION
+
+
 opensearch-benchmark execute-test \
 --pipeline=benchmark-only \
 --workload=$WORKLOAD \
 --target-hosts=$CLUSTER_HOST \
---workload-params="number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10" \
+--workload-params="number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10,target_throughput:''" \
 --client-options="basic_auth_user:'admin',basic_auth_password:'$password',use_ssl:true,verify_certs:false" \
 --kill-running-processes \
---results-file=$RESULTS_FILE-ingest \
---test-execution-id=$TEST_EXECUTION_ID \
+--results-file=$RESULTS_FILE-$i \
+--test-execution-id=$TEST_EXECUTION_ID-$i \
 --distribution-version=$OPENSEARCH_VERSION \
---exclude-tasks="type:search"
+--include-tasks="type:search"
 
 
-exit 0
-
-
-WORKLOAD_PARAMS="\"number_of_replicas:0,bulk_indexing_clients:1,force_merge_max_num_segments:t,max_num_segments:10\""
-CLIENT_OPTIONS="\"basic_auth_user:'admin',basic_auth_password:'$password',use_ssl:true,verify_certs:false\""
-
-# Queries only
-echo "Running Queries Only"
-for i in 2 3 4 5
-do
-opensearch-benchmark execute-test --pipeline=benchmark-only --workload=$WORKLOAD  --target-hosts=$CLUSTER_HOST --workload-params=$WORKLOAD_PARAMS --kill-running-processes --include-tasks="\"type:search\"" --results-file=$RESULTS_FILE-$i --test-execution-id=$TEST_EXECUTION_ID-$i --distribution-version=8.0.0
 
 echo "Sleeping for 60 seconds"
 sleep 60
