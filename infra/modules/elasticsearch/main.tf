@@ -82,7 +82,8 @@ resource "aws_instance" "load-generation" {
   provisioner "remote-exec" {
     inline = [
       "echo 'Waiting for user data script to finish'",
-      "cloud-init status --wait > /dev/null"
+      "cloud-init status --wait > /dev/null",
+      "echo 'User data script finished'",
     ]
   }
 
