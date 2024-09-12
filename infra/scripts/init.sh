@@ -1,9 +1,10 @@
 #!/bin/bash
 
-hostnamectl set-hostname ${hostname}
+hostnamectl set-hostname "${hostname}"
 
 INSTALL_ROOT=/mnt
 USER=ubuntu
+SCRIPT_DIR=/home/$USER
 
 if [ -z "$INSTALL_ROOT" ]; then
     echo "Please provide the path to the directory to mount"
@@ -24,5 +25,14 @@ sudo mkdir $INSTALL_ROOT || echo "$INSTALL_ROOT already exists, will still mount
 sudo mount /dev/$PARTITION $INSTALL_ROOT
 sudo chown -R $USER $INSTALL_ROOT
 echo "Done"
+
+# Wait until scripts are copied by provisioners
+while [ ! -f "$SCRIPT_DIR/init_machine.sh" ]; do
+    echo "Waiting for init_machine.sh to be copied"
+    sleep 2
+done
+
+chmod +x "$SCRIPT_DIR/init_machine.sh"
+"$SCRIPT_DIR/init_machine.sh" ${args} || exit 1
 
 exit 0
