@@ -45,11 +45,18 @@ resource "aws_instance" "load-generation" {
       ingest_script = yamlencode(
         base64encode(templatefile("${path.module}/ingest.sh",
           {
-            s3_bucket_name = var.s3_bucket_name,
+            s3_bucket_name  = var.s3_bucket_name,
+            workload_params = var.workload_params,
           }
         ))
       ),
-      benchmark_script = yamlencode(filebase64("${path.module}/benchmark.sh")),
+      benchmark_script = yamlencode(
+        base64encode(templatefile("${path.module}/benchmark.sh",
+          {
+            workload_params = var.workload_params,
+          }
+        ))
+      ),
     }
   )
 

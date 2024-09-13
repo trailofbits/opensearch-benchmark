@@ -8,7 +8,7 @@ fi
 
 ES_SNAPSHOT_S3_BUCKET=${s3_bucket_name}
 WORKLOAD="big5"
-WORKLOAD_PARAMS="number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10,target_throughput:0"
+WORKLOAD_PARAMS="${workload_params}"
 CLIENT_OPTIONS="basic_auth_user:elastic,basic_auth_password:$ES_PASSWORD,use_ssl:true,verify_certs:false"
 
 INGESTION_RESULTS=/mnt/ingestion_results

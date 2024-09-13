@@ -62,3 +62,9 @@ variable "snapshot_user_aws_secret_access_key" {
   type        = string
   sensitive   = true
 }
+
+variable "workload_params" {
+  description = "Workload parameters to pass to the ingest and benchmark scripts"
+  type        = string
+  default     = ""
+}

@@ -130,6 +130,7 @@ module "es-cluster" {
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
   snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key
+  workload_params                     = var.workload_params
 
   tags = {
     Name = "target-cluster"
