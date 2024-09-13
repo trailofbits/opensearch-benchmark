@@ -1,0 +1,63 @@
+#cloud-config
+
+hostname: es-load-generation
+fqdn: es-load-generation
+
+write_files:
+  - path: /etc/sysctl.d/99-custom.conf
+    content: |
+      vm.max_map_count=262144
+    owner: root:root
+    permissions: '0644'
+  - path: /es_load_generation.sh
+    encoding: b64
+    content: ${es_load_script}
+    owner: root:root
+    permissions: '0755'
+  - path: /es_indexes/es_index_8.15.0.json
+    encoding: b64
+    content: |
+      ${es_index_8_15_0}
+    owner: root:root
+    permissions: '0644'
+  - path: /benchmark.sh
+    encoding: b64
+    content: |
+      ${benchmark_script}
+    owner: root:root
+    permissions: '0755'
+  - path: /ingest.sh
+    encoding: b64
+    content: |
+      ${ingest_script}
+    owner: root:root
+    permissions: '0755'
+
+fs_setup:
+  - label: None
+    filesystem: xfs
+    device: /dev/nvme1n1
+    partition: none
+    overwrite: true
+
+mounts:
+  - [ /dev/nvme1n1, /mnt, xfs, "defaults", "0", "0" ]
+
+bootcmd:
+  - swapoff -a
+
+byobu_by_default: enable-user
+
+package_update: true
+packages:
+  - pbzip2
+  - jq
+  - python3-pip
+  - python3-venv
+  - git
+  - openjdk-17-jdk-headless
+
+runcmd:
+  - [ sysctl, -p, /etc/sysctl.d/99-custom.conf ]
+  - [ chown, -R, ubuntu:ubuntu, /mnt ]
+  - [ sudo, -u, ubuntu, /es_load_generation.sh, https://${es_cluster}:9200, ${es_password} ]

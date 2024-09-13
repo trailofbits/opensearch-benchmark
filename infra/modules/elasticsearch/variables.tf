@@ -44,3 +44,21 @@ variable "password" {
   description = "Password for the ES cluster"
   type        = string
 }
+
+variable "s3_bucket_name" {
+  description = "S3 bucket name for the ES snapshot"
+  type        = string
+  default     = ""
+}
+
+variable "snapshot_user_aws_access_key_id" {
+  description = "value of the AWS_ACCESS_KEY_ID for the snapshot user"
+  type        = string
+  sensitive   = true
+}
+
+variable "snapshot_user_aws_secret_access_key" {
+  description = "value of the AWS_SECRET_ACCESS_KEY for the snapshot user"
+  type        = string
+  sensitive   = true
+}

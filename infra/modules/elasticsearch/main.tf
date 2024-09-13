@@ -8,22 +8,15 @@ resource "aws_instance" "target-cluster" {
 
   subnet_id = var.subnet_id
 
-  user_data = templatefile("${path.module}/../../scripts/init.sh", {
-    hostname = "es-cluster",
-    args     = "${var.password}",
-  })
+  user_data = templatefile("${path.module}/es-cluster.yaml",
+    {
+      es_cluster_script = yamlencode(filebase64("${path.module}/es_cluster.sh")),
+      es_password       = var.password,
 
-  provisioner "file" {
-    source      = "${path.module}/es_cluster.sh"
-    destination = "/home/ubuntu/init_machine.sh"
-  }
-
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file(var.ssh_priv_key)
-    host        = self.public_ip
-  }
+      es_snapshot_access_key = var.snapshot_user_aws_access_key_id,
+      es_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
+    }
+  )
 
   private_dns_name_options {
     hostname_type = "resource-name"
@@ -42,42 +35,23 @@ resource "aws_instance" "load-generation" {
 
   subnet_id = var.subnet_id
 
-  user_data = templatefile("${path.module}/../../scripts/init.sh", {
-    hostname = "load-generation",
-    args     = "https://${aws_instance.target-cluster.public_dns}:9200 ${var.password}",
-  })
+  user_data = templatefile("${path.module}/es-load-generation.yaml",
+    {
+      es_load_script  = yamlencode(filebase64("${path.module}/es_load_generation.sh")),
+      es_cluster      = aws_instance.target-cluster.public_dns
+      es_password     = var.password,
+      es_index_8_15_0 = yamlencode(filebase64("${path.module}/es_indexes/es_index_8.15.0.json")),
 
-  provisioner "file" {
-    source      = "${path.module}/es_indexes"
-    destination = "/home/ubuntu/"
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/es_load_generation.sh"
-    destination = "/home/ubuntu/init_machine.sh"
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/ingest.sh"
-    destination = "/home/ubuntu/ingest.sh"
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/benchmark.sh"
-    destination = "/home/ubuntu/benchmark.sh"
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/es_indexes/"
-    destination = "/home/ubuntu/"
-  }
-
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file(var.ssh_priv_key)
-    host        = self.public_ip
-  }
+      ingest_script = yamlencode(
+        base64encode(templatefile("${path.module}/ingest.sh",
+          {
+            s3_bucket_name = var.s3_bucket_name,
+          }
+        ))
+      ),
+      benchmark_script = yamlencode(filebase64("${path.module}/benchmark.sh")),
+    }
+  )
 
   provisioner "remote-exec" {
     inline = [
@@ -85,6 +59,13 @@ resource "aws_instance" "load-generation" {
       "cloud-init status --wait > /dev/null",
       "echo 'User data script finished'",
     ]
+  }
+
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = file(var.ssh_priv_key)
+    host        = self.public_ip
   }
 
   private_dns_name_options {

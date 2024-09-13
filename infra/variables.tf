@@ -47,3 +47,20 @@ variable "os_version" {
   type        = string
   default     = "2.16.0"
 }
+
+variable "s3_bucket_name" {
+  description = "S3 bucket name for the snapshot"
+  type        = string
+}
+
+variable "snapshot_user_aws_access_key_id" {
+  description = "value of the AWS_ACCESS_KEY_ID for the snapshot user"
+  type        = string
+  sensitive   = true
+}
+
+variable "snapshot_user_aws_secret_access_key" {
+  description = "value of the AWS_SECRET_ACCESS_KEY for the snapshot user"
+  type        = string
+  sensitive   = true
+}

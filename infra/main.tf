@@ -126,6 +126,11 @@ module "es-cluster" {
   security_groups = [aws_security_group.allow_osb.id]
   subnet_id       = aws_subnet.subnet.id
   password        = random_password.cluster-password.result
+
+  s3_bucket_name                      = var.s3_bucket_name
+  snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
+  snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key
+
   tags = {
     Name = "target-cluster"
   }

@@ -1,19 +1,12 @@
 #!/bin/bash
 
-USER=ubuntu
-
-if [ $UID -eq 0 ]; then
-  exec sudo -u "$USER" "$0" "$@"
-  # nothing will be executed from root beyond that line,
-  # because exec replaces running process with the new one
-fi
-
 ELASTIC_PASSWORD=$1
+ES_SNAPSHOT_AWS_ACCESS_KEY_ID=$2
+ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY=$3
+
 cd /mnt || exit 1
 
-
-sudo apt update && sudo -E DEBIAN_FRONTEND=noninteractive apt install -y socat
-
+# Install ElasticSearch from .tar.gz
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.15.0-linux-x86_64.tar.gz
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.15.0-linux-x86_64.tar.gz.sha512
 shasum -a 512 -c elasticsearch-8.15.0-linux-x86_64.tar.gz.sha512
@@ -22,7 +15,7 @@ cd elasticsearch-8.15.0/ || exit 1
 
 cat <<EOF > config/elasticsearch.yml
 discovery.type: single-node
-network.host: 0.0.0.0 # set this as appropriate
+network.host: 0.0.0.0
 path.repo: ["/mnt/es-backup"]
 path.data: /mnt/es-data
 path.logs: /mnt/es-logs
@@ -32,9 +25,8 @@ sudo mkdir /mnt/es-backup && sudo chmod ugo+rwx /mnt/es-backup
 sudo mkdir /mnt/es-data && sudo chmod ugo+rwx /mnt/es-data
 sudo mkdir /mnt/es-logs && sudo chmod ugo+rwx /mnt/es-logs
 
-# Open ports on firewall
-sudo ufw allow 9200/tcp
-sudo ufw allow 9300/tcp
+echo "$ES_SNAPSHOT_AWS_ACCESS_KEY_ID" | ./bin/elasticsearch-keystore add -s -f -x s3.client.default.access_key
+echo "$ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY" | bin/elasticsearch-keystore add -s -f -x s3.client.default.secret_key
 
 # Start Elasticsearch
 ./bin/elasticsearch -d -p /mnt/es_pid
@@ -56,3 +48,18 @@ curl -k -X POST "https://localhost:9200/_security/user/elastic/_password" -u ela
 }"
 
 curl -ku elastic:$ELASTIC_PASSWORD https://localhost:9200
+
+# Configure snapshots on AWS S3 (if ES_SNAPSHOT_S3_BUCKET is set)
+if [ -z "$ES_SNAPSHOT_S3_BUCKET" ]; then
+    echo "No S3 bucket provided, skipping snapshot configuration"
+    exit 0
+fi
+
+curl -ku elastic:$ELASTIC_PASSWORD -X PUT "https://localhost:9200/_snapshot/my_s3_repository?pretty" -H 'Content-Type: application/json' -d"
+{
+  \"type\": \"s3\",
+  \"settings\": {
+    \"bucket\": \"$ES_SNAPSHOT_S3_BUCKET\"
+  }
+}
+"
