@@ -48,18 +48,3 @@ curl -k -X POST "https://localhost:9200/_security/user/elastic/_password" -u ela
 }"
 
 curl -ku elastic:$ELASTIC_PASSWORD https://localhost:9200
-
-# Configure snapshots on AWS S3 (if ES_SNAPSHOT_S3_BUCKET is set)
-if [ -z "$ES_SNAPSHOT_S3_BUCKET" ]; then
-    echo "No S3 bucket provided, skipping snapshot configuration"
-    exit 0
-fi
-
-curl -ku elastic:$ELASTIC_PASSWORD -X PUT "https://localhost:9200/_snapshot/my_s3_repository?pretty" -H 'Content-Type: application/json' -d"
-{
-  \"type\": \"s3\",
-  \"settings\": {
-    \"bucket\": \"$ES_SNAPSHOT_S3_BUCKET\"
-  }
-}
-"
