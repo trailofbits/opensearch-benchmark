@@ -130,3 +130,20 @@ module "es-cluster" {
     Name = "target-cluster"
   }
 }
+
+module "os-cluster" {
+  count = var.target_cluster_type == "OpenSearch" ? 1 : 0
+
+  source          = "./modules/opensearch"
+  instance_type   = var.instance_type
+  ami_id          = data.aws_ami.ubuntu_ami.id
+  os_version      = var.os_version
+  ssh_key_name    = aws_key_pair.ssh_key.key_name
+  ssh_priv_key    = var.ssh_priv_key
+  security_groups = [aws_security_group.allow_osb.id]
+  subnet_id       = aws_subnet.subnet.id
+  password        = random_password.cluster-password.result
+  tags = {
+    Name = "target-cluster"
+  }
+}

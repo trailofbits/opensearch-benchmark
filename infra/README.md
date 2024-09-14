@@ -17,18 +17,34 @@ Use `terraform output` to get the IPs/hostnames of the two instances.
 Use `terraform output cluster-password` to get the password for the cluster.
 
 ## Run the benchmarking (load-generation host)
-To ingest the data in the Target Cluster:
+To ingest the data in the Target Cluster.
+ElasticSearch:
 ```shell
 export ES_HOST=https://<hostname>.amazonaws.com:9200
 export ES_PASSWORD=<password>
 
 bash ./ingest.sh
 ```
+OpenSearch:
+```shell
+export OS_VERSION=2.16.0
+export OS_PASSWORD=<password>
 
-To benchmark the queries:
+bash ./ingest.sh
+```
+
+To benchmark the queries.
+ElasticSearch:
 ```shell
 export ES_HOST=https://<hostname>.amazonaws.com:9200
 export ES_PASSWORD=<password>
+
+bash ./benchmark.sh
+```
+OpenSearch:
+```shell
+export OS_VERSION=2.16.0
+export OS_PASSWORD=<password>
 
 bash ./benchmark.sh
 ```
