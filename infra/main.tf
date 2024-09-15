@@ -133,8 +133,6 @@ resource "aws_instance" "load-generation" {
   key_name        = aws_key_pair.ssh_key.key_name
   security_groups = [aws_security_group.allow_osb.id]
 
-  associate_public_ip_address = true
-
   subnet_id = aws_subnet.subnet.id
 
   user_data = templatefile("${path.module}/scripts/init.sh", {
@@ -150,10 +148,19 @@ resource "aws_instance" "load-generation" {
   }
 }
 
+data "aws_eip" "load-gen-eip" {
+  public_ip = var.load_gen_ip
+}
+
+resource "aws_eip_association" "eip_assoc" {
+  instance_id   = aws_instance.load-generation.id
+  allocation_id = data.aws_eip.load-gen-eip.id
+}
+
 output "target-cluster-ip" {
   value = aws_instance.target-cluster.public_dns
 }
 
 output "load-generation-ip" {
-  value = aws_instance.load-generation.public_dns
+  value = data.aws_eip.load-gen-eip.public_dns
 }
