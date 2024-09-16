@@ -4,6 +4,11 @@ terraform {
       source  = "hashicorp/aws"
       version = "5.65.0"
     }
+
+    random = {
+      source  = "hashicorp/random"
+      version = "3.6.2"
+    }
   }
 }
 
@@ -104,56 +109,48 @@ data "aws_ami" "ubuntu_ami" {
   owners = ["099720109477"]
 }
 
-resource "aws_instance" "target-cluster" {
-  ami             = data.aws_ami.ubuntu_ami.id
-  instance_type   = "c5d.2xlarge"
-  key_name        = aws_key_pair.ssh_key.key_name
+resource "random_password" "cluster-password" {
+  length  = 16
+  special = false
+}
+
+module "es-cluster" {
+  count = var.target_cluster_type == "ElasticSearch" ? 1 : 0
+
+  source          = "./modules/elasticsearch"
+  instance_type   = var.instance_type
+  ami_id          = data.aws_ami.ubuntu_ami.id
+  es_version      = var.es_version
+  ssh_key_name    = aws_key_pair.ssh_key.key_name
+  ssh_priv_key    = var.ssh_priv_key
   security_groups = [aws_security_group.allow_osb.id]
+  subnet_id       = aws_subnet.subnet.id
+  password        = random_password.cluster-password.result
 
-  associate_public_ip_address = true
-
-  subnet_id = aws_subnet.subnet.id
-
-  user_data = templatefile("${path.module}/scripts/init.sh", {
-    hostname = "target-cluster"
-  })
-
-  private_dns_name_options {
-    hostname_type = "resource-name"
-  }
+  s3_bucket_name                      = var.s3_bucket_name
+  snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
+  snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key
+  workload_params                     = var.workload_params
 
   tags = {
     Name = "target-cluster"
   }
 }
 
-resource "aws_instance" "load-generation" {
-  ami             = data.aws_ami.ubuntu_ami.id
-  instance_type   = "c5d.2xlarge"
-  key_name        = aws_key_pair.ssh_key.key_name
+module "os-cluster" {
+  count = var.target_cluster_type == "OpenSearch" ? 1 : 0
+
+  source          = "./modules/opensearch"
+  instance_type   = var.instance_type
+  ami_id          = data.aws_ami.ubuntu_ami.id
+  os_version      = var.os_version
+  ssh_key_name    = aws_key_pair.ssh_key.key_name
+  ssh_priv_key    = var.ssh_priv_key
   security_groups = [aws_security_group.allow_osb.id]
-
-  associate_public_ip_address = true
-
-  subnet_id = aws_subnet.subnet.id
-
-  user_data = templatefile("${path.module}/scripts/init.sh", {
-    hostname = "load-generation"
-  })
-
-  private_dns_name_options {
-    hostname_type = "resource-name"
-  }
-
+  subnet_id       = aws_subnet.subnet.id
+  password        = random_password.cluster-password.result
+  workload_params = var.workload_params
   tags = {
-    Name = "load-generation"
+    Name = "target-cluster"
   }
-}
-
-output "target-cluster-ip" {
-  value = aws_instance.target-cluster.public_dns
-}
-
-output "load-generation-ip" {
-  value = aws_instance.load-generation.public_dns
 }
