@@ -8,22 +8,13 @@ resource "aws_instance" "target-cluster" {
 
   subnet_id = var.subnet_id
 
-  user_data = templatefile("${path.module}/../../scripts/init.sh", {
-    hostname = "os-cluster",
-    args     = "${var.password} ${var.os_version}",
-  })
-
-  provisioner "file" {
-    source      = "${path.module}/os_cluster.sh"
-    destination = "/home/ubuntu/init_machine.sh"
-  }
-
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file(var.ssh_priv_key)
-    host        = self.public_ip
-  }
+  user_data = templatefile("${path.module}/os-cluster.yaml",
+    {
+      os_cluster_script = yamlencode(filebase64("${path.module}/os_cluster.sh")),
+      os_password       = var.password,
+      os_version        = var.os_version,
+    }
+  )
 
   private_dns_name_options {
     hostname_type = "resource-name"
@@ -42,24 +33,36 @@ resource "aws_instance" "load-generation" {
 
   subnet_id = var.subnet_id
 
-  user_data = templatefile("${path.module}/../../scripts/init.sh", {
-    hostname = "load-generation",
-    args     = "https://${aws_instance.target-cluster.public_dns}:9200 ${var.password} ${var.os_version}",
-  })
+  user_data = templatefile("${path.module}/os-load-generation.yaml",
+    {
+      os_load_script = yamlencode(filebase64("${path.module}/os_load_generation.sh")),
+      os_cluster     = aws_instance.target-cluster.public_dns
+      os_password    = var.password,
+      os_version     = var.os_version,
 
-  provisioner "file" {
-    source      = "${path.module}/os_load_generation.sh"
-    destination = "/home/ubuntu/init_machine.sh"
-  }
+      ingest_script = yamlencode(
+        base64encode(templatefile("${path.module}/ingest.sh",
+          {
+            workload_params = var.workload_params,
+          }
+        ))
+      ),
+      benchmark_script = yamlencode(
+        base64encode(templatefile("${path.module}/benchmark.sh",
+          {
+            workload_params = var.workload_params,
+          }
+        ))
+      ),
+    }
+  )
 
-  provisioner "file" {
-    source      = "${path.module}/ingest.sh"
-    destination = "/home/ubuntu/ingest.sh"
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/benchmark.sh"
-    destination = "/home/ubuntu/benchmark.sh"
+  provisioner "remote-exec" {
+    inline = [
+      "echo 'Waiting for user data script to finish'",
+      "cloud-init status --wait > /dev/null",
+      "echo 'User data script finished'",
+    ]
   }
 
   connection {
@@ -67,13 +70,6 @@ resource "aws_instance" "load-generation" {
     user        = "ubuntu"
     private_key = file(var.ssh_priv_key)
     host        = self.public_ip
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "echo 'Waiting for user data script to finish'",
-      "cloud-init status --wait > /dev/null"
-    ]
   }
 
   private_dns_name_options {

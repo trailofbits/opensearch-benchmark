@@ -149,6 +149,7 @@ module "os-cluster" {
   security_groups = [aws_security_group.allow_osb.id]
   subnet_id       = aws_subnet.subnet.id
   password        = random_password.cluster-password.result
+  workload_params = var.workload_params
   tags = {
     Name = "target-cluster"
   }

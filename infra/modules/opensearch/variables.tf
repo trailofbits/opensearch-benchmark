@@ -44,3 +44,9 @@ variable "password" {
   description = "Password for the OS cluster"
   type        = string
 }
+
+variable "workload_params" {
+  description = "Workload parameters to pass to the ingest and benchmark scripts"
+  type        = string
+  default     = ""
+}

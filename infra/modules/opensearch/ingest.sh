@@ -6,7 +6,7 @@ if [ -z "$OS_HOST" ] || [ -z "$OS_PASSWORD" ] || [ -z "$OS_VERSION" ]; then
 fi
 
 WORKLOAD="big5"
-WORKLOAD_PARAMS="number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10,target_throughput:0"
+WORKLOAD_PARAMS=${workload_params}
 CLIENT_OPTIONS="basic_auth_user:admin,basic_auth_password:$OS_PASSWORD,use_ssl:true,verify_certs:false"
 
 INGESTION_RESULTS=/mnt/ingestion_results

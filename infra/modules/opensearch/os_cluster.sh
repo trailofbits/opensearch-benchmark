@@ -1,13 +1,5 @@
 #!/bin/bash
 
-USER=ubuntu
-
-if [ $UID -eq 0 ]; then
-  exec sudo -u "$USER" "$0" "$@"
-  # nothing will be executed from root beyond that line,
-  # because exec replaces running process with the new one
-fi
-
 OS_PASSWORD=$1
 OS_VERSION=$2
 
@@ -18,14 +10,7 @@ DOWNLOAD_URL=https://artifacts.opensearch.org/releases/bundle/opensearch/$OS_VER
 CONFIG_FILE=$INSTALL_PATH/config/opensearch.yml
 JVM_CONFIG=$INSTALL_PATH/config/jvm.options
 
-cd $HOME
-
-# Ensure map count is the expected
-# TODO: This won't survive a reboot. Consider persisting to /etc/sysctl.conf
-sudo sysctl -w vm.max_map_count=262144
-
-# Disable swap
-sudo swapoff -a
+cd /mnt || exit 1
 
 #Download and install OpenSearch 2.16.0 then remove installer
 mkdir -p $INSTALL_PATH
@@ -49,10 +34,6 @@ GB=$(echo "$(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / (1024*1024*
 sed -i "s/-Xms1g/-Xms${GB}g/" $JVM_CONFIG
 sed -i "s/-Xmx1g/-Xmx${GB}g/" $JVM_CONFIG
 touch d
-
-# Open firewall ports
-sudo ufw allow 9200/tcp
-sudo ufw allow 9300/tcp
 
 touch e
 # Run opensearch startup script with security demo configuration
