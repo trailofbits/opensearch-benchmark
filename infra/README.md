@@ -20,7 +20,7 @@ Use `terraform output cluster-password` to get the password for the cluster.
 ### Snapshotting
 If you want to use snapshotting, configure an S3 bucket on AWS and access to it. For ElasticSearch, follow the instructions in [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/repository-s3.html).
 
-## Run the benchmarking
+## Ingest/Load the data
 
 Connect to the load-generation host with:
 ```shell
@@ -28,6 +28,8 @@ ssh ubuntu@$(terraform output -raw load-generation-ip)
 ```
 
 To ingest the data in the Target Cluster:
+
+### ElasticSearch:
 ```shell
 export ES_PASSWORD=<password>
 
@@ -41,11 +43,29 @@ export ES_PASSWORD=<password>
 bash /restore_snapshot.sh
 ```
 
-To benchmark the queries:
+### OpenSearch:
+```shell
+export OS_VERSION=2.16.0
+export OS_PASSWORD=<password>
+
+bash ./ingest.sh
+```
+
+## Benchmark the queries.
+
+### ElasticSearch:
 ```shell
 export ES_PASSWORD=<password>
 
 bash /benchmark.sh
+```
+
+### OpenSearch:
+```shell
+export OS_VERSION=2.16.0
+export OS_PASSWORD=<password>
+
+bash ./benchmark.sh
 ```
 
 ## Get the results
