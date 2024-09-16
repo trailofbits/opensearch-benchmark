@@ -3,7 +3,7 @@
 OS_HOST=$1
 OS_PASSWORD=$2
 OS_VERSION=$3
-OS_USER=elastic
+OS_USER=admin
 
 # TODO:Make configurable in the future
 WORKLOAD="big5"
