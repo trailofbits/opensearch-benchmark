@@ -29,16 +29,31 @@ ssh ubuntu@$(terraform output -raw load-generation-ip)
 
 To ingest the data in the Target Cluster:
 ```shell
-export ES_HOST=https://<hostname>.amazonaws.com:9200
 export ES_PASSWORD=<password>
 
 bash /ingest.sh
 ```
 
+Alternatively, if you already have a snapshot and you want to restore it, do:
+```shell
+export ES_PASSWORD=<password>
+
+bash /restore_snapshot.sh
+```
+
 To benchmark the queries:
 ```shell
-export ES_HOST=https://<hostname>.amazonaws.com:9200
 export ES_PASSWORD=<password>
 
 bash /benchmark.sh
 ```
+
+## Get the results
+From your local host:
+```shell
+mkdir /tmp/results
+bash ./scripts/get_results.sh /tmp/results
+```
+
+You will get the JSON files of the various test executions in the `/tmp/results`
+directory.

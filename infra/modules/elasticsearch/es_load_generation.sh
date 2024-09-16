@@ -17,6 +17,7 @@ export BENCHMARK_HOME=/mnt
 echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
 echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/' >> ~/.bashrc
 echo 'export BENCHMARK_HOME=/mnt' >> ~/.bashrc
+echo "export ES_HOST=$ES_HOST" >> ~/.bashrc
 
 pip install opensearch-benchmark
 

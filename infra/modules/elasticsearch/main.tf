@@ -50,6 +50,13 @@ resource "aws_instance" "load-generation" {
           }
         ))
       ),
+      restore_snapshot_script = yamlencode(
+        base64encode(templatefile("${path.module}/restore_snapshot.sh",
+          {
+            s3_bucket_name = var.s3_bucket_name,
+          }
+        ))
+      ),
       benchmark_script = yamlencode(
         base64encode(templatefile("${path.module}/benchmark.sh",
           {

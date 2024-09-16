@@ -22,14 +22,17 @@ write_files:
     permissions: '0644'
   - path: /benchmark.sh
     encoding: b64
-    content: |
-      ${benchmark_script}
+    content: ${benchmark_script}
     owner: root:root
     permissions: '0755'
   - path: /ingest.sh
     encoding: b64
-    content: |
-      ${ingest_script}
+    content: ${ingest_script}
+    owner: root:root
+    permissions: '0755'
+  - path: /restore_snapshot.sh
+    encoding: b64
+    content: ${restore_snapshot_script}
     owner: root:root
     permissions: '0755'
 
