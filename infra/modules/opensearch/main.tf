@@ -23,6 +23,10 @@ resource "aws_instance" "target-cluster" {
   tags = var.tags
 }
 
+data "aws_eip" "load-gen-eip" {
+  public_ip = var.load_gen_ip
+}
+
 resource "aws_instance" "load-generation" {
   ami             = var.ami_id
   instance_type   = var.instance_type
@@ -67,7 +71,7 @@ resource "aws_instance" "load-generation" {
     type        = "ssh"
     user        = "ubuntu"
     private_key = file(var.ssh_priv_key)
-    host        = self.public_ip
+    host        = data.aws_eip.load-gen-eip.public_ip
   }
 
   private_dns_name_options {
@@ -85,5 +89,5 @@ resource "aws_instance" "load-generation" {
 
 resource "aws_eip_association" "eip_assoc" {
   instance_id   = aws_instance.load-generation.id
-  allocation_id = var.load_gen_eip_id
+  allocation_id = data.aws_eip.load-gen-eip.id
 }

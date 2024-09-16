@@ -45,8 +45,8 @@ variable "password" {
   type        = string
 }
 
-variable "load_gen_eip_id" {
-  description = "Load generation Elastic IP ID"
+variable "load_gen_ip" {
+  description = "IP of Load generation Elastic IP"
   type        = string
 }
 

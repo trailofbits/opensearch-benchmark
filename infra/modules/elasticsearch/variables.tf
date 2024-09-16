@@ -63,8 +63,8 @@ variable "snapshot_user_aws_secret_access_key" {
   sensitive   = true
 }
 
-variable "load_gen_eip_id" {
-  description = "Load generation Elastic IP ID"
+variable "load_gen_ip" {
+  description = "IP of Load generation Elastic IP"
   type        = string
 }
 
