@@ -11,3 +11,20 @@
 - `terraform init`
 - `terraform apply -var ssh_pub_key=~/.ssh/id_rsa.pub` (or change the variable in `terraform.tfvars` and just run `terraform apply`)
 - connect to the VM with `ssh ubuntu@<ip>`
+
+## Connecting to the Metric Datastore
+OpenSearch Benchmark can be configured to use a remote OpenSearch instance as a metric data store. These instructions are specific to the shared data store.
+
+- Connect to the load generation instance and update `~/.benchmark/benchmark.ini`
+```
+[results_publishing]
+datastore.type = opensearch
+datastore.host = insert_hostname_here
+datastore.port = 443
+datastore.secure = True
+datastore.ssl.verification_mode = none
+datastore.user = insert_user_here
+datastore.password = insert_password_here
+datastore.number_of_replicas = 1
+datastore.number_of_shards = 3
+```
