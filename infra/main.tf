@@ -48,6 +48,10 @@ resource "aws_security_group" "allow_osb" {
   name        = "${terraform.workspace}-allow-osb"
   description = "Allow ES/OS/OSB inbound traffic and all outbound traffic"
   vpc_id      = aws_vpc.vpc.id
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
