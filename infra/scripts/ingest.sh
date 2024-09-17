@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /utils.sh
+
 if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$CLUSTER_VERSION" ]; then
     echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and CLUSTER_VERSION environment variables"
     exit 1
@@ -25,6 +27,8 @@ opensearch-benchmark execute-test \
     --test-execution-id=ingestion \
     --distribution-version=$CLUSTER_VERSION \
     --exclude-tasks="type:search"
+
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST"
 
 # If SNAPSHOT_S3_BUCKET is not set, skip the snapshot
 if [ -z "$SNAPSHOT_S3_BUCKET" ]; then
@@ -81,3 +85,5 @@ while [ "$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD "$CLUSTER_HOST/_recovery"
   echo "Waiting for restore to complete"
   sleep 10
 done
+
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST"
