@@ -49,7 +49,7 @@ resource "aws_instance" "load-generation" {
       es_index_8_15_0 = yamlencode(filebase64("${path.module}/es_indexes/es_index_8.15.0.json")),
 
       ingest_script = yamlencode(
-        base64encode(templatefile("${path.module}/ingest.sh",
+        base64encode(templatefile("${path.module}/../../scripts/ingest.sh",
           {
             s3_bucket_name  = var.s3_bucket_name,
             workload_params = var.workload_params,

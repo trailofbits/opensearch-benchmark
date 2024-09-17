@@ -12,7 +12,7 @@ if [ -z "$ES_SNAPSHOT_S3_BUCKET" ]; then
 fi
 
 # Register the S3 repository for snapshots
-response=$(curl -s -ku elastic:$ES_PASSWORD -X PUT "$ES_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET?pretty" -H 'Content-Type: application/json' -d"
+response=$(curl -s -ku elastic:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET?pretty" -H 'Content-Type: application/json' -d"
 {
   \"type\": \"s3\",
   \"settings\": {
@@ -28,8 +28,8 @@ echo "$response" | jq -e '.error' > /dev/null && {
 
 
 # Restore the snapshot
-curl -ku elastic:$ES_PASSWORD -X DELETE "$ES_HOST/$WORKLOAD?pretty"
-curl -ku elastic:$ES_PASSWORD -X POST "$ES_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore" -H "Content-Type: application/json" -d"
+curl -ku elastic:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$WORKLOAD?pretty"
+curl -ku elastic:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }"
