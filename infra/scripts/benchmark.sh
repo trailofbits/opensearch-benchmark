@@ -11,7 +11,9 @@ WORKLOAD="big5"
 WORKLOAD_PARAMS="${workload_params}"
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 TEST_EXECUTION_ID="cluster_$(date '+%Y_%m_%d_%H_%M_%S')"
-RESULTS_FILE="/mnt/$TEST_EXECUTION_ID"
+EXECUTION_DIR="/mnt/test_executions"
+mkdir -p "$EXECUTION_DIR"
+RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
 
 set -x
 
