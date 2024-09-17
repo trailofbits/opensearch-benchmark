@@ -48,7 +48,7 @@ echo "Waiting for server to boot"
 
 echo "Waiting for server to boot"
 # Wait for OpenSearch to start
-while ! curl --max-time 5 -ks https://localhost:9200 2>&1 >/dev/null ; do
+while ! curl --max-time 5 -ks https://localhost:9200 > /dev/null 2>&1 ; do
     echo "Waiting for OpenSearch to start"
     sleep 1
 done 
