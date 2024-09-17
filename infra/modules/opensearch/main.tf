@@ -33,6 +33,8 @@ resource "aws_instance" "load-generation" {
   key_name        = var.ssh_key_name
   security_groups = var.security_groups
 
+  associate_public_ip_address = true
+
   subnet_id = var.subnet_id
 
   user_data = templatefile("${path.module}/os-load-generation.yaml",
@@ -71,7 +73,7 @@ resource "aws_instance" "load-generation" {
     type        = "ssh"
     user        = "ubuntu"
     private_key = file(var.ssh_priv_key)
-    host        = data.aws_eip.load-gen-eip.public_ip
+    host        = self.public_ip
   }
 
   private_dns_name_options {
