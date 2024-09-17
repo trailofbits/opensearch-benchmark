@@ -126,6 +126,7 @@ module "es-cluster" {
   security_groups = [aws_security_group.allow_osb.id]
   subnet_id       = aws_subnet.subnet.id
   password        = random_password.cluster-password.result
+  load_gen_ip     = var.load_gen_ip
 
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
@@ -150,6 +151,8 @@ module "os-cluster" {
   subnet_id       = aws_subnet.subnet.id
   password        = random_password.cluster-password.result
   workload_params = var.workload_params
+  load_gen_ip     = var.load_gen_ip
+
   tags = {
     Name = "target-cluster"
   }

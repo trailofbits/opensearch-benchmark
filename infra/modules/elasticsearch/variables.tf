@@ -63,6 +63,11 @@ variable "snapshot_user_aws_secret_access_key" {
   sensitive   = true
 }
 
+variable "load_gen_ip" {
+  description = "IP address of load generation Elastic IP"
+  type        = string
+}
+
 variable "workload_params" {
   description = "Workload parameters to pass to the ingest and benchmark scripts"
   type        = string

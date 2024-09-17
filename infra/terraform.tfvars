@@ -4,6 +4,7 @@ aws_region                          = "us-east-1"
 aws_subnet_zone                     = "us-east-1a"
 target_cluster_type                 = "ElasticSearch"
 s3_bucket_name                      = "es-snapshots-osb"
+load_gen_ip                         = "INSERT_IP"
 snapshot_user_aws_access_key_id     = "<ACCESS-KEY>"
 snapshot_user_aws_secret_access_key = "<SECRET-KEY>"
 

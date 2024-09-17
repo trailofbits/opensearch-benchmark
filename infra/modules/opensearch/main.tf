@@ -23,12 +23,18 @@ resource "aws_instance" "target-cluster" {
   tags = var.tags
 }
 
+data "aws_eip" "load-gen-eip" {
+  public_ip = var.load_gen_ip
+}
+
 resource "aws_instance" "load-generation" {
   ami             = var.ami_id
   instance_type   = var.instance_type
   key_name        = var.ssh_key_name
   security_groups = var.security_groups
 
+  # Temporarily assign public IP before EIP so that provisioner can connect to instance
+  # NOTE: self.public_ip will be outdated after the aws_eip_association
   associate_public_ip_address = true
 
   subnet_id = var.subnet_id
@@ -83,4 +89,9 @@ resource "aws_instance" "load-generation" {
   # Ensure the load-generation instance is created after the target-cluster
   # instance so we can connect to it
   depends_on = [aws_instance.target-cluster]
+}
+
+resource "aws_eip_association" "eip_assoc" {
+  instance_id   = aws_instance.load-generation.id
+  allocation_id = data.aws_eip.load-gen-eip.id
 }
