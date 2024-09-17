@@ -65,7 +65,7 @@ resource "aws_instance" "load-generation" {
         ))
       ),
       benchmark_script = yamlencode(
-        base64encode(templatefile("${path.module}/benchmark.sh",
+        base64encode(templatefile("${path.module}/../../scripts/benchmark.sh",
           {
             workload_params = var.workload_params,
           }

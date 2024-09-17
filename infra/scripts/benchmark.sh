@@ -1,15 +1,14 @@
 #!/bin/bash
 
-# Check if CLUSTER_HOST, and CLUSTER_PASSWORD env vars are set
-if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_PASSWORD" ]; then
-    echo "Please set the CLUSTER_HOST, and CLUSTER_PASSWORD environment variables"
+if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$CLUSTER_VERSION" ]; then
+    echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and CLUSTER_VERSION environment variables"
     exit 1
 fi
 
 WORKLOAD="big5"
 WORKLOAD_PARAMS="${workload_params}"
-CLIENT_OPTIONS="basic_auth_user:elastic,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
-TEST_EXECUTION_ID="es-query-benchmark"
+CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
+TEST_EXECUTION_ID="cluster_$(date '+%Y_%m_%d_%H_%M_%S')"
 RESULTS_FILE="/mnt/$TEST_EXECUTION_ID"
 
 set -x
@@ -28,6 +27,6 @@ do
                 --include-tasks="type:search" \
                 --results-file="$RESULTS_FILE-$i" \
                 --test-execution-id="$TEST_EXECUTION_ID-$i" \
-                --distribution-version=8.15.0
+                --distribution-version=$CLUSTER_VERSION
 done
 
