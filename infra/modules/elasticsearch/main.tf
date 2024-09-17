@@ -35,6 +35,8 @@ resource "aws_instance" "load-generation" {
   key_name        = var.ssh_key_name
   security_groups = var.security_groups
 
+  # Temporarily assign public IP before EIP so that provisioner can connect to instance
+  # NOTE: self.public_ip will be outdated after the aws_eip_association
   associate_public_ip_address = true
 
   subnet_id = var.subnet_id
