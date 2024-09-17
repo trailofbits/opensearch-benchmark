@@ -60,22 +60,23 @@ To ingest the data in the Target Cluster:
 
 ### ElasticSearch:
 ```shell
-export ES_PASSWORD=<password>
+export CLUSTER_PASSWORD=<password>
+export CLUSTER_VERSION=8.15.0
 
 bash /ingest.sh
 ```
 
 Alternatively, if you already have a snapshot and you want to restore it, do:
 ```shell
-export ES_PASSWORD=<password>
+export CLUSTER_PASSWORD=<password>
 
 bash /restore_snapshot.sh
 ```
 
 ### OpenSearch:
 ```shell
-export OS_VERSION=2.16.0
-export OS_PASSWORD=<password>
+export CLUSTER_VERSION=2.16.0
+export CLUSTER_PASSWORD=<password>
 
 bash ./ingest.sh
 ```
@@ -84,15 +85,16 @@ bash ./ingest.sh
 
 ### ElasticSearch:
 ```shell
-export ES_PASSWORD=<password>
+export CLUSTER_PASSWORD=<password>
+export CLUSTER_VERSION=8.15.0
 
 bash /benchmark.sh
 ```
 
 ### OpenSearch:
 ```shell
-export OS_VERSION=2.16.0
-export OS_PASSWORD=<password>
+export CLUSTER_VERSION=2.16.0
+export CLUSTER_PASSWORD=<password>
 
 bash ./benchmark.sh
 ```

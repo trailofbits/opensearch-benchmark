@@ -1,31 +1,30 @@
 #!/bin/bash
 
-# Check if ES_HOST, and ES_PASSWORD env vars are set
-if [ -z "$ES_HOST" ] || [ -z "$ES_PASSWORD" ]; then
-    echo "Please set the ES_HOST, and ES_PASSWORD environment variables"
+if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$CLUSTER_VERSION" ]; then
+    echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and CLUSTER_VERSION environment variables"
     exit 1
 fi
 
 ES_SNAPSHOT_S3_BUCKET=${s3_bucket_name}
 WORKLOAD="big5"
-WORKLOAD_PARAMS="${workload_params}"
-CLIENT_OPTIONS="basic_auth_user:elastic,basic_auth_password:$ES_PASSWORD,use_ssl:true,verify_certs:false"
+WORKLOAD_PARAMS=${workload_params}
+CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
 
 INGESTION_RESULTS=/mnt/ingestion_results
 
-# Ingest data in the ES cluster
+# Ingest data in the cluster
 opensearch-benchmark execute-test \
     --pipeline=benchmark-only \
     --workload=$WORKLOAD \
-    --target-hosts="$ES_HOST" \
+    --target-hosts="$CLUSTER_HOST" \
     --workload-params="$WORKLOAD_PARAMS" \
     --client-options="$CLIENT_OPTIONS" \
     --kill-running-processes \
     --results-file=$INGESTION_RESULTS \
     --test-execution-id=ingestion \
-    --distribution-version=8.15.0 \
-    --exclude-tasks="type:search" || exit 2
+    --distribution-version=$CLUSTER_VERSION \
+    --exclude-tasks="type:search"
 
 # If ES_SNAPSHOT_S3_BUCKET is not set, skip the snapshot
 if [ -z "$ES_SNAPSHOT_S3_BUCKET" ]; then
@@ -34,7 +33,7 @@ if [ -z "$ES_SNAPSHOT_S3_BUCKET" ]; then
 fi
 
 # Register the S3 repository for snapshots
-response=$(curl -s -ku elastic:$ES_PASSWORD -X PUT "$ES_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET?pretty" -H 'Content-Type: application/json' -d"
+response=$(curl -s -ku elastic:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET?pretty" -H 'Content-Type: application/json' -d"
 {
   \"type\": \"s3\",
   \"settings\": {
@@ -49,7 +48,7 @@ echo "$response" | jq -e '.error' > /dev/null && {
 }
 
 # Perform the snapshot
-response=$(curl -ku elastic:$ES_PASSWORD -X PUT "$ES_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME" -H "Content-Type: application/json" -d"
+response=$(curl -ku elastic:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }")
@@ -61,7 +60,7 @@ echo "$response" | jq -e '.error' > /dev/null && {
 
 # Wait until the snapshot is in SUCCESS state
 while true; do
-  STATUS=$(curl -s -ku elastic:$ES_PASSWORD -X GET "$ES_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_status?pretty" | jq -r '.snapshots[0].state')
+  STATUS=$(curl -s -ku elastic:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_status?pretty" | jq -r '.snapshots[0].state')
   if [ "$STATUS" == "SUCCESS" ]; then
     break
   fi
@@ -70,8 +69,8 @@ while true; do
 done
 
 # Restore the snapshot
-curl -ku elastic:$ES_PASSWORD -X DELETE "$ES_HOST/$WORKLOAD?pretty"
-curl -ku elastic:$ES_PASSWORD -X POST "$ES_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore" -H "Content-Type: application/json" -d"
+curl -ku elastic:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$WORKLOAD?pretty"
+curl -ku elastic:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }"

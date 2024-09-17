@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Check if ES_HOST, and ES_PASSWORD env vars are set
-if [ -z "$ES_HOST" ] || [ -z "$ES_PASSWORD" ]; then
-    echo "Please set the ES_HOST, and ES_PASSWORD environment variables"
+# Check if CLUSTER_HOST, and CLUSTER_PASSWORD env vars are set
+if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_PASSWORD" ]; then
+    echo "Please set the CLUSTER_HOST, and CLUSTER_PASSWORD environment variables"
     exit 1
 fi
 
 WORKLOAD="big5"
 WORKLOAD_PARAMS="${workload_params}"
-CLIENT_OPTIONS="basic_auth_user:elastic,basic_auth_password:$ES_PASSWORD,use_ssl:true,verify_certs:false"
+CLIENT_OPTIONS="basic_auth_user:elastic,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 TEST_EXECUTION_ID="es-query-benchmark"
 RESULTS_FILE="/mnt/$TEST_EXECUTION_ID"
 
@@ -21,7 +21,7 @@ do
         opensearch-benchmark execute-test \
                 --pipeline=benchmark-only \
                 --workload=$WORKLOAD  \
-                --target-hosts="$ES_HOST" \
+                --target-hosts="$CLUSTER_HOST" \
                 --workload-params="$WORKLOAD_PARAMS" \
                 --client-options="$CLIENT_OPTIONS" \
                 --kill-running-processes \

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ELASTIC_PASSWORD=$1
+CLUSTER_PASSWORD=$1
 ES_SNAPSHOT_AWS_ACCESS_KEY_ID=$2
 ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY=$3
 
@@ -41,10 +41,10 @@ done
 CURRENT_ELASTIC_PASSWORD=$(./bin/elasticsearch-reset-password -u elastic -b -s)
 curl -ku elastic:$CURRENT_ELASTIC_PASSWORD https://localhost:9200
 
-echo "Current: $CURRENT_ELASTIC_PASSWORD , New: $ELASTIC_PASSWORD"
+echo "Current: $CURRENT_ELASTIC_PASSWORD , New: $CLUSTER_PASSWORD"
 
 curl -k -X POST "https://localhost:9200/_security/user/elastic/_password" -u elastic:$CURRENT_ELASTIC_PASSWORD -H "Content-Type: application/json" -d "{
-  \"password\": \"$ELASTIC_PASSWORD\"
+  \"password\": \"$CLUSTER_PASSWORD\"
 }"
 
-curl -ku elastic:$ELASTIC_PASSWORD https://localhost:9200
+curl -ku elastic:$CLUSTER_PASSWORD https://localhost:9200
