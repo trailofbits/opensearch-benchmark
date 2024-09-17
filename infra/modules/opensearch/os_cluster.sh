@@ -24,7 +24,7 @@ echo "discovery.type: single-node" >> $CONFIG_FILE
 
 # JDK location
 export OPENSEARCH_JAVA_HOME=$INSTALL_PATH/jdk
-echo "export OPENSEARCH_JAVA_HOME=$$OPENSEARCH_JAVA_HOME" >> ~/.bashrc
+echo "export OPENSEARCH_JAVA_HOME=$OPENSEARCH_JAVA_HOME" >> ~/.bashrc
 
 # Fix the JVM size
 GB=$(echo "$(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / (1024*1024*2)" | bc)
