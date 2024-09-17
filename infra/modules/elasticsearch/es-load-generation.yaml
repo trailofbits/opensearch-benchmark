@@ -40,6 +40,11 @@ write_files:
     content: ${restore_snapshot_script}
     owner: root:root
     permissions: '0755'
+  - path: /utils.sh
+    encoding: gz+b64
+    content: ${utils_script}
+    owner: root:root
+    permissions: '0755'
 
 fs_setup:
   - label: None

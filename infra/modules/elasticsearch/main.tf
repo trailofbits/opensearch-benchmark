@@ -74,6 +74,9 @@ resource "aws_instance" "load-generation" {
         ))
       ),
       fix_index_script = yamlencode(base64gzip(file("${path.module}/fix_index.sh"))),
+      utils_script = yamlencode(
+        base64gzip(templatefile("${path.module}/../../scripts/utils.sh", {}))
+      ),
     }
   )
   user_data_replace_on_change = true

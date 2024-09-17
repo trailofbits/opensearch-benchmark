@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /utils.sh
+
 if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$CLUSTER_VERSION" ]; then
     echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and CLUSTER_VERSION environment variables"
     exit 1
@@ -17,6 +19,7 @@ set -x
 echo "Running Queries Only"
 for i in $(seq 0 3)
 do
+        check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST"
         opensearch-benchmark execute-test \
                 --pipeline=benchmark-only \
                 --workload=$WORKLOAD  \
@@ -30,3 +33,4 @@ do
                 --distribution-version=$CLUSTER_VERSION
 done
 
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST"

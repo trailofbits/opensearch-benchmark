@@ -73,6 +73,9 @@ resource "aws_instance" "load-generation" {
           }
         ))
       ),
+      utils_script = yamlencode(
+        base64encode(templatefile("${path.module}/../../scripts/utils.sh", {}))
+      ),
     }
   )
   user_data_replace_on_change = true
