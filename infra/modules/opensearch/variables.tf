@@ -46,7 +46,7 @@ variable "password" {
 }
 
 variable "load_gen_ip" {
-  description = "IP of Load generation Elastic IP"
+  description = "IP address of load generation Elastic IP"
   type        = string
 }
 
