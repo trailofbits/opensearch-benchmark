@@ -26,7 +26,7 @@ If you want to use snapshotting, configure an S3 bucket on AWS and access to it.
 ## Connecting to the Metric Datastore
 OpenSearch Benchmark can be configured to use a remote OpenSearch instance as a metric data store. These instructions are specific to the shared data store.
 
-- Connect to the load generation instance and update `~/.benchmark/benchmark.ini`
+- Connect to the load generation instance and update `/mnt/.benchmark/benchmark.ini`
 ```
 [results_publishing]
 datastore.type = opensearch
