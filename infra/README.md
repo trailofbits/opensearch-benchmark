@@ -5,8 +5,17 @@
 - In the AWS Console, go to "Security Credentials" and create a new "Access Key"
 - Set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 - Create an Elastic IP in the console. This will be for the load generator so that it remains the same across deployments.
-    - For metric data store access: Add the Elastic IP you created to the shared prefix list (id: `pl-06f77c0b59dbf70fe`).
-    - Set `load_gen_ip` to the Elastic IP address in `terraform.tfvars`.
+    - Go to the [Elastic IP page](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#Addresses:).
+    - Select "Allocate Elastic IP Address"
+    - Specify a network border group matching the region the infra will be deployed in.
+    - Give it a Name by adding a new tag with key "Name"
+- Add the Elastic IP you created to the shared prefix list.
+    - This is to access the shared metric data store, which allows the CIDR blocks specified in the shared prefix list.
+    - Go to the [shared prefix list](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#PrefixListDetails:prefixListId=pl-06f77c0b59dbf70fe) (id: `pl-06f77c0b59dbf70fe`).
+    - Select "Modify Prefix List"
+    - Select "Add New Entry"
+    - Enter your Elastic IP address as a CIDR block (ending in /32) and give it a description.
+- Set `load_gen_ip` to the Elastic IP address in `terraform.tfvars`.
 - `terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
 - `terraform init`
 - Modify the `terraform.tfvars` file according to your needs
