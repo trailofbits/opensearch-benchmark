@@ -64,7 +64,7 @@ variable "snapshot_user_aws_secret_access_key" {
 }
 
 variable "load_gen_ip" {
-  description = "IP of Load generation Elastic IP"
+  description = "IP address of load generation Elastic IP"
   type        = string
 }
 
