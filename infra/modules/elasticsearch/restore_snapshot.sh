@@ -2,6 +2,8 @@
 
 ES_SNAPSHOT_S3_BUCKET=${s3_bucket_name}
 WORKLOAD="big5"
+WORKLOAD_PARAMS="${workload_params}"
+SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
 
 # If ES_SNAPSHOT_S3_BUCKET is not set, skip the snapshot
 if [ -z "$ES_SNAPSHOT_S3_BUCKET" ]; then
@@ -27,7 +29,7 @@ echo "$response" | jq -e '.error' > /dev/null && {
 
 # Restore the snapshot
 curl -ku elastic:$ES_PASSWORD -X DELETE "$ES_HOST/$WORKLOAD?pretty"
-curl -ku elastic:$ES_PASSWORD -X POST "$ES_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/snapshot_1/_restore" -H "Content-Type: application/json" -d"
+curl -ku elastic:$ES_PASSWORD -X POST "$ES_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }"
