@@ -124,16 +124,20 @@ resource "random_password" "cluster-password" {
 module "es-cluster" {
   count = var.target_cluster_type == "ElasticSearch" ? 1 : 0
 
-  source          = "./modules/elasticsearch"
-  instance_type   = var.instance_type
-  ami_id          = data.aws_ami.ubuntu_ami.id
-  es_version      = var.es_version
-  ssh_key_name    = aws_key_pair.ssh_key.key_name
-  ssh_priv_key    = var.ssh_priv_key
-  security_groups = [aws_security_group.allow_osb.id]
-  subnet_id       = aws_subnet.subnet.id
-  password        = random_password.cluster-password.result
-  load_gen_ip     = var.load_gen_ip
+  source                = "./modules/elasticsearch"
+  instance_type         = var.instance_type
+  ami_id                = data.aws_ami.ubuntu_ami.id
+  es_version            = var.es_version
+  ssh_key_name          = aws_key_pair.ssh_key.key_name
+  ssh_priv_key          = var.ssh_priv_key
+  security_groups       = [aws_security_group.allow_osb.id]
+  subnet_id             = aws_subnet.subnet.id
+  password              = random_password.cluster-password.result
+  load_gen_ip           = var.load_gen_ip
+  benchmark_environment = var.benchmark_environment
+  datastore_host        = var.datastore_host
+  datastore_username    = var.datastore_username
+  datastore_password    = var.datastore_password
 
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
@@ -148,17 +152,21 @@ module "es-cluster" {
 module "os-cluster" {
   count = var.target_cluster_type == "OpenSearch" ? 1 : 0
 
-  source          = "./modules/opensearch"
-  instance_type   = var.instance_type
-  ami_id          = data.aws_ami.ubuntu_ami.id
-  os_version      = var.os_version
-  ssh_key_name    = aws_key_pair.ssh_key.key_name
-  ssh_priv_key    = var.ssh_priv_key
-  security_groups = [aws_security_group.allow_osb.id]
-  subnet_id       = aws_subnet.subnet.id
-  password        = random_password.cluster-password.result
-  load_gen_ip     = var.load_gen_ip
-  
+  source                = "./modules/opensearch"
+  instance_type         = var.instance_type
+  ami_id                = data.aws_ami.ubuntu_ami.id
+  os_version            = var.os_version
+  ssh_key_name          = aws_key_pair.ssh_key.key_name
+  ssh_priv_key          = var.ssh_priv_key
+  security_groups       = [aws_security_group.allow_osb.id]
+  subnet_id             = aws_subnet.subnet.id
+  password              = random_password.cluster-password.result
+  load_gen_ip           = var.load_gen_ip
+  benchmark_environment = var.benchmark_environment
+  datastore_host        = var.datastore_host
+  datastore_username    = var.datastore_username
+  datastore_password    = var.datastore_password
+
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
   snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key

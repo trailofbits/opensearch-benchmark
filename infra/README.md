@@ -32,22 +32,12 @@ Use `terraform output cluster-password` to get the password for the cluster.
 ### Snapshotting
 If you want to use snapshotting, configure an S3 bucket on AWS and access to it. For ElasticSearch, follow the instructions in [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/repository-s3.html). For OpenSearch, follow the instructions [here](https://opensearch.org/docs/latest/tuning-your-cluster/availability-and-recovery/snapshots/index/).
 
-## Connecting to the Metric Datastore
-OpenSearch Benchmark can be configured to use a remote OpenSearch instance as a metric data store. These instructions are specific to the shared data store.
+### Connecting to the Metric Datastore
+OpenSearch Benchmark will automatically upload benchmark results to the shared metric data store. The data store-relevant terraform variables are:
+ - `benchmark_environment`: Metadata tag for the results
+ - `datastore_host`, `datastore_username`, `datastore_password`: Required to connect to the data store. They are in the shared 1Password.
 
-- Connect to the load generation instance and update `/mnt/.benchmark/benchmark.ini`
-```
-[results_publishing]
-datastore.type = opensearch
-datastore.host = insert_hostname_here
-datastore.port = 443
-datastore.secure = True
-datastore.ssl.verification_mode = none
-datastore.user = insert_user_here
-datastore.password = insert_password_here
-datastore.number_of_replicas = 1
-datastore.number_of_shards = 3
-```
+If you want to disable uploading to the shared data store, edit `/mnt/.benchmark/benchmark.ini` to use the commented default config for `[results_publishing]`. This will save results locally.
 
 ## Ingest/Load the data
 

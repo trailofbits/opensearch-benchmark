@@ -10,10 +10,9 @@ resource "aws_instance" "target-cluster" {
 
   user_data = templatefile("${path.module}/os-cluster.yaml",
     {
-      os_cluster_script = yamlencode(filebase64("${path.module}/os_cluster.sh")),
-      os_password       = var.password,
-      os_version        = var.os_version,
-      
+      os_cluster_script      = yamlencode(filebase64("${path.module}/os_cluster.sh")),
+      os_password            = var.password,
+      os_version             = var.os_version,
       os_snapshot_access_key = var.snapshot_user_aws_access_key_id,
       os_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
     }
@@ -45,13 +44,18 @@ resource "aws_instance" "load-generation" {
 
   user_data = templatefile("${path.module}/os-load-generation.yaml",
     {
-      load_script = yamlencode(filebase64("${path.module}/../../scripts/load_generation.sh")),
-      os_cluster  = aws_instance.target-cluster.public_dns
-      os_password = var.password,
-      os_version  = var.os_version,
+      load_script           = yamlencode(base64gzip(file("${path.module}/../../scripts/load_generation.sh"))),
+      os_cluster            = aws_instance.target-cluster.public_dns
+      os_password           = var.password,
+      os_version            = var.os_version,
+      benchmark_environment = var.benchmark_environment
+      datastore_host        = var.datastore_host
+      datastore_username    = var.datastore_username
+      datastore_password    = var.datastore_password
+
 
       ingest_script = yamlencode(
-        base64encode(templatefile("${path.module}/../../scripts/ingest.sh",
+        base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",
           {
             workload_params = var.workload_params,
             s3_bucket_name  = var.s3_bucket_name,
@@ -59,7 +63,7 @@ resource "aws_instance" "load-generation" {
         ))
       ),
       restore_snapshot_script = yamlencode(
-        base64encode(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
+        base64gzip(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
           {
             s3_bucket_name  = var.s3_bucket_name,
             workload_params = var.workload_params,
@@ -67,7 +71,7 @@ resource "aws_instance" "load-generation" {
         ))
       ),
       benchmark_script = yamlencode(
-        base64encode(templatefile("${path.module}/../../scripts/benchmark.sh",
+        base64gzip(templatefile("${path.module}/../../scripts/benchmark.sh",
           {
             workload_params = var.workload_params,
           }
