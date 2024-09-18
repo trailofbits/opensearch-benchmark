@@ -10,7 +10,7 @@ resource "aws_instance" "target-cluster" {
 
   user_data = templatefile("${path.module}/os-cluster.yaml",
     {
-      os_cluster_script      = yamlencode(filebase64("${path.module}/os_cluster.sh")),
+      os_cluster_script      = yamlencode(base64gzip(file("${path.module}/os_cluster.sh"))),
       os_password            = var.password,
       os_version             = var.os_version,
       os_snapshot_access_key = var.snapshot_user_aws_access_key_id,

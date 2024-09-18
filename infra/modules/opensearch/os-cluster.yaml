@@ -10,7 +10,7 @@ write_files:
     owner: root:root
     permissions: '0644'
   - path: /os_cluster.sh
-    encoding: b64
+    encoding: gz+b64
     content: ${os_cluster_script}
     owner: root:root
     permissions: '0755'
