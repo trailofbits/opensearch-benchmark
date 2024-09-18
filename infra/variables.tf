@@ -81,3 +81,26 @@ variable "workload_params" {
   type        = string
   default     = "number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10,target_throughput:0"
 }
+
+variable "benchmark_environment" {
+  description = "Benchmark environment, saved as metadata in shared metric data store"
+  type        = string
+}
+
+variable "datastore_host" {
+  description = "Shared data store host"
+  type        = string
+  sensitive   = true
+}
+
+variable "datastore_username" {
+  description = "Shared data store username"
+  type        = string
+  sensitive   = true
+}
+
+variable "datastore_password" {
+  description = "Shared data store password"
+  type        = string
+  sensitive   = true
+}

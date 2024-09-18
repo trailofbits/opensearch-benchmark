@@ -44,11 +44,15 @@ resource "aws_instance" "load-generation" {
 
   user_data = templatefile("${path.module}/es-load-generation.yaml",
     {
-      load_script     = yamlencode(base64gzip(file("${path.module}/../../scripts/load_generation.sh"))),
-      es_cluster      = aws_instance.target-cluster.public_dns
-      es_password     = var.password,
-      es_version      = "8.15.0",
-      es_index_8_15_0 = yamlencode(base64gzip(file("${path.module}/es_indexes/es_index_8.15.0.json"))),
+      load_script           = yamlencode(base64gzip(file("${path.module}/../../scripts/load_generation.sh"))),
+      es_cluster            = aws_instance.target-cluster.public_dns
+      es_password           = var.password,
+      es_version            = "8.15.0",
+      es_index_8_15_0       = yamlencode(base64gzip(file("${path.module}/es_indexes/es_index_8.15.0.json"))),
+      benchmark_environment = var.benchmark_environment
+      datastore_host        = var.datastore_host
+      datastore_username    = var.datastore_username
+      datastore_password    = var.datastore_password
 
       ingest_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",
