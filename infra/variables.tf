@@ -20,15 +20,9 @@ variable "aws_subnet_zone" {
   type        = string
 }
 
-variable "load_gen_ip" {
-  description = "IP address of an existing Elastic IP for the load gen instance."
+variable "prefix_list_id" {
+  description = "ID of prefix list resource to add the load generation IP to"
   type        = string
-  validation {
-    condition = (
-      can(cidrnetmask("${var.load_gen_ip}/32"))
-    )
-    error_message = "The load_gen_ip value must be a valid IPv4 address."
-  }
 }
 
 variable "target_cluster_type" {

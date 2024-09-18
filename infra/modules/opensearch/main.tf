@@ -26,10 +26,6 @@ resource "aws_instance" "target-cluster" {
   tags = var.tags
 }
 
-data "aws_eip" "load-gen-eip" {
-  public_ip = var.load_gen_ip
-}
-
 resource "aws_instance" "load-generation" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
@@ -112,7 +108,8 @@ resource "aws_instance" "load-generation" {
   depends_on = [aws_instance.target-cluster]
 }
 
-resource "aws_eip_association" "eip_assoc" {
-  instance_id   = aws_instance.load-generation.id
-  allocation_id = data.aws_eip.load-gen-eip.id
+resource "aws_ec2_managed_prefix_list_entry" "prefix-list-entry-load-gen" {
+  cidr           = "${aws_instance.load-generation.public_ip}/32"
+  description    = terraform.workspace
+  prefix_list_id = var.prefix_list_id
 }
