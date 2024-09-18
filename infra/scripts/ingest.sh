@@ -74,3 +74,10 @@ curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPS
 {
   \"indices\": \"$WORKLOAD\"
 }"
+
+# Wait until the restore is complete (stage == "DONE")
+# Do not fail if the curl|jq command fails for any reasons
+while [ "$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD "$CLUSTER_HOST/_recovery" | jq -r ".[\"$WORKLOAD\"][\"shards\"] | .[].stage" | sort | uniq)" != "DONE" ]; do
+  echo "Waiting for restore to complete"
+  sleep 10
+done
