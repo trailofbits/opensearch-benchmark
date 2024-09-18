@@ -58,7 +58,7 @@ resource "aws_instance" "load-generation" {
         ))
       ),
       restore_snapshot_script = yamlencode(
-        base64encode(templatefile("${path.module}/restore_snapshot.sh",
+        base64encode(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
           {
             s3_bucket_name  = var.s3_bucket_name,
             workload_params = var.workload_params,

@@ -13,6 +13,9 @@ resource "aws_instance" "target-cluster" {
       os_cluster_script = yamlencode(filebase64("${path.module}/os_cluster.sh")),
       os_password       = var.password,
       os_version        = var.os_version,
+      
+      os_snapshot_access_key = var.snapshot_user_aws_access_key_id,
+      os_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
     }
   )
   user_data_replace_on_change = true
@@ -51,7 +54,15 @@ resource "aws_instance" "load-generation" {
         base64encode(templatefile("${path.module}/../../scripts/ingest.sh",
           {
             workload_params = var.workload_params,
-            s3_bucket_name  = "",
+            s3_bucket_name  = var.s3_bucket_name,
+          }
+        ))
+      ),
+      restore_snapshot_script = yamlencode(
+        base64encode(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
+          {
+            s3_bucket_name  = var.s3_bucket_name,
+            workload_params = var.workload_params,
           }
         ))
       ),
