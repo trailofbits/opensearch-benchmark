@@ -1,8 +1,8 @@
 resource "aws_instance" "target-cluster" {
-  ami             = var.ami_id
-  instance_type   = var.instance_type
-  key_name        = var.ssh_key_name
-  security_groups = var.security_groups
+  ami                    = var.ami_id
+  instance_type          = var.instance_type
+  key_name               = var.ssh_key_name
+  vpc_security_group_ids = var.security_groups
 
   associate_public_ip_address = true
 
@@ -17,6 +17,7 @@ resource "aws_instance" "target-cluster" {
       es_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
     }
   )
+  user_data_replace_on_change = true
 
   private_dns_name_options {
     hostname_type = "resource-name"
@@ -30,10 +31,10 @@ data "aws_eip" "load-gen-eip" {
 }
 
 resource "aws_instance" "load-generation" {
-  ami             = var.ami_id
-  instance_type   = var.instance_type
-  key_name        = var.ssh_key_name
-  security_groups = var.security_groups
+  ami                    = var.ami_id
+  instance_type          = var.instance_type
+  key_name               = var.ssh_key_name
+  vpc_security_group_ids = var.security_groups
 
   # Temporarily assign public IP before EIP so that provisioner can connect to instance
   # NOTE: self.public_ip will be outdated after the aws_eip_association
@@ -73,6 +74,7 @@ resource "aws_instance" "load-generation" {
       ),
     }
   )
+  user_data_replace_on_change = true
 
   provisioner "remote-exec" {
     inline = [
