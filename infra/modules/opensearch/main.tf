@@ -45,10 +45,10 @@ resource "aws_instance" "load-generation" {
 
   user_data = templatefile("${path.module}/os-load-generation.yaml",
     {
-      os_load_script = yamlencode(filebase64("${path.module}/os_load_generation.sh")),
-      os_cluster     = aws_instance.target-cluster.public_dns
-      os_password    = var.password,
-      os_version     = var.os_version,
+      load_script = yamlencode(filebase64("${path.module}/../../scripts/load_generation.sh")),
+      os_cluster  = aws_instance.target-cluster.public_dns
+      os_password = var.password,
+      os_version  = var.os_version,
 
       ingest_script = yamlencode(
         base64encode(templatefile("${path.module}/../../scripts/ingest.sh",

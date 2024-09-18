@@ -10,7 +10,7 @@ resource "aws_instance" "target-cluster" {
 
   user_data = templatefile("${path.module}/es-cluster.yaml",
     {
-      es_cluster_script = yamlencode(filebase64("${path.module}/es_cluster.sh")),
+      es_cluster_script = yamlencode(base64gzip(file("${path.module}/es_cluster.sh"))),
       es_password       = var.password,
 
       es_snapshot_access_key = var.snapshot_user_aws_access_key_id,
@@ -44,13 +44,14 @@ resource "aws_instance" "load-generation" {
 
   user_data = templatefile("${path.module}/es-load-generation.yaml",
     {
-      es_load_script  = yamlencode(filebase64("${path.module}/es_load_generation.sh")),
+      load_script     = yamlencode(base64gzip(file("${path.module}/../../scripts/load_generation.sh"))),
       es_cluster      = aws_instance.target-cluster.public_dns
       es_password     = var.password,
-      es_index_8_15_0 = yamlencode(filebase64("${path.module}/es_indexes/es_index_8.15.0.json")),
+      es_version      = "8.15.0",
+      es_index_8_15_0 = yamlencode(base64gzip(file("${path.module}/es_indexes/es_index_8.15.0.json"))),
 
       ingest_script = yamlencode(
-        base64encode(templatefile("${path.module}/../../scripts/ingest.sh",
+        base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",
           {
             s3_bucket_name  = var.s3_bucket_name,
             workload_params = var.workload_params,
@@ -58,7 +59,7 @@ resource "aws_instance" "load-generation" {
         ))
       ),
       restore_snapshot_script = yamlencode(
-        base64encode(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
+        base64gzip(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
           {
             s3_bucket_name  = var.s3_bucket_name,
             workload_params = var.workload_params,
@@ -66,12 +67,13 @@ resource "aws_instance" "load-generation" {
         ))
       ),
       benchmark_script = yamlencode(
-        base64encode(templatefile("${path.module}/../../scripts/benchmark.sh",
+        base64gzip(templatefile("${path.module}/../../scripts/benchmark.sh",
           {
             workload_params = var.workload_params,
           }
         ))
       ),
+      fix_index_script = yamlencode(base64gzip(file("${path.module}/fix_index.sh"))),
     }
   )
   user_data_replace_on_change = true
