@@ -9,29 +9,34 @@ write_files:
       vm.max_map_count=262144
     owner: root:root
     permissions: '0644'
-  - path: /es_load_generation.sh
-    encoding: b64
-    content: ${es_load_script}
+  - path: /load_generation.sh
+    encoding: gz+b64
+    content: ${load_script}
+    owner: root:root
+    permissions: '0755'
+  - path: /fix_index.sh
+    encoding: gz+b64
+    content: ${fix_index_script}
     owner: root:root
     permissions: '0755'
   - path: /es_indexes/es_index_8.15.0.json
-    encoding: b64
+    encoding: gz+b64
     content: |
       ${es_index_8_15_0}
     owner: root:root
     permissions: '0644'
   - path: /benchmark.sh
-    encoding: b64
+    encoding: gz+b64
     content: ${benchmark_script}
     owner: root:root
     permissions: '0755'
   - path: /ingest.sh
-    encoding: b64
+    encoding: gz+b64
     content: ${ingest_script}
     owner: root:root
     permissions: '0755'
   - path: /restore_snapshot.sh
-    encoding: b64
+    encoding: gz+b64
     content: ${restore_snapshot_script}
     owner: root:root
     permissions: '0755'
@@ -63,4 +68,5 @@ packages:
 runcmd:
   - [ sysctl, -p, /etc/sysctl.d/99-custom.conf ]
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
-  - [ sudo, -u, ubuntu, /es_load_generation.sh, https://${es_cluster}:9200, ${es_password} ]
+  - [ sudo, -u, ubuntu, /load_generation.sh, https://${es_cluster}:9200, elastic, ${es_password}, ${es_version} ]
+  - [ sudo, -u, ubuntu, /fix_index.sh, https://${es_cluster}:9200, elastic, ${es_password} ]

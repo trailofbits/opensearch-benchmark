@@ -9,9 +9,9 @@ write_files:
       vm.max_map_count=262144
     owner: root:root
     permissions: '0644'
-  - path: /os_load_generation.sh
+  - path: /load_generation.sh
     encoding: b64
-    content: ${os_load_script}
+    content: ${load_script}
     owner: root:root
     permissions: '0755'
   - path: /benchmark.sh
@@ -57,4 +57,4 @@ packages:
 runcmd:
   - [ sysctl, -p, /etc/sysctl.d/99-custom.conf ]
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
-  - [ sudo, -u, ubuntu, /os_load_generation.sh, https://${os_cluster}:9200, ${os_password}, ${os_version} ]
+  - [ sudo, -u, ubuntu, /load_generation.sh, https://${os_cluster}:9200, admin, ${os_password}, ${os_version} ]
