@@ -3,5 +3,5 @@ output "es-cluster-ip" {
 }
 
 output "load-generation-ip" {
-  value = aws_eip_association.eip_assoc.public_ip
+  value = aws_instance.load-generation.public_dns
 }

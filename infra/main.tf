@@ -97,6 +97,10 @@ resource "aws_route_table_association" "subnet-association" {
   route_table_id = aws_route_table.route-table-test-env.id
 }
 
+data "aws_ec2_managed_prefix_list" "prefix-list" {
+  id = var.prefix_list_id
+}
+
 data "aws_ami" "ubuntu_ami" {
   most_recent = true
 
@@ -133,7 +137,7 @@ module "es-cluster" {
   security_groups       = [aws_security_group.allow_osb.id]
   subnet_id             = aws_subnet.subnet.id
   password              = random_password.cluster-password.result
-  load_gen_ip           = var.load_gen_ip
+  prefix_list_id        = data.aws_ec2_managed_prefix_list.prefix-list.id
   benchmark_environment = var.benchmark_environment
   datastore_host        = var.datastore_host
   datastore_username    = var.datastore_username
@@ -161,7 +165,7 @@ module "os-cluster" {
   security_groups       = [aws_security_group.allow_osb.id]
   subnet_id             = aws_subnet.subnet.id
   password              = random_password.cluster-password.result
-  load_gen_ip           = var.load_gen_ip
+  prefix_list_id        = data.aws_ec2_managed_prefix_list.prefix-list.id
   benchmark_environment = var.benchmark_environment
   datastore_host        = var.datastore_host
   datastore_username    = var.datastore_username
