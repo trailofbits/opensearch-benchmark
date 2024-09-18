@@ -5,7 +5,7 @@ if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" 
     exit 1
 fi
 
-ES_SNAPSHOT_S3_BUCKET=${s3_bucket_name}
+SNAPSHOT_S3_BUCKET=${s3_bucket_name}
 WORKLOAD="big5"
 WORKLOAD_PARAMS=${workload_params}
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
@@ -26,18 +26,18 @@ opensearch-benchmark execute-test \
     --distribution-version=$CLUSTER_VERSION \
     --exclude-tasks="type:search"
 
-# If ES_SNAPSHOT_S3_BUCKET is not set, skip the snapshot
-if [ -z "$ES_SNAPSHOT_S3_BUCKET" ]; then
+# If SNAPSHOT_S3_BUCKET is not set, skip the snapshot
+if [ -z "$SNAPSHOT_S3_BUCKET" ]; then
     echo "Skipping snapshot"
     exit 0
 fi
 
-# Register the S3 repository for snapshots
-response=$(curl -s -ku elastic:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET?pretty" -H 'Content-Type: application/json' -d"
+# Register the S3 repository for snapshots (same for OS/ES)
+response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET?pretty" -H 'Content-Type: application/json' -d"
 {
   \"type\": \"s3\",
   \"settings\": {
-    \"bucket\": \"$ES_SNAPSHOT_S3_BUCKET\"
+    \"bucket\": \"$SNAPSHOT_S3_BUCKET\"
   }
 }
 ")
@@ -48,7 +48,7 @@ echo "$response" | jq -e '.error' > /dev/null && {
 }
 
 # Perform the snapshot
-response=$(curl -ku elastic:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME" -H "Content-Type: application/json" -d"
+response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }")
@@ -60,7 +60,7 @@ echo "$response" | jq -e '.error' > /dev/null && {
 
 # Wait until the snapshot is in SUCCESS state
 while true; do
-  STATUS=$(curl -s -ku elastic:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_status?pretty" | jq -r '.snapshots[0].state')
+  STATUS=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_status?pretty" | jq -r '.snapshots[0].state')
   if [ "$STATUS" == "SUCCESS" ]; then
     break
   fi
@@ -69,8 +69,8 @@ while true; do
 done
 
 # Restore the snapshot
-curl -ku elastic:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$WORKLOAD?pretty"
-curl -ku elastic:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$ES_SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore" -H "Content-Type: application/json" -d"
+curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$WORKLOAD?pretty"
+curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }"

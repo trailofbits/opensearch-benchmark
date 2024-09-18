@@ -24,6 +24,11 @@ write_files:
     content: ${ingest_script}
     owner: root:root
     permissions: '0755'
+  - path: /restore_snapshot.sh
+    encoding: b64
+    content: ${restore_snapshot_script}
+    owner: root:root
+    permissions: '0755'
 
 fs_setup:
   - label: None

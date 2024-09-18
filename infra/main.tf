@@ -114,8 +114,11 @@ data "aws_ami" "ubuntu_ami" {
 }
 
 resource "random_password" "cluster-password" {
-  length  = 16
-  special = false
+  length      = 16
+  special     = false
+  min_lower   = 1
+  min_upper   = 0
+  min_numeric = 1
 }
 
 module "es-cluster" {
@@ -154,8 +157,12 @@ module "os-cluster" {
   security_groups = [aws_security_group.allow_osb.id]
   subnet_id       = aws_subnet.subnet.id
   password        = random_password.cluster-password.result
-  workload_params = var.workload_params
   load_gen_ip     = var.load_gen_ip
+  
+  s3_bucket_name                      = var.s3_bucket_name
+  snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
+  snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key
+  workload_params                     = var.workload_params
 
   tags = {
     Name = "target-cluster"

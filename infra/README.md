@@ -30,7 +30,7 @@ Use `terraform output` to get the IPs/hostnames of the two instances.
 Use `terraform output cluster-password` to get the password for the cluster.
 
 ### Snapshotting
-If you want to use snapshotting, configure an S3 bucket on AWS and access to it. For ElasticSearch, follow the instructions in [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/repository-s3.html).
+If you want to use snapshotting, configure an S3 bucket on AWS and access to it. For ElasticSearch, follow the instructions in [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/repository-s3.html). For OpenSearch, follow the instructions [here](https://opensearch.org/docs/latest/tuning-your-cluster/availability-and-recovery/snapshots/index/).
 
 ## Connecting to the Metric Datastore
 OpenSearch Benchmark can be configured to use a remote OpenSearch instance as a metric data store. These instructions are specific to the shared data store.
@@ -79,6 +79,13 @@ export CLUSTER_VERSION=2.16.0
 export CLUSTER_PASSWORD=<password>
 
 bash /ingest.sh
+```
+
+Alternatively, if you already have a snapshot and you want to restore it, do:
+```shell
+export CLUSTER_PASSWORD=<password>
+
+bash /restore_snapshot.sh
 ```
 
 ## Benchmark the queries.
