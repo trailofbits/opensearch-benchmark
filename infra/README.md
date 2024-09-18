@@ -78,7 +78,7 @@ bash /restore_snapshot.sh
 export CLUSTER_VERSION=2.16.0
 export CLUSTER_PASSWORD=<password>
 
-bash ./ingest.sh
+bash /ingest.sh
 ```
 
 ## Benchmark the queries.
@@ -96,7 +96,7 @@ bash /benchmark.sh
 export CLUSTER_VERSION=2.16.0
 export CLUSTER_PASSWORD=<password>
 
-bash ./benchmark.sh
+bash /benchmark.sh
 ```
 
 ## Get the results
