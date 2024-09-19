@@ -15,6 +15,7 @@
     - Select "Modify Prefix List"
     - Select "Add New Entry"
     - Enter your Elastic IP address as a CIDR block (ending in /32) and give it a description.
+- Copy `terraform.tfvars.template` to `terraform.tfvars` and modify it.
 - Set `load_gen_ip` to the Elastic IP address in `terraform.tfvars`.
 - `terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
 - `terraform init`
