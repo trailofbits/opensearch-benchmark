@@ -23,6 +23,18 @@ provider "aws" {
   }
 }
 
+provider "aws" {
+  region = "us-east-1"
+  alias  = "prefix_list_region"
+
+  default_tags {
+    tags = {
+      Workspace = terraform.workspace
+      Service   = "OSB"
+    }
+  }
+}
+
 resource "aws_key_pair" "ssh_key" {
   key_name   = "${terraform.workspace}-ssh-key"
   public_key = file(var.ssh_pub_key)
@@ -98,7 +110,8 @@ resource "aws_route_table_association" "subnet-association" {
 }
 
 data "aws_ec2_managed_prefix_list" "prefix-list" {
-  id = var.prefix_list_id
+  provider = aws.prefix_list_region
+  id       = var.prefix_list_id
 }
 
 data "aws_ami" "ubuntu_ami" {
@@ -148,6 +161,11 @@ module "es-cluster" {
   snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key
   workload_params                     = var.workload_params
 
+  providers = {
+    aws                    = aws
+    aws.prefix_list_region = aws.prefix_list_region
+  }
+
   tags = {
     Name = "target-cluster"
   }
@@ -175,6 +193,11 @@ module "os-cluster" {
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
   snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key
   workload_params                     = var.workload_params
+
+  providers = {
+    aws                    = aws
+    aws.prefix_list_region = aws.prefix_list_region
+  }
 
   tags = {
     Name = "target-cluster"
