@@ -1,3 +1,13 @@
+terraform {
+  required_providers {
+    aws = {
+      source                = "hashicorp/aws"
+      version               = "5.65.0"
+      configuration_aliases = [aws.prefix_list_region]
+    }
+  }
+}
+
 resource "aws_instance" "target-cluster" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
@@ -110,6 +120,7 @@ resource "aws_instance" "load-generation" {
 }
 
 resource "aws_ec2_managed_prefix_list_entry" "prefix-list-entry-load-gen" {
+  provider       = aws.prefix_list_region
   cidr           = "${aws_instance.load-generation.public_ip}/32"
   description    = terraform.workspace
   prefix_list_id = var.prefix_list_id
