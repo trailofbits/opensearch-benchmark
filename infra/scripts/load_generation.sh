@@ -6,7 +6,7 @@ CLUSTER_USER=$2
 CLUSTER_PASSWORD=$3
 CLUSTER_VERSION=$4
 
-WORKLOAD="big5"
+WORKLOAD="${workload}"
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 
 export PATH=$PATH:~/.local/bin

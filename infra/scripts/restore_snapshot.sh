@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SNAPSHOT_S3_BUCKET=${s3_bucket_name}
-WORKLOAD="big5"
+WORKLOAD="${workload}"
 WORKLOAD_PARAMS="${workload_params}"
 SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
 

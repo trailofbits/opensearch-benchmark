@@ -50,11 +50,17 @@ resource "aws_instance" "load-generation" {
 
   user_data = templatefile("${path.module}/es-load-generation.yaml",
     {
-      load_script           = yamlencode(base64gzip(file("${path.module}/../../scripts/load_generation.sh"))),
+      load_script = yamlencode(base64gzip(templatefile(
+        "${path.module}/../../scripts/load_generation.sh",
+        {
+          workload = var.workload,
+        }
+      ))),
       es_cluster            = aws_instance.target-cluster.public_dns
       es_password           = var.password,
       es_version            = "8.15.0",
-      es_index_8_15_0       = yamlencode(base64gzip(file("${path.module}/es_indexes/es_index_8.15.0.json"))),
+      workload              = var.workload
+      big5_es_index_8_15_0  = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.15.0.json"))),
       benchmark_environment = var.benchmark_environment
       datastore_host        = var.datastore_host
       datastore_username    = var.datastore_username
@@ -63,6 +69,7 @@ resource "aws_instance" "load-generation" {
       ingest_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",
           {
+            workload        = var.workload
             s3_bucket_name  = var.s3_bucket_name,
             workload_params = var.workload_params,
           }
@@ -71,6 +78,7 @@ resource "aws_instance" "load-generation" {
       restore_snapshot_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
           {
+            workload        = var.workload
             s3_bucket_name  = var.s3_bucket_name,
             workload_params = var.workload_params,
           }
@@ -79,13 +87,18 @@ resource "aws_instance" "load-generation" {
       benchmark_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/benchmark.sh",
           {
+            workload        = var.workload
             workload_params = var.workload_params,
           }
         ))
       ),
-      fix_index_script = yamlencode(base64gzip(file("${path.module}/fix_index.sh"))),
+      fix_index_script = yamlencode(base64gzip(templatefile("${path.module}/fix_index.sh",
+        {
+          workload = var.workload,
+        }
+      ))),
       utils_script = yamlencode(
-        base64gzip(templatefile("${path.module}/../../scripts/utils.sh", {}))
+        base64gzip(file("${path.module}/../../scripts/utils.sh"))
       ),
     }
   )
