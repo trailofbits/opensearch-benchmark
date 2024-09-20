@@ -52,7 +52,7 @@ echo "$response" | jq -e '.error' > /dev/null && {
 }
 
 # Perform the snapshot
-response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME" -H "Content-Type: application/json" -d"
+response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME?wait_for_completion=true" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }")
@@ -62,29 +62,11 @@ echo "$response" | jq -e '.error' > /dev/null && {
   exit 4
 }
 
-# Wait until the snapshot is in SUCCESS state
-while true; do
-  STATUS=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_status?pretty" | jq -r '.snapshots[0].state')
-  if [ "$STATUS" == "SUCCESS" ]; then
-    break
-  fi
-  echo "Snapshot status: $STATUS, waiting for it to be SUCCESS"
-  sleep 5
-done
-
 # Restore the snapshot
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$WORKLOAD?pretty"
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore" -H "Content-Type: application/json" -d"
+curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/$WORKLOAD/_close"
+curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }"
-
-# Wait until the restore is complete (stage == "DONE")
-# Do not fail if the curl|jq command fails for any reasons
-while [ "$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD "$CLUSTER_HOST/_recovery" | jq -r ".[\"$WORKLOAD\"][\"shards\"] | .[].stage" | sort | uniq)" != "DONE" ]; do
-  echo "Waiting for restore to complete"
-  sleep 10
-done
-echo "Snapshot restore completed"
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
