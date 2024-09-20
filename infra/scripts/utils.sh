@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
 
+check_prerequisites () {
+    local program_list=("curl" "jq" "wget" "shasum" "tar" "sudo" "sed" "opensearch-benchmark" "scp")
+
+    for program in "${program_list[@]}" ; do
+        if ! command -v "${program}" > /dev/null 2>&1 ; then
+            echo "The following program is required but was not found: ${program}"
+            return 1
+        fi
+    done
+
+    return 0
+}
+
 check_value () {
     local name=$1
     local expected=$2
@@ -30,3 +43,6 @@ check_params () {
     check_value "failed shards count" "$${FAILED_SHARDS:-0}" "$shards_failed"
     check_value "skipped shards count" "$${SKIPPED_SHARDS:-0}" "$shards_skipped"
 }
+
+# Ensure that sourcing this script will trigger the prerequisites check
+check_prerequisites || exit 1
