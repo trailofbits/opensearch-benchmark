@@ -8,7 +8,7 @@ if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" 
 fi
 
 SNAPSHOT_S3_BUCKET=${s3_bucket_name}
-WORKLOAD="big5"
+WORKLOAD="${workload}"
 WORKLOAD_PARAMS=${workload_params}
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
@@ -28,7 +28,7 @@ opensearch-benchmark execute-test \
     --distribution-version=$CLUSTER_VERSION \
     --exclude-tasks="type:search"
 
-check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST"
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
 
 # If SNAPSHOT_S3_BUCKET is not set, skip the snapshot
 if [ -z "$SNAPSHOT_S3_BUCKET" ]; then
@@ -85,5 +85,6 @@ while [ "$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD "$CLUSTER_HOST/_recovery"
   echo "Waiting for restore to complete"
   sleep 10
 done
+echo "Snapshot restore completed"
 
-check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST"
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"

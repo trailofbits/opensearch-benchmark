@@ -155,6 +155,7 @@ module "es-cluster" {
   datastore_host        = var.datastore_host
   datastore_username    = var.datastore_username
   datastore_password    = var.datastore_password
+  workload              = var.workload
 
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
@@ -188,6 +189,7 @@ module "os-cluster" {
   datastore_host        = var.datastore_host
   datastore_username    = var.datastore_username
   datastore_password    = var.datastore_password
+  workload              = var.workload
 
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id

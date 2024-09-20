@@ -50,19 +50,25 @@ resource "aws_instance" "load-generation" {
 
   user_data = templatefile("${path.module}/os-load-generation.yaml",
     {
-      load_script           = yamlencode(base64gzip(file("${path.module}/../../scripts/load_generation.sh"))),
+      load_script = yamlencode(base64gzip(templatefile(
+        "${path.module}/../../scripts/load_generation.sh",
+        {
+          workload = var.workload,
+        }
+      ))),
       os_cluster            = aws_instance.target-cluster.public_dns
       os_password           = var.password,
       os_version            = var.os_version,
+      workload              = var.workload
       benchmark_environment = var.benchmark_environment
       datastore_host        = var.datastore_host
       datastore_username    = var.datastore_username
       datastore_password    = var.datastore_password
 
-
       ingest_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",
           {
+            workload        = var.workload,
             workload_params = var.workload_params,
             s3_bucket_name  = var.s3_bucket_name,
           }
@@ -71,6 +77,7 @@ resource "aws_instance" "load-generation" {
       restore_snapshot_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
           {
+            workload        = var.workload
             s3_bucket_name  = var.s3_bucket_name,
             workload_params = var.workload_params,
           }
@@ -79,12 +86,13 @@ resource "aws_instance" "load-generation" {
       benchmark_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/benchmark.sh",
           {
+            workload        = var.workload
             workload_params = var.workload_params,
           }
         ))
       ),
       utils_script = yamlencode(
-        base64encode(templatefile("${path.module}/../../scripts/utils.sh", {}))
+        base64gzip(file("${path.module}/../../scripts/utils.sh"))
       ),
     }
   )

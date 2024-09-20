@@ -98,3 +98,9 @@ variable "datastore_password" {
   type        = string
   sensitive   = true
 }
+
+variable "workload" {
+  description = "Workload to deploy"
+  type        = string
+  default     = "big5"
+}

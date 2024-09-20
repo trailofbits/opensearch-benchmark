@@ -7,7 +7,7 @@ if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" 
     exit 1
 fi
 
-WORKLOAD="big5"
+WORKLOAD="${workload}"
 WORKLOAD_PARAMS="${workload_params}"
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 TEST_EXECUTION_ID="cluster_$(date '+%Y_%m_%d_%H_%M_%S')"
@@ -19,7 +19,7 @@ set -x
 echo "Running Queries Only"
 for i in $(seq 0 3)
 do
-        check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST"
+        check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
         opensearch-benchmark execute-test \
                 --pipeline=benchmark-only \
                 --workload=$WORKLOAD  \
@@ -33,4 +33,4 @@ do
                 --distribution-version=$CLUSTER_VERSION
 done
 
-check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST"
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
