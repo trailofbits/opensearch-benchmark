@@ -15,6 +15,15 @@ SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
 
 INGESTION_RESULTS=/mnt/ingestion_results
 
+# If the snapshot already exists, skip ingestion (check response.total > 0),
+# unless FORCE_INGESTION is set
+response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME")
+if [[ $(echo "$response" | jq -r '.total') -gt 0 ]] && [ -z "$FORCE_INGESTION" ]; then
+    echo "There's a snapshot already. Use /restore_snapshot.sh to restore it."
+    echo "If you want to recreate the snapshot, set FORCE_INGESTION=true."
+    exit 1
+fi
+
 # Ingest data in the cluster
 opensearch-benchmark execute-test \
     --pipeline=benchmark-only \
@@ -50,6 +59,9 @@ echo "$response" | jq -e '.error' > /dev/null && {
   echo "$response"
   exit 3
 }
+
+# Delete the snapshot if it already exists
+curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME?wait_for_completion=true"
 
 # Perform the snapshot
 response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME?wait_for_completion=true" -H "Content-Type: application/json" -d"
