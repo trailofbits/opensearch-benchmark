@@ -25,6 +25,7 @@ echo "export CLUSTER_HOST=$CLUSTER_HOST" >> ~/.bashrc
 echo "export CLUSTER_USER=$CLUSTER_USER" >> ~/.bashrc
 echo "export ENGINE_TYPE=$ENGINE_TYPE" >> ~/.bashrc
 echo "export INSTANCE_TYPE=$INSTANCE_TYPE" >> ~/.bashrc
+echo "export CLUSTER_VERSION=$CLUSTER_VERSION" >> ~/.bashrc
 
 pip install opensearch-benchmark
 

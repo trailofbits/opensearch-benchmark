@@ -9,11 +9,6 @@ variable "ami_id" {
   type        = string
 }
 
-variable "es_version" {
-  description = "Version of ElasticSearch to deploy"
-  type        = string
-  default     = "8.15.0"
-}
 
 variable "ssh_key_name" {
   description = "Name of the SSH key to use for the cluster"

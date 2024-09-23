@@ -8,6 +8,7 @@
 - `terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
 - `terraform init`
 - Modify the `terraform.tfvars` file according to your needs
+    - You can configure the OpenSearch version, but not the ElasticSearch version.
 - By default, the load generation IP is added to the [shared prefix list](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#PrefixListDetails:prefixListId=pl-06f77c0b59dbf70fe) (id: `pl-06f77c0b59dbf70fe`). This gives access to the shared data store.
     - The workspace name is used a description for the prefix list entry.
 - Run `terraform apply`
@@ -42,7 +43,6 @@ To ingest the data in the Target Cluster:
 ### ElasticSearch:
 ```shell
 export CLUSTER_PASSWORD=<password>
-export CLUSTER_VERSION=8.15.0
 
 bash /ingest.sh
 ```
@@ -56,7 +56,6 @@ bash /restore_snapshot.sh
 
 ### OpenSearch:
 ```shell
-export CLUSTER_VERSION=2.16.0
 export CLUSTER_PASSWORD=<password>
 
 bash /ingest.sh
@@ -74,14 +73,12 @@ bash /restore_snapshot.sh
 ### ElasticSearch:
 ```shell
 export CLUSTER_PASSWORD=<password>
-export CLUSTER_VERSION=8.15.0
 
 bash /benchmark.sh
 ```
 
 ### OpenSearch:
 ```shell
-export CLUSTER_VERSION=2.16.0
 export CLUSTER_PASSWORD=<password>
 
 bash /benchmark.sh
