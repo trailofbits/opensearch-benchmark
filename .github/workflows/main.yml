@@ -1,0 +1,43 @@
+#
+# Copyright (c) 2024-present, Trail of Bits, Inc.
+# All rights reserved.
+#
+# This source code is licensed in accordance with the terms specified in
+# the LICENSE file found in the root directory of this source tree.
+#
+
+name: Linux
+
+on:
+  push:
+    branches:
+      - '*'
+
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  shellcheck:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-24.04]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get install -y \
+          shellcheck
+
+    - name: Run ShellCheck (warnings only)
+      run: |
+        shellcheck --shell=bash --severity=warning --source-path="infra/scripts" $(find ./infra/scripts -type f -name '*.sh' | xargs)
+
+    - name: Run ShellCheck
+      continue-on-error: true
+      run: |
+        shellcheck --shell=bash --source-path="infra/scripts" $(find ./infra/scripts -type f -name '*.sh' | xargs)

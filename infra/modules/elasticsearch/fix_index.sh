@@ -3,7 +3,11 @@
 CLUSTER_HOST=$1
 CLUSTER_USER=$2
 CLUSTER_PASSWORD=$3
+
+# This comes from the user `terraform.tfvars` configuration file
+# shellcheck disable=SC2154
 WORKLOAD="${workload}"
+
 BENCHMARK_HOME="/mnt"
 
 # Get script directory
