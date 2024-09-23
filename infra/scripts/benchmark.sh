@@ -17,7 +17,7 @@ set -x
 
 # Queries only
 echo "Running Queries Only"
-for i in $(seq 0 3)
+for i in $(seq 0 4)
 do
         check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
         opensearch-benchmark execute-test \
@@ -30,7 +30,8 @@ do
                 --include-tasks="type:search" \
                 --results-file="$RESULTS_FILE-$i" \
                 --test-execution-id="$TEST_EXECUTION_ID-$i" \
-                --distribution-version=$CLUSTER_VERSION
+                --distribution-version=$CLUSTER_VERSION \
+                --user-tag "run:$i"
 done
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
