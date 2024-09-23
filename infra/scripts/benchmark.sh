@@ -9,11 +9,11 @@ fi
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
-WORKLOAD="${workload}"
+WORKLOAD="$${WORKLOAD:-${workload}}"
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
-WORKLOAD_PARAMS="${workload_params}"
+WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 TEST_EXECUTION_ID="cluster_$(date '+%Y_%m_%d_%H_%M_%S')"

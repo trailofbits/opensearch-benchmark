@@ -13,11 +13,11 @@ SNAPSHOT_S3_BUCKET="${s3_bucket_name}"
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
-WORKLOAD="${workload}"
+WORKLOAD="$${WORKLOAD:-${workload}}"
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
-WORKLOAD_PARAMS="${workload_params}"
+WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
