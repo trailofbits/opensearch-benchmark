@@ -23,8 +23,8 @@ get_shards_count() {
     local workload=$1
 
     declare -A shards_count
-    shards_counts["big5"]=1
-    shards_counts["pmc"]=5
+    shards_count["big5"]=1
+    shards_count["pmc"]=5
 
     # Check if the workload exists in the associative array
     if [[ -v "shards_count[$workload]" ]]; then
@@ -63,7 +63,7 @@ check_params () {
     )
 
     check_value "document count" "${DOC_COUNT:-$(get_doc_count $workload)}" "$doc_count"
-    check_value "total shards count" "${TOTAL_SHARDS:-1}" "$shards_total"
+    check_value "total shards count" "${TOTAL_SHARDS:-$(get_shards_count $workload)}" "$shards_total"
     check_value "failed shards count" "${FAILED_SHARDS:-0}" "$shards_failed"
     check_value "skipped shards count" "${SKIPPED_SHARDS:-0}" "$shards_skipped"
 }
