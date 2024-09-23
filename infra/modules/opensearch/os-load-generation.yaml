@@ -62,7 +62,7 @@ packages:
 runcmd:
   - [ sysctl, -p, /etc/sysctl.d/99-custom.conf ]
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
-  - [ sudo, -u, ubuntu, /load_generation.sh, https://${os_cluster}:9200, admin, ${os_password}, ${os_version} ]
+  - [ sudo, -u, ubuntu, /load_generation.sh, https://${os_cluster}:9200, admin, ${os_password}, ${os_version}, "OS", ${instance_type}]
   - [sed, -i, '/^env.name =/c\env.name = ${benchmark_environment}', /mnt/.benchmark/benchmark.ini]
   - [sed, -i, '/^datastore\./s/^/# /',  /mnt/.benchmark/benchmark.ini]
   - |

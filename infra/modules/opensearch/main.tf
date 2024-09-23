@@ -64,6 +64,7 @@ resource "aws_instance" "load-generation" {
       datastore_host        = var.datastore_host
       datastore_username    = var.datastore_username
       datastore_password    = var.datastore_password
+      instance_type         = var.instance_type
 
       ingest_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",

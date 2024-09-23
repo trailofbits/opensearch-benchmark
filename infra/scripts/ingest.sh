@@ -23,6 +23,7 @@ CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSW
 SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
 
 INGESTION_RESULTS=/mnt/ingestion_results
+USER_TAGS="run-type:ingest"
 
 # Ingest data in the cluster
 opensearch-benchmark execute-test \
@@ -35,7 +36,8 @@ opensearch-benchmark execute-test \
     --results-file=$INGESTION_RESULTS \
     --test-execution-id=ingestion \
     --distribution-version=$CLUSTER_VERSION \
-    --exclude-tasks="type:search"
+    --exclude-tasks="type:search" \
+    --user-tag="$USER_TAGS"
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
 
