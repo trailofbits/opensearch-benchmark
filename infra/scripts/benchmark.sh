@@ -30,8 +30,10 @@ WORKLOAD_PARAMS="${workload_params}"
 
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 RUN_GROUP_ID="$(date '+%Y_%m_%d_%H_%M_%S')"
+AWS_ACCOUNT_ID="$(curl -m 5 -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .accountId)"
+AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 http://169.254.169.254/latest/meta-data/instance-id)"
 # assumes same machine for cluster
-GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,run-type:$RUN_TYPE"
+GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,run-type:$RUN_TYPE,aws-account-id:$AWS_ACCOUNT_ID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
 
 set -x
 

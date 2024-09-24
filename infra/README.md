@@ -40,47 +40,18 @@ ssh ubuntu@$(terraform output -raw load-generation-ip)
 
 To ingest the data in the Target Cluster:
 
-### ElasticSearch:
 ```shell
-export CLUSTER_PASSWORD=<password>
-
 bash /ingest.sh
 ```
 
 Alternatively, if you already have a snapshot and you want to restore it, do:
 ```shell
-export CLUSTER_PASSWORD=<password>
-
-bash /restore_snapshot.sh
-```
-
-### OpenSearch:
-```shell
-export CLUSTER_PASSWORD=<password>
-
-bash /ingest.sh
-```
-
-Alternatively, if you already have a snapshot and you want to restore it, do:
-```shell
-export CLUSTER_PASSWORD=<password>
-
 bash /restore_snapshot.sh
 ```
 
 ## Benchmark the queries.
 
-### ElasticSearch:
 ```shell
-export CLUSTER_PASSWORD=<password>
-
-bash /benchmark.sh
-```
-
-### OpenSearch:
-```shell
-export CLUSTER_PASSWORD=<password>
-
 bash /benchmark.sh
 ```
 
