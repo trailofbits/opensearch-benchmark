@@ -37,13 +37,16 @@ GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),i
 
 set -x
 
+EXECUTION_DIR="/mnt/test_executions"
+mkdir -p "$EXECUTION_DIR"
+
 # Queries only
 echo "Running Queries Only"
 for i in $(seq 0 3)
 do
         check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
         TEST_EXECUTION_ID="cluster-$RUN_GROUP_ID-$i"
-        RESULTS_FILE="/mnt/$TEST_EXECUTION_ID"
+        RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
         opensearch-benchmark execute-test \
                 --pipeline=benchmark-only \
                 --workload=$WORKLOAD  \

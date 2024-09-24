@@ -1,9 +1,9 @@
 #!/bin/bash
-
+set -e
+if [ $# -ne 1 ]; then
+    echo "Usage: bash get_results.sh <output-folder>"
+    exit 1
+fi
 OUTPUT_DIR=$1
-
-for i in $(seq 0 3)
-do
-    scp "ubuntu@$(terraform output -raw load-generation-ip):/mnt/.benchmark/benchmarks/test_executions/es-query-benchmark-$i/test_execution.json" \
-        $OUTPUT_DIR/res-$i.json
-done
+REMOTE_PATH="/mnt/test_executions/*"
+rsync --ignore-existing "ubuntu@$(terraform output -raw load-generation-ip):$REMOTE_PATH" "$OUTPUT_DIR"
