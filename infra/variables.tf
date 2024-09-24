@@ -41,6 +41,12 @@ variable "instance_type" {
   default     = "c5d.2xlarge"
 }
 
+variable "es_version" {
+  description = "Version of ElasticSearch to deploy"
+  type        = string
+  default     = "8.15.0"
+}
+
 variable "os_version" {
   description = "Version of OpenSearch to deploy"
   type        = string
