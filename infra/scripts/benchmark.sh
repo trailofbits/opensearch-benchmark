@@ -53,7 +53,8 @@ do
                 --results-file="$RESULTS_FILE" \
                 --test-execution-id="$TEST_EXECUTION_ID" \
                 --distribution-version=$CLUSTER_VERSION \
-                --user-tag="$GROUP_USER_TAGS"
+                --user-tag="$GROUP_USER_TAGS" \
+                --telemetry="node-stats"
 done
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"

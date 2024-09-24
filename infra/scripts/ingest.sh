@@ -37,7 +37,8 @@ opensearch-benchmark execute-test \
     --test-execution-id=ingestion \
     --distribution-version=$CLUSTER_VERSION \
     --exclude-tasks="type:search" \
-    --user-tag="$USER_TAGS"
+    --user-tag="$USER_TAGS" \
+    --telemetry="node-stats"
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
 
