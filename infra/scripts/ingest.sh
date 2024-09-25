@@ -2,8 +2,8 @@
 
 source /utils.sh
 
-if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$CLUSTER_VERSION" ]; then
-    echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and CLUSTER_VERSION environment variables"
+if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$DISTRIBUTION_VERSION" ]; then
+    echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and DISTRIBUTION_VERSION environment variables"
     exit 1
 fi
 
@@ -13,17 +13,26 @@ SNAPSHOT_S3_BUCKET="${s3_bucket_name}"
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
-WORKLOAD="${workload}"
+WORKLOAD="$${WORKLOAD:-${workload}}"
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
-WORKLOAD_PARAMS="${workload_params}"
+WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
 
 INGESTION_RESULTS=/mnt/ingestion_results
 USER_TAGS="run-type:ingest"
+
+# If the snapshot already exists, skip ingestion (check response.total > 0),
+# unless FORCE_INGESTION is set
+response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME")
+if [[ $(echo "$response" | jq -r '.total') -gt 0 ]] && [ -z "$FORCE_INGESTION" ]; then
+    echo "There's a snapshot already. Use /restore_snapshot.sh to restore it."
+    echo "If you want to recreate the snapshot, set FORCE_INGESTION=true."
+    exit 1
+fi
 
 # Ingest data in the cluster
 opensearch-benchmark execute-test \
@@ -35,7 +44,7 @@ opensearch-benchmark execute-test \
     --kill-running-processes \
     --results-file=$INGESTION_RESULTS \
     --test-execution-id=ingestion \
-    --distribution-version=$CLUSTER_VERSION \
+    --distribution-version=$DISTRIBUTION_VERSION \
     --exclude-tasks="type:search" \
     --user-tag="$USER_TAGS" \
     --telemetry="node-stats"
@@ -49,6 +58,7 @@ if [ -z "$SNAPSHOT_S3_BUCKET" ]; then
 fi
 
 # Register the S3 repository for snapshots (same for OS/ES)
+echo "Registering snapshot repository..."
 response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET?pretty" -H 'Content-Type: application/json' -d"
 {
   \"type\": \"s3\",
@@ -63,8 +73,14 @@ echo "$response" | jq -e '.error' > /dev/null && {
   exit 3
 }
 
+# Delete the snapshot if it already exists
+echo "Deleting snapshot..."
+curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME?wait_for_completion=true"
+echo "Snapshot deleted"
+
 # Perform the snapshot
-response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME" -H "Content-Type: application/json" -d"
+echo "Performing snapshot..."
+response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME?wait_for_completion=true" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }")
@@ -73,30 +89,15 @@ echo "$response" | jq -e '.error' > /dev/null && {
   echo "$response"
   exit 4
 }
-
-# Wait until the snapshot is in SUCCESS state
-while true; do
-  STATUS=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_status?pretty" | jq -r '.snapshots[0].state')
-  if [ "$STATUS" == "SUCCESS" ]; then
-    break
-  fi
-  echo "Snapshot status: $STATUS, waiting for it to be SUCCESS"
-  sleep 5
-done
+echo "Snapshot done"
 
 # Restore the snapshot
+echo "Restoring snapshot..."
 curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$WORKLOAD?pretty"
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore" -H "Content-Type: application/json" -d"
+curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }"
-
-# Wait until the restore is complete (stage == "DONE")
-# Do not fail if the curl|jq command fails for any reasons
-while [ "$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD "$CLUSTER_HOST/_recovery" | jq -r ".[\"$WORKLOAD\"][\"shards\"] | .[].stage" | sort | uniq)" != "DONE" ]; do
-  echo "Waiting for restore to complete"
-  sleep 10
-done
-echo "Snapshot restore completed"
+echo "Snapshot restored"
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"

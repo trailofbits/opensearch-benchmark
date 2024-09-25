@@ -15,6 +15,11 @@ variable "os_version" {
   default     = "2.16.0"
 }
 
+variable "distribution_version" {
+  description = "OSB distribution-version to use"
+  type        = string
+}
+
 variable "ssh_key_name" {
   description = "Name of the SSH key to use for the cluster"
   type        = string

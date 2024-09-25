@@ -145,6 +145,7 @@ module "es-cluster" {
   instance_type         = var.instance_type
   ami_id                = data.aws_ami.ubuntu_ami.id
   es_version            = var.es_version
+  distribution_version = var.distribution_version
   ssh_key_name          = aws_key_pair.ssh_key.key_name
   ssh_priv_key          = var.ssh_priv_key
   security_groups       = [aws_security_group.allow_osb.id]
@@ -179,6 +180,7 @@ module "os-cluster" {
   instance_type         = var.instance_type
   ami_id                = data.aws_ami.ubuntu_ami.id
   os_version            = var.os_version
+  distribution_version = var.distribution_version
   ssh_key_name          = aws_key_pair.ssh_key.key_name
   ssh_priv_key          = var.ssh_priv_key
   security_groups       = [aws_security_group.allow_osb.id]

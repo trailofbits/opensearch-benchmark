@@ -15,18 +15,18 @@ if [ "$RUN_TYPE" != "official" ] && [ "$RUN_TYPE" != "dev" ]; then
     exit 1
 fi
 
-if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$CLUSTER_VERSION" ] || [ -z "$ENGINE_TYPE" ] || [ -z "$INSTANCE_TYPE" ]; then
-    echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD, CLUSTER_VERSION, ENGINE_TYPE, and INSTANCE_TYPE environment variables"
+if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$DISTRIBUTION_VERSION" ] || [ -z "$CLUSTER_VERSION" ] || [ -z "$ENGINE_TYPE" ] || [ -z "$INSTANCE_TYPE" ]; then
+    echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD, DISTRIBUTION_VERSION, CLUSTER_VERSION, ENGINE_TYPE, and INSTANCE_TYPE environment variables"
     exit 1
 fi
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
-WORKLOAD="${workload}"
+WORKLOAD="$${WORKLOAD:-${workload}}"
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
-WORKLOAD_PARAMS="${workload_params}"
+WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 RUN_GROUP_ID="$(date '+%Y_%m_%d_%H_%M_%S')"
@@ -42,11 +42,12 @@ mkdir -p "$EXECUTION_DIR"
 
 # Queries only
 echo "Running Queries Only"
-for i in $(seq 0 3)
+for i in $(seq 0 4)
 do
         check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
         TEST_EXECUTION_ID="cluster-$RUN_GROUP_ID-$i"
         RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
+        USER_TAGS="$GROUP_USER_TAGS,run:$i"
         opensearch-benchmark execute-test \
                 --pipeline=benchmark-only \
                 --workload=$WORKLOAD  \
@@ -57,8 +58,8 @@ do
                 --include-tasks="type:search" \
                 --results-file="$RESULTS_FILE" \
                 --test-execution-id="$TEST_EXECUTION_ID" \
-                --distribution-version=$CLUSTER_VERSION \
-                --user-tag="$GROUP_USER_TAGS" \
+                --distribution-version=$DISTRIBUTION_VERSION \
+                --user-tag="$USER_TAGS" \
                 --telemetry="node-stats"
 done
 

@@ -4,9 +4,10 @@
 CLUSTER_HOST=$1
 CLUSTER_USER=$2
 CLUSTER_PASSWORD=$3
-CLUSTER_VERSION=$4
-ENGINE_TYPE=$5
-INSTANCE_TYPE=$6
+DISTRIBUTION_VERSION=$4
+CLUSTER_VERSION=$5
+ENGINE_TYPE=$6
+INSTANCE_TYPE=$7
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
@@ -23,6 +24,7 @@ echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/' >> ~/.bashrc
 echo 'export BENCHMARK_HOME=/mnt' >> ~/.bashrc
 echo "export CLUSTER_HOST=$CLUSTER_HOST" >> ~/.bashrc
 echo "export CLUSTER_USER=$CLUSTER_USER" >> ~/.bashrc
+echo "export DISTRIBUTION_VERSION=$DISTRIBUTION_VERSION" >> ~/.bashrc
 echo "export ENGINE_TYPE=$ENGINE_TYPE" >> ~/.bashrc
 echo "export INSTANCE_TYPE=$INSTANCE_TYPE" >> ~/.bashrc
 echo "export CLUSTER_VERSION=$CLUSTER_VERSION" >> ~/.bashrc
@@ -44,7 +46,7 @@ opensearch-benchmark execute-test \
     --client-options="$CLIENT_OPTIONS" \
     --test-mode \
     --workload-params=number_of_replicas:0 \
-    --distribution-version=$CLUSTER_VERSION \
+    --distribution-version=$DISTRIBUTION_VERSION \
     --kill-running-processes \
     '--include-tasks=""'
 

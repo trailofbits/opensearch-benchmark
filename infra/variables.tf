@@ -53,6 +53,12 @@ variable "os_version" {
   default     = "2.16.0"
 }
 
+variable "distribution_version" {
+  description = "OSB distribution-version to use"
+  type        = string
+  default     = "2.16.0"
+}
+
 variable "s3_bucket_name" {
   description = "S3 bucket name for the snapshot"
   type        = string

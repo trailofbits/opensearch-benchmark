@@ -58,7 +58,7 @@ resource "aws_instance" "load-generation" {
       ))),
       os_cluster            = aws_instance.target-cluster.public_dns
       os_password           = var.password,
-      os_version            = var.os_version,
+      distribution_version  = var.distribution_version,
       workload              = var.workload
       benchmark_environment = var.benchmark_environment
       datastore_host        = var.datastore_host
