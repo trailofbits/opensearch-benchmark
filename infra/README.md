@@ -7,6 +7,7 @@
 - In the AWS Console, go to "Security Credentials" and create a new "Access Key" (cli)
   - Set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 - `$ cp terraform.tfvars.template terraform.tfvars`
+  - For configurations for each workload, see `terraform_tfvars/` directory
 - `$ terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
 - `$ terraform init`
 - Modify the `terraform.tfvars` file according to your needs
