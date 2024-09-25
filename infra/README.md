@@ -49,9 +49,9 @@ bash /restore_snapshot.sh
 ```
 
 ## Benchmark the queries.
-
+- Pass `official` or `dev` to tag the run results
 ```shell
-bash /benchmark.sh
+bash /benchmark.sh [official|dev]
 ```
 
 ## Get the results
