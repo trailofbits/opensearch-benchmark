@@ -2,8 +2,8 @@
 
 source /utils.sh
 
-if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$CLUSTER_VERSION" ]; then
-    echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and CLUSTER_VERSION environment variables"
+if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$DISTRIBUTION_VERSION" ]; then
+    echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and DISTRIBUTION_VERSION environment variables"
     exit 1
 fi
 
@@ -43,7 +43,7 @@ opensearch-benchmark execute-test \
     --kill-running-processes \
     --results-file=$INGESTION_RESULTS \
     --test-execution-id=ingestion \
-    --distribution-version=$CLUSTER_VERSION \
+    --distribution-version=$DISTRIBUTION_VERSION \
     --exclude-tasks="type:search"
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
