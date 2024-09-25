@@ -34,6 +34,7 @@ AWS_ACCOUNT_ID="$(curl -m 5 -s http://169.254.169.254/latest/dynamic/instance-id
 AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 http://169.254.169.254/latest/meta-data/instance-id)"
 # assumes same machine for cluster
 GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,run-type:$RUN_TYPE,aws-account-id:$AWS_ACCOUNT_ID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
+GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION"
 
 set -x
 
