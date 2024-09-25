@@ -59,6 +59,7 @@ resource "aws_instance" "load-generation" {
       es_cluster            = aws_instance.target-cluster.public_dns
       es_password           = var.password,
       distribution_version  = var.distribution_version,
+      es_version            = var.es_version,
       workload              = var.workload
       big5_es_index_8_15_0  = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.15.0.json"))),
       benchmark_environment = var.benchmark_environment
