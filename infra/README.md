@@ -2,24 +2,24 @@
 
 ## Create your own environment for benchmarking
 
-- Install `terraform`.
-- In the AWS Console, go to "Security Credentials" and create a new "Access Key"
-- Set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
-- Copy `terraform.tfvars.template` to `terraform.tfvars`.
-- `terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
-- `terraform init`
+- Install `terraform`
+- `$ terraform init`
+- In the AWS Console, go to "Security Credentials" and create a new "Access Key" (cli)
+  - Set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+- `$ cp terraform.tfvars.template terraform.tfvars`
+- `$ terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
+- `$ terraform init`
 - Modify the `terraform.tfvars` file according to your needs
+  - Create an SSH key without a password (will be used as `ssh_priv_key` and `ssh_pub_key` variables)
 - By default, the load generation IP is added to the [shared prefix list](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#PrefixListDetails:prefixListId=pl-06f77c0b59dbf70fe) (id: `pl-06f77c0b59dbf70fe`). This gives access to the shared data store.
-  - The workspace name is used a description for the prefix list entry.
-- Run `terraform apply`
+  - The workspace name is used a description for the prefix list entry
+- `$ terraform apply`
 
-The Terraform script is going to create two separate AWS EC2 instances, one
-`target-cluster` used to host the product being benchmarked (e.g. OpenSearch)
-and the other `load-generation` running OpenSearch Benchmarking tool, used to
-load data and perform queries to the target cluster.
+The Terraform script is going to create two separate AWS EC2 instances, one `target-cluster` used to host the product being benchmarked (e.g. OpenSearch) and the other `load-generation` running OpenSearch Benchmarking tool, used to load data and perform queries to the target cluster.
 
 Use `terraform output` to get the IPs/hostnames of the two instances.
-Use `terraform output cluster-password` to get the password for the cluster.
+
+Use `terraform output cluster-password` to get the password for the cluster (see `CLUSTER_PASSWORD` environment variable below).
 
 ### Snapshotting
 
@@ -41,6 +41,8 @@ Connect to the load-generation host with:
 ```shell
 ssh ubuntu@$(terraform output -raw load-generation-ip)
 ```
+
+The default multiplexer is `byobu`. Here is a [cheatsheet](https://gist.github.com/devhero/7b9a7281db0ac4ba683f).
 
 To ingest the data in the Target Cluster:
 
@@ -107,5 +109,10 @@ mkdir /tmp/results
 bash ./scripts/get_results.sh /tmp/results
 ```
 
-You will get the JSON files of the various test executions in the `/tmp/results`
-directory.
+You will get the JSON files of the various test executions in the `/tmp/results` directory.
+
+## Destroy Instances
+
+```shell
+terraform destroy
+```
