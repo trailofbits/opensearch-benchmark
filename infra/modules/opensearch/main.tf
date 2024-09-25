@@ -59,11 +59,13 @@ resource "aws_instance" "load-generation" {
       os_cluster            = aws_instance.target-cluster.public_dns
       os_password           = var.password,
       distribution_version  = var.distribution_version,
+      os_version            = var.os_version,
       workload              = var.workload
       benchmark_environment = var.benchmark_environment
       datastore_host        = var.datastore_host
       datastore_username    = var.datastore_username
       datastore_password    = var.datastore_password
+      instance_type         = var.instance_type
 
       ingest_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",

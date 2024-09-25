@@ -5,6 +5,9 @@ CLUSTER_HOST=$1
 CLUSTER_USER=$2
 CLUSTER_PASSWORD=$3
 DISTRIBUTION_VERSION=$4
+CLUSTER_VERSION=$5
+ENGINE_TYPE=$6
+INSTANCE_TYPE=$7
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
@@ -22,6 +25,10 @@ echo 'export BENCHMARK_HOME=/mnt' >> ~/.bashrc
 echo "export CLUSTER_HOST=$CLUSTER_HOST" >> ~/.bashrc
 echo "export CLUSTER_USER=$CLUSTER_USER" >> ~/.bashrc
 echo "export DISTRIBUTION_VERSION=$DISTRIBUTION_VERSION" >> ~/.bashrc
+echo "export ENGINE_TYPE=$ENGINE_TYPE" >> ~/.bashrc
+echo "export INSTANCE_TYPE=$INSTANCE_TYPE" >> ~/.bashrc
+echo "export CLUSTER_VERSION=$CLUSTER_VERSION" >> ~/.bashrc
+echo "export CLUSTER_PASSWORD=$CLUSTER_PASSWORD" >> ~/.bashrc
 
 pip install opensearch-benchmark
 

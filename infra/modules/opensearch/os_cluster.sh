@@ -14,7 +14,7 @@ JVM_CONFIG=$INSTALL_PATH/config/jvm.options
 
 cd /mnt || exit 1
 
-#Download and install OpenSearch 2.16.0 then remove installer
+# Download and install OpenSearch then remove installer
 mkdir -p $INSTALL_PATH
 wget $DOWNLOAD_URL
 tar -xvf $INSTALL_FILENAME -C $INSTALL_ROOT

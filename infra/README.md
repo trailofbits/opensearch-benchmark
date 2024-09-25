@@ -8,6 +8,7 @@
 - `terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
 - `terraform init`
 - Modify the `terraform.tfvars` file according to your needs
+- Note: The data store credentials and cluster password will be saved to the load generation machine.
 - By default, the load generation IP is added to the [shared prefix list](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#PrefixListDetails:prefixListId=pl-06f77c0b59dbf70fe) (id: `pl-06f77c0b59dbf70fe`). This gives access to the shared data store.
     - The workspace name is used a description for the prefix list entry.
 - Run `terraform apply`
@@ -39,52 +40,19 @@ ssh ubuntu@$(terraform output -raw load-generation-ip)
 
 To ingest the data in the Target Cluster:
 
-### ElasticSearch:
 ```shell
-export CLUSTER_PASSWORD=<password>
-export CLUSTER_VERSION=8.15.0
-
 bash /ingest.sh
 ```
 
 Alternatively, if you already have a snapshot and you want to restore it, do:
 ```shell
-export CLUSTER_PASSWORD=<password>
-
-bash /restore_snapshot.sh
-```
-
-### OpenSearch:
-```shell
-export CLUSTER_VERSION=2.16.0
-export CLUSTER_PASSWORD=<password>
-
-bash /ingest.sh
-```
-
-Alternatively, if you already have a snapshot and you want to restore it, do:
-```shell
-export CLUSTER_PASSWORD=<password>
-
 bash /restore_snapshot.sh
 ```
 
 ## Benchmark the queries.
-
-### ElasticSearch:
+- Pass `official` or `dev` to tag the run results
 ```shell
-export CLUSTER_PASSWORD=<password>
-export CLUSTER_VERSION=8.15.0
-
-bash /benchmark.sh
-```
-
-### OpenSearch:
-```shell
-export CLUSTER_VERSION=2.16.0
-export CLUSTER_PASSWORD=<password>
-
-bash /benchmark.sh
+bash /benchmark.sh [official|dev]
 ```
 
 ## Get the results
