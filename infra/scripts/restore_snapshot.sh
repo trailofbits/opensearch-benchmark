@@ -21,6 +21,7 @@ if [ -z "$SNAPSHOT_S3_BUCKET" ]; then
 fi
 
 # Register the S3 repository for snapshots
+echo "Registering snapshot repository..."
 response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET?pretty" -H 'Content-Type: application/json' -d"
 {
   \"type\": \"s3\",
@@ -37,15 +38,10 @@ echo "$response" | jq -e '.error' > /dev/null && {
 
 
 # Restore the snapshot
+echo "Restoring snapshot..."
 curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$WORKLOAD?pretty"
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore" -H "Content-Type: application/json" -d"
+curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$WORKLOAD\"
 }"
-
-
-# Wait until the restore is complete (stage == "DONE")
-while [ "$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD "$CLUSTER_HOST/_recovery" | jq -r ".[\"$WORKLOAD\"][\"shards\"] | .[].stage" | sort | uniq)" != "DONE" ]; do
-  echo "Waiting for restore to complete"
-  sleep 10
-done
+echo "Snapshot restored"
