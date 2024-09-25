@@ -35,7 +35,7 @@ AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 -s http://169.254.169.254/latest/meta-data/
 SHARD_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$WORKLOAD/_settings" | jq --raw-output ".$WORKLOAD.settings.index.number_of_shards")"
 REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$WORKLOAD/_settings" | jq --raw-output ".$WORKLOAD.settings.index.number_of_replicas")"
 # assumes same machine for cluster
-GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,run-type:$RUN_TYPE,aws-account-id:$AWS_ACCOUNT_ID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
+GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,aws-account-id:$AWS_ACCOUNT_ID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
 GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION,shard-count:$SHARD_COUNT,replica-count:$REPLICA_COUNT"
 
 set -x
@@ -51,6 +51,12 @@ do
         TEST_EXECUTION_ID="cluster-$RUN_GROUP_ID-$i"
         RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
         USER_TAGS="$GROUP_USER_TAGS,run:$i"
+        # tag first run as a warmup
+        if [[ $i -eq 0 ]]; then
+            USER_TAGS+=",run-type:warmup"
+        else
+            USER_TAGS+=",run-type:$RUN_TYPE"
+        fi
         opensearch-benchmark execute-test \
                 --pipeline=benchmark-only \
                 --workload=$WORKLOAD  \
