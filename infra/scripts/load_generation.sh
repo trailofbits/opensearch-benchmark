@@ -4,7 +4,7 @@
 CLUSTER_HOST=$1
 CLUSTER_USER=$2
 CLUSTER_PASSWORD=$3
-CLUSTER_VERSION=$4
+DISTRIBUTION_VERSION=$4
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
@@ -21,6 +21,7 @@ echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/' >> ~/.bashrc
 echo 'export BENCHMARK_HOME=/mnt' >> ~/.bashrc
 echo "export CLUSTER_HOST=$CLUSTER_HOST" >> ~/.bashrc
 echo "export CLUSTER_USER=$CLUSTER_USER" >> ~/.bashrc
+echo "export DISTRIBUTION_VERSION=$DISTRIBUTION_VERSION" >> ~/.bashrc
 
 pip install opensearch-benchmark
 
@@ -38,7 +39,7 @@ opensearch-benchmark execute-test \
     --client-options="$CLIENT_OPTIONS" \
     --test-mode \
     --workload-params=number_of_replicas:0 \
-    --distribution-version=$CLUSTER_VERSION \
+    --distribution-version=$DISTRIBUTION_VERSION \
     --kill-running-processes \
     '--include-tasks=""'
 

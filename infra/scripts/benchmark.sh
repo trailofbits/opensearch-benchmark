@@ -2,8 +2,8 @@
 
 source /utils.sh
 
-if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$CLUSTER_VERSION" ]; then
-    echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and CLUSTER_VERSION environment variables"
+if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$DISTRIBUTION_VERSION" ]; then
+    echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and DISTRIBUTION_VERSION environment variables"
     exit 1
 fi
 
@@ -36,7 +36,7 @@ do
                 --include-tasks="type:search" \
                 --results-file="$RESULTS_FILE-$i" \
                 --test-execution-id="$TEST_EXECUTION_ID-$i" \
-                --distribution-version=$CLUSTER_VERSION \
+                --distribution-version=$DISTRIBUTION_VERSION \
                 --user-tag "run:$i"
 done
 
