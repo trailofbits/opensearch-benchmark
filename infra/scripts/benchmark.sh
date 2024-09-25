@@ -31,10 +31,12 @@ WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
 RUN_GROUP_ID="$(date '+%Y_%m_%d_%H_%M_%S')"
 AWS_ACCOUNT_ID="$(curl -m 5 -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .accountId)"
-AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 http://169.254.169.254/latest/meta-data/instance-id)"
+AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 -s http://169.254.169.254/latest/meta-data/instance-id)"
+SHARD_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$WORKLOAD/_settings" | jq --raw-output ".$WORKLOAD.settings.index.number_of_shards")"
+REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$WORKLOAD/_settings" | jq --raw-output ".$WORKLOAD.settings.index.number_of_replicas")"
 # assumes same machine for cluster
 GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,run-type:$RUN_TYPE,aws-account-id:$AWS_ACCOUNT_ID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
-GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION"
+GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION,shard-count:$SHARD_COUNT,replica-count:$REPLICA_COUNT"
 
 set -x
 
