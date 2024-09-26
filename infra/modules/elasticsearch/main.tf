@@ -22,6 +22,7 @@ resource "aws_instance" "target-cluster" {
     {
       es_cluster_script = yamlencode(base64gzip(file("${path.module}/es_cluster.sh"))),
       es_password       = var.password,
+      es_version        = var.es_version
 
       es_snapshot_access_key = var.snapshot_user_aws_access_key_id,
       es_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
