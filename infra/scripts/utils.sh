@@ -15,7 +15,7 @@ get_doc_count() {
         echo "${doc_counts[$workload]}"
     else
         # Default value
-        echo "1"
+        echo "1000"
     fi
 }
 
@@ -32,7 +32,7 @@ get_shards_count() {
         echo "${shards_count[$workload]}"
     else
         # Default value
-        echo "1000"
+        echo "1"
     fi
 }
 
