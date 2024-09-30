@@ -3,8 +3,8 @@ This document describes the metadata for results saved to the shared data store.
 
 ## User Tags
 User tags are custom fields added to enrich the metadata. They are recorded in different fields depending on the index:
-    - `benchmark-results*`: `user-tags.<tag_name>`
-    - `benchmark-metrics*`: `meta.tag-<tag_name>`
+- `benchmark-results*`: `user-tags.<tag_name>`
+- `benchmark-metrics*`: `meta.tag-<tag_name>`
 
 | Tag Name | Description |
 | -------- | -------- |
@@ -21,7 +21,7 @@ User tags are custom fields added to enrich the metadata. They are recorded in d
 | run | Zero-indexed number for a run in a run group |
 | run-type | Type of run. Options are `official`, `dev`, `ingest`, and `warmup` |
 
-- `run-type` options explained further:
+- Explanation of `run-type` options:
     - `official`: Runs that should be included in reports
     - `dev`: Runs executed during development. Can be ignored
     - `ingest`: Data ingestion runs. Can be ignored
