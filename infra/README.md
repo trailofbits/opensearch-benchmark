@@ -14,13 +14,13 @@
 - Note: The data store credentials and cluster password will be saved to the load generation machine.
 - By default, the load generation IP is added to the [shared prefix list](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#PrefixListDetails:prefixListId=pl-06f77c0b59dbf70fe) (id: `pl-06f77c0b59dbf70fe`). This gives access to the shared data store.
   - The workspace name is used a description for the prefix list entry
-- `terraform apply`
+- Run `terraform apply`
 
 The Terraform script is going to create two separate AWS EC2 instances, one `target-cluster` used to host the product being benchmarked (e.g. OpenSearch) and the other `load-generation` running OpenSearch Benchmarking tool, used to load data and perform queries to the target cluster.
 
 Use `terraform output` to get the IPs/hostnames of the two instances.
 
-Use `terraform output cluster-password` to get the password for the cluster (see `CLUSTER_PASSWORD` environment variable below).
+Use `terraform output cluster-password` to get the password for the cluster.
 
 ### Snapshotting
 
