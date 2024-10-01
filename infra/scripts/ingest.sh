@@ -78,7 +78,13 @@ echo "$response" | jq -e '.error' > /dev/null && {
 
 # Delete the snapshot if it already exists
 echo "Deleting snapshot..."
-curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME?wait_for_completion=true"
+curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME"
+echo "Snapshot deletion initiated, waiting for confirmation"
+while true
+do
+  curl -s --max-time 5 -ku "$CLUSTER_USER:$CLUSTER_PASSWORD" "$CLUSTER_HOST"/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME | jq -e ".error" && break
+  sleep 1
+done
 echo "Snapshot deleted"
 
 # Perform the snapshot
