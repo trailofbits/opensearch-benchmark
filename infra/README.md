@@ -55,6 +55,12 @@ bash /restore_snapshot.sh
 bash /benchmark.sh [official|dev]
 ```
 
+## Additional client options
+To specify additional client options use the `EXTRA_CLIENT_OPTIONS` environment variable:
+```shell
+EXTRA_CLIENT_OPTIONS=timeout:240 bash /ingest.sh
+```
+
 ## Get the results
 From your local host:
 ```shell

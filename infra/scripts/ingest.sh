@@ -22,7 +22,7 @@ INDEX_NAME=$(workload_index_name $WORKLOAD)
 # shellcheck disable=SC2154
 WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 
-CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
+CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
 SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
 
 INGESTION_RESULTS=/mnt/ingestion_results

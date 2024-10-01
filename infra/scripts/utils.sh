@@ -88,3 +88,11 @@ print(wl.indices[0].name)
 logger.disabled = False
 EOF
 }
+
+
+# Helper function to join parameters by single charater delimiter
+join_by() {
+    local IFS="$1";
+    shift;
+    echo "$*";
+}
