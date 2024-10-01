@@ -8,7 +8,6 @@ s3_bucket_name                      = "es-snapshots-osb"
 prefix_list_id                      = "pl-06f77c0b59dbf70fe"
 snapshot_user_aws_access_key_id     = "<ACCESS-KEY>"
 snapshot_user_aws_secret_access_key = "<SECRET-KEY>"
-workspace                           = "<NAME>"
 
 # Datastore variables
 benchmark_environment = "<ENVIRONMENT>"
