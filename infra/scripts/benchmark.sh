@@ -31,7 +31,7 @@ INDEX_NAME=$(workload_index_name $WORKLOAD)
 # shellcheck disable=SC2154
 WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 
-CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
+CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
 RUN_GROUP_ID="$(date '+%Y_%m_%d_%H_%M_%S')"
 AWS_ACCOUNT_ID="$(curl -m 5 -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .accountId)"
 AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 -s http://169.254.169.254/latest/meta-data/instance-id)"

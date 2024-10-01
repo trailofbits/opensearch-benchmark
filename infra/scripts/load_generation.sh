@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /utils.sh
+
 # Get script directory
 CLUSTER_HOST=$1
 CLUSTER_USER=$2
@@ -13,7 +15,7 @@ INSTANCE_TYPE=$7
 # shellcheck disable=SC2154
 WORKLOAD="${workload}"
 
-CLIENT_OPTIONS="basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false"
+CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
 
 export PATH=$PATH:~/.local/bin
 export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
