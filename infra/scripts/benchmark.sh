@@ -24,6 +24,9 @@ fi
 # shellcheck disable=SC2154
 WORKLOAD="$${WORKLOAD:-${workload}}"
 
+# Based on the workload, we can figure out the index name. It is mostly the same, but somtimes not.
+INDEX_NAME=$(workload_index_name $WORKLOAD)
+
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
 WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
@@ -47,7 +50,7 @@ mkdir -p "$EXECUTION_DIR"
 echo "Running Queries Only"
 for i in $(seq 0 4)
 do
-        check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
+        check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
         TEST_EXECUTION_ID="cluster-$RUN_GROUP_ID-$i"
         RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
         USER_TAGS="$GROUP_USER_TAGS,run:$i"
@@ -72,4 +75,4 @@ do
                 --telemetry="node-stats"
 done
 
-check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"

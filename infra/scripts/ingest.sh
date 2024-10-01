@@ -15,6 +15,9 @@ SNAPSHOT_S3_BUCKET="${s3_bucket_name}"
 # shellcheck disable=SC2154
 WORKLOAD="$${WORKLOAD:-${workload}}"
 
+# Based on the workload, we can figure out the index name. It is mostly the same, but somtimes not.
+INDEX_NAME=$(workload_index_name $WORKLOAD)
+
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
 WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
@@ -49,7 +52,7 @@ opensearch-benchmark execute-test \
     --user-tag="$USER_TAGS" \
     --telemetry="node-stats"
 
-check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
 
 # If SNAPSHOT_S3_BUCKET is not set, skip the snapshot
 if [ -z "$SNAPSHOT_S3_BUCKET" ]; then
@@ -82,7 +85,7 @@ echo "Snapshot deleted"
 echo "Performing snapshot..."
 response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME?wait_for_completion=true" -H "Content-Type: application/json" -d"
 {
-  \"indices\": \"$WORKLOAD\"
+  \"indices\": \"$INDEX_NAME\"
 }")
 echo "$response" | jq -e '.error' > /dev/null && {
   echo "Error in response from Elasticsearch"
@@ -93,11 +96,11 @@ echo "Snapshot done"
 
 # Restore the snapshot
 echo "Restoring snapshot..."
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$WORKLOAD?pretty"
+curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$INDEX_NAME?pretty"
 curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
 {
-  \"indices\": \"$WORKLOAD\"
+  \"indices\": \"$INDEX_NAME\"
 }"
 echo "Snapshot restored"
 
-check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD"
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /utils.sh
+
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
 SNAPSHOT_S3_BUCKET="${s3_bucket_name}"
@@ -7,6 +9,9 @@ SNAPSHOT_S3_BUCKET="${s3_bucket_name}"
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
 WORKLOAD="$${WORKLOAD:-${workload}}"
+
+# Based on the workload, we can figure out the index name. It is mostly the same, but somtimes not.
+INDEX_NAME=$(workload_index_name $WORKLOAD)
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
@@ -39,9 +44,9 @@ echo "$response" | jq -e '.error' > /dev/null && {
 
 # Restore the snapshot
 echo "Restoring snapshot..."
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$WORKLOAD?pretty"
+curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$INDEX_NAME?pretty"
 curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
 {
-  \"indices\": \"$WORKLOAD\"
+  \"indices\": \"$INDEX_NAME\"
 }"
 echo "Snapshot restored"
