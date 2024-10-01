@@ -4,7 +4,7 @@ This document describes the metadata for results saved to the shared data store.
 ## User Tags
 User tags are custom fields added to enrich the metadata. They are recorded in different fields depending on the index:
 - `benchmark-results*`: `user-tags.<tag_name>`
-- `benchmark-metrics*`: `meta.tag-<tag_name>`
+- `benchmark-metrics*`: `meta.tag_<tag_name>`
 
 | Tag Name | Description |
 | -------- | -------- |
