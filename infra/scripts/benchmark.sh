@@ -31,6 +31,10 @@ INDEX_NAME=$(workload_index_name $WORKLOAD)
 # shellcheck disable=SC2154
 WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 
+# This comes from the user `terraform.tfvars` configuration file
+# shellcheck disable=SC2154
+TEST_PROCEDURE="$${TEST_PROCEDURE:-${test_procedure}}"
+
 CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
 RUN_GROUP_ID="$(date '+%Y_%m_%d_%H_%M_%S')"
 AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 -s http://169.254.169.254/latest/meta-data/instance-id)"
@@ -69,6 +73,7 @@ do
                 --include-tasks="type:search" \
                 --results-file="$RESULTS_FILE" \
                 --test-execution-id="$TEST_EXECUTION_ID" \
+                --test-procedure="$TEST_PROCEDURE" \
                 --distribution-version=$DISTRIBUTION_VERSION \
                 --user-tag="$USER_TAGS" \
                 --telemetry="node-stats"
