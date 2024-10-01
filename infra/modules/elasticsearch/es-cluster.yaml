@@ -33,4 +33,4 @@ bootcmd:
 runcmd:
   - [ sysctl, -p, /etc/sysctl.d/99-custom.conf ]
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
-  - [ sudo, -u, ubuntu, /es_cluster.sh, ${es_password}, ${es_snapshot_access_key}, ${es_snapshot_secret_key} ]
+  - [ sudo, -u, ubuntu, /es_cluster.sh, ${es_password}, ${es_version}, ${es_snapshot_access_key}, ${es_snapshot_secret_key} ]

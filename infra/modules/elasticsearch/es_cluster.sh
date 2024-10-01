@@ -1,17 +1,18 @@
 #!/bin/bash
 
 CLUSTER_PASSWORD=$1
-ES_SNAPSHOT_AWS_ACCESS_KEY_ID=$2
-ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY=$3
+CLUSTER_VERSION=$2
+ES_SNAPSHOT_AWS_ACCESS_KEY_ID=$3
+ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY=$4
 
 cd /mnt || exit 1
 
 # Install ElasticSearch from .tar.gz
-wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.15.0-linux-x86_64.tar.gz
-wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.15.0-linux-x86_64.tar.gz.sha512
-shasum -a 512 -c elasticsearch-8.15.0-linux-x86_64.tar.gz.sha512
-tar -xzf elasticsearch-8.15.0-linux-x86_64.tar.gz
-cd elasticsearch-8.15.0/ || exit 1
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$CLUSTER_VERSION-linux-x86_64.tar.gz
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$CLUSTER_VERSION-linux-x86_64.tar.gz.sha512
+shasum -a 512 -c elasticsearch-$CLUSTER_VERSION-linux-x86_64.tar.gz.sha512
+tar -xzf elasticsearch-$CLUSTER_VERSION-linux-x86_64.tar.gz
+cd elasticsearch-$CLUSTER_VERSION/ || exit 1
 
 cat <<EOF > config/elasticsearch.yml
 discovery.type: single-node

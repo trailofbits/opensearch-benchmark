@@ -15,6 +15,8 @@ SCRIPT_DIR="$( cd "$( dirname "$${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # Replace workload index.json file with one for the correct ES version
 CURRENT_ES_VERSION=$(curl -ku "$CLUSTER_USER:$CLUSTER_PASSWORD" "$CLUSTER_HOST" | jq -r '.version.number')
+# Get only the first 2 numbers of the version (e.g. "7.10.2" -> "7.10")
+CURRENT_ES_VERSION=$(echo "$CURRENT_ES_VERSION" | cut -d. -f1-2)
 # Check if there is a replacement index.json file for the current ES version
 if [ ! -f "$SCRIPT_DIR/es_indexes/$WORKLOAD/es_index_$CURRENT_ES_VERSION.json" ]; then
     echo "No index.json file found for Workload $WORKLOAD ES version $CURRENT_ES_VERSION"
