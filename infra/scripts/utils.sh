@@ -52,13 +52,14 @@ check_params () {
     local password=$2
     local host=$3
     local workload=$4
+    local index=$5
 
     read -r doc_count shards_total shards_failed shards_skipped < <( \
         curl \
             --silent \
             --insecure \
             --user "$user:$password" \
-            --request GET "$host/$workload/_count" \
+            --request GET "$host/$index/_count" \
         | jq --raw-output '"\(.count) \(._shards.total) \(._shards.failed) \(._shards.skipped)"' \
     )
 
@@ -66,4 +67,24 @@ check_params () {
     check_value "total shards count" "${TOTAL_SHARDS:-$(get_shards_count $workload)}" "$shards_total"
     check_value "failed shards count" "${FAILED_SHARDS:-0}" "$shards_failed"
     check_value "skipped shards count" "${SKIPPED_SHARDS:-0}" "$shards_skipped"
+}
+
+
+# Uses opensearch benchmark to get the index names. Note, this will use the default invocation params.
+workload_index_name() {
+    cat <<EOF | python3 2>/dev/null | tail -n1
+import logging
+logger = logging.getLogger()
+logger.disabled = True
+import osbenchmark, osbenchmark.config, osbenchmark.paths, osbenchmark.workload
+cfg = osbenchmark.config.Config()
+cfg.load_config()
+cfg.add(osbenchmark.config.Scope.applicationOverride, "workload", "workload.name", "$1")
+cfg.add(osbenchmark.config.Scope.applicationOverride, "workload", "repository.name", "default")
+cfg.add(osbenchmark.config.Scope.applicationOverride, "system", "offline.mode", "False")
+cfg.add(osbenchmark.config.Scope.applicationOverride, "node", "benchmark.root", osbenchmark.paths.benchmark_root())
+wl = osbenchmark.workload.load_workload(cfg)
+print(wl.indices[0].name)
+logger.disabled = False
+EOF
 }
