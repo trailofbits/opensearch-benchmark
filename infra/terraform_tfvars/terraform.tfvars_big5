@@ -8,7 +8,6 @@ s3_bucket_name                      = "es-snapshots-osb"
 prefix_list_id                      = "pl-06f77c0b59dbf70fe"
 snapshot_user_aws_access_key_id     = "<ACCESS-KEY>"
 snapshot_user_aws_secret_access_key = "<SECRET-KEY>"
-workspace                           = "nyc_taxis"
 
 # Datastore variables
 benchmark_environment = "<ENVIRONMENT>"
@@ -17,5 +16,8 @@ datastore_username    = "<USERNAME>"
 datastore_password    = "<PASSWORD>"
 
 # Workload variables
-workload                            = "nyc_taxis"
-workload_params                     = "target_throughput:0"
+workload                            = "big5"
+workload_params                     = "number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0"
+
+# Use this for a quick test of the whole process
+# workload_params = "corpus_size:1,document_file:documents-60-1k.json.bz2,document_count:1000,document_uncompressed_size_in_bytes:926287,document_compressed_size_in_bytes:54669,number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10,target_throughput:0"
