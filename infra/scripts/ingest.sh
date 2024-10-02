@@ -26,7 +26,7 @@ CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$C
 SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
 
 INGESTION_RESULTS=/mnt/ingestion_results
-USER_TAGS="run-type:ingest"
+USER_TAGS="run-type:ingest,aws-user-id:$AWS_USERID"
 
 # If the snapshot already exists, skip ingestion (check response.total > 0),
 # unless FORCE_INGESTION is set
