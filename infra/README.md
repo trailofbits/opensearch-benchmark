@@ -31,7 +31,7 @@ If you want to use snapshotting, configure an S3 bucket on AWS and access to it.
 OpenSearch Benchmark will automatically upload benchmark results to the shared metric data store. The data store-relevant terraform variables are:
 
 - `benchmark_environment`: Metadata tag for the results
-- `datastore_host`, `datastore_username`, `datastore_password`: Required to connect to the data store. They are in the shared 1Password.
+- `datastore_host`, `datastore_username`, `datastore_password`: Required to connect to the data store.
 
 If you want to disable uploading to the shared data store, edit `/mnt/.benchmark/benchmark.ini` to use the commented default config for `[results_publishing]`. This will save results locally.
 
