@@ -33,6 +33,7 @@ WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
+# When nothing is specified, the default test procedure is used.
 TEST_PROCEDURE="$${TEST_PROCEDURE:-${test_procedure}}"
 
 CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
