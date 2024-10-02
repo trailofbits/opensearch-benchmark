@@ -82,6 +82,12 @@ variable "workload_params" {
   default     = "number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10,target_throughput:0"
 }
 
+variable "test_procedure" {
+  description = "Test procedure for Workload to run"
+  type        = string
+  default     = ""
+}
+
 variable "benchmark_environment" {
   description = "Benchmark environment, saved as metadata in shared metric data store"
   type        = string

@@ -95,6 +95,7 @@ resource "aws_instance" "load-generation" {
           {
             workload        = var.workload
             workload_params = var.workload_params,
+            test_procedure  = var.test_procedure,
           }
         ))
       ),

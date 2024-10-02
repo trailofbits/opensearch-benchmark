@@ -83,6 +83,12 @@ variable "workload_params" {
   default     = ""
 }
 
+variable "test_procedure" {
+  description = "Test procedure for Workload to run"
+  type        = string
+  default     = ""
+}
+
 variable "benchmark_environment" {
   description = "Benchmark environment, saved as metadata in shared metric data store"
   type        = string
