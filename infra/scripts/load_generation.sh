@@ -15,6 +15,10 @@ INSTANCE_TYPE=$7
 # shellcheck disable=SC2154
 WORKLOAD="${workload}"
 
+# This comes from the `main.tf` configuration file
+# shellcheck disable=SC2154
+AWS_USERID="${aws_userid}"
+
 CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
 
 export PATH=$PATH:~/.local/bin
@@ -31,6 +35,7 @@ echo "export ENGINE_TYPE=$ENGINE_TYPE" >> ~/.bashrc
 echo "export INSTANCE_TYPE=$INSTANCE_TYPE" >> ~/.bashrc
 echo "export CLUSTER_VERSION=$CLUSTER_VERSION" >> ~/.bashrc
 echo "export CLUSTER_PASSWORD=$CLUSTER_PASSWORD" >> ~/.bashrc
+echo "export AWS_USERID=$AWS_USERID" >> ~/.bashrc
 
 pip install opensearch-benchmark
 

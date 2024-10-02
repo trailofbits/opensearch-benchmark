@@ -8,6 +8,8 @@ terraform {
   }
 }
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_instance" "target-cluster" {
   ami                    = var.ami_id
   instance_type          = var.instance_type
@@ -54,6 +56,7 @@ resource "aws_instance" "load-generation" {
         "${path.module}/../../scripts/load_generation.sh",
         {
           workload = var.workload,
+          aws_userid   = replace(data.aws_caller_identity.current.arn, "/.+//", "")
         }
       ))),
       os_cluster            = aws_instance.target-cluster.public_dns
