@@ -8,9 +8,7 @@ on:
   schedule:
     # Run every day at 00:00
     - cron: "0 0 * * *"
-  push:
-    branches:
-      - '*'
+
   workflow_dispatch:
     inputs:
       workloads:
@@ -35,9 +33,9 @@ on:
         default: dev
 
 env:
-  WORKLOADS: ${{ inputs.workloads || 'pmc' }}
+  WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis' }}
   WORKLOAD_PARAMS: ${{ inputs.workload_params || 'number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0' }}
-  CLUSTER_TYPES: ${{ inputs.cluster_types || 'OpenSearch' }}
+  CLUSTER_TYPES: ${{ inputs.cluster_types || 'OpenSearch,ElasticSearch' }}
 
 jobs:
   generate-matrix:
@@ -68,7 +66,7 @@ jobs:
       s3_bucket_name: ${{ matrix.s3_bucket_name }}
       workload: ${{ matrix.workload }}
       workload_params: ${{ matrix.workload_params }}
-      benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'dev' }}
+      benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'dev' }} # TODO: switch to official once it's tested
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
