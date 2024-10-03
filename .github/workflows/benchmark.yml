@@ -119,10 +119,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
      
      - name: Restore snapshot
+       continue-on-error: true
        run: |
           ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/restore_snapshot.sh;'"
      
      - name: Run benchmark
+       continue-on-error: true
        run: |
           ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/benchmark.sh;'"
 
