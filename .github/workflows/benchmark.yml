@@ -81,6 +81,9 @@ jobs:
 
      - uses: hashicorp/setup-terraform@v3
 
+     - name: Set up SSH keys
+       run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -P ""
+
      - name: Terraform setup
        run: terraform init
        working-directory: infra
@@ -97,6 +100,8 @@ jobs:
        run: terraform apply -auto-approve
        working-directory: infra
        env:
+          TF_VAR_ssh_priv_key: ~/.ssh/id_rsa
+          TF_VAR_ssh_pub_key: ~/.ssh/id_rsa.pub
           TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
           TF_VAR_snapshot_user_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
           TF_VAR_datastore_host: ${{ secrets.DATASTORE_HOST }}
