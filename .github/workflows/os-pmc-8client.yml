@@ -1,0 +1,44 @@
+name: OS-PMC-8client
+
+on:
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-24.04]
+
+    steps:
+     - uses: actions/checkout@v4
+       with:
+        ref: main
+
+     - name: Testing
+       continue-on-error: false
+       run: |
+         echo "Hello, World!"
+
+#    - name: Terraform setup
+#      continue-on-error: false
+#      run: |
+#        terraform init
+
+#    - name: Terraform apply
+#      continue-on-error: false
+#      run: |
+#        terraform apply -auto-approve
+#    
+#    - name: Run benchmark
+#      continue-on-error: false
+#      run: |
+#         ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "ls -l;"
+
+#         ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set +x; bash /ingest.sh; bash /restore_snapshot.sh; EXTRA_CLIENT_OPTIONS=timeout:240 bash /benchmark.sh official"
+
+#    - name: Terraform destroy
+#      continue-on-error: false
+#      run: |
+#        terraform destroy
