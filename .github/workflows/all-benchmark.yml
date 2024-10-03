@@ -1,6 +1,9 @@
 ---
 name: Nightly Benchmarks
 
+permissions:
+  contents: read
+
 on:
   schedule:
     # Run every day at 00:00
