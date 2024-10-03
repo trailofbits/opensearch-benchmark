@@ -104,7 +104,7 @@ jobs:
        continue-on-error: true
        working-directory: infra
        run: |
-          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic \"/benchmark.sh $BENCHMARK_TYPE;\""
+          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic \"EXTRA_CLIENT_OPTIONS=timeout:240 /benchmark.sh $BENCHMARK_TYPE;\""
        env:
           BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
 

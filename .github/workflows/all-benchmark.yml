@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       workloads:
-        description: 'Workloads to run'
+        description: 'Workloads to run (comma separated)'
         required: true
         type: string
         default: pmc
@@ -24,7 +24,7 @@ on:
         type: string
         default: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
       cluster_types:
-        description: 'Cluster types'
+        description: 'Cluster types (comma separated)'
         required: true
         type: string
         default: OpenSearch
