@@ -103,36 +103,37 @@ jobs:
        run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -P ""
 
      - name: Terraform setup
-       run: terraform init
        working-directory: infra
+       run: terraform init
 
      - name: Switch Terraform workspace
-       run: terraform workspace new gh-nightly-${{ github.run_id }}
        working-directory: infra
+       run: terraform workspace new gh-nightly-${{ github.run_id }}
 
      - name: Get current time
        id: now
        run: echo "now=$(date +%s)" >> $GITHUB_OUTPUT
 
      - name: Create benchmark environment
-       run: terraform apply -auto-approve
        working-directory: infra
+       run: terraform apply -auto-approve
        env:
           TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
      
      - name: Restore snapshot
        continue-on-error: true
+       working-directory: infra
        run: |
           ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/restore_snapshot.sh;'"
-       working-directory: infra
      
      - name: Run benchmark
        continue-on-error: true
+       working-directory: infra
        run: |
           ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/benchmark.sh;'"
-       working-directory: infra
 
      - name: Destroy benchmark environment
+       working-directory: infra
        run: terraform destroy
        env:
           TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
