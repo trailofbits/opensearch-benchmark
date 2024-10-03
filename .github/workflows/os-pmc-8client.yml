@@ -16,29 +16,29 @@ jobs:
        with:
         ref: main
 
-     - name: Testing
+     - name: Terraform setup
        continue-on-error: false
        run: |
-         echo "Hello, World!"
+         terraform init
 
-#    - name: Terraform setup
-#      continue-on-error: false
-#      run: |
-#        terraform init
+     - name: Terraform apply
+       continue-on-error: false
+       run: |
+         terraform apply \
+            -auto-approve \
+            -var="snapshot_user_aws_access_key_id=${AWS_ACCESS_KEY_ID}" \
+            -var="snapshot_user_aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}" \
+            -var="datastore_host=${DATASTORE_HOST}" \
+            -var="datastore_user=${DATASTORE_USERNAME}" \
+            -var="datastore_password=${DATASTORE_PASSWORD}" \
+            -var="benchmark_environment=pmc-nightly-$(date +%s)"
+     
+     - name: Run benchmark
+       continue-on-error: false
+       run: |
+          ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash /ingest.sh; bash /restore_snapshot.sh; EXTRA_CLIENT_OPTIONS=timeout:240 bash /benchmark.sh official"
 
-#    - name: Terraform apply
-#      continue-on-error: false
-#      run: |
-#        terraform apply -auto-approve
-#    
-#    - name: Run benchmark
-#      continue-on-error: false
-#      run: |
-#         ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "ls -l;"
-
-#         ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set +x; bash /ingest.sh; bash /restore_snapshot.sh; EXTRA_CLIENT_OPTIONS=timeout:240 bash /benchmark.sh official"
-
-#    - name: Terraform destroy
-#      continue-on-error: false
-#      run: |
-#        terraform destroy
+     - name: Terraform destroy
+       continue-on-error: false
+       run: |
+         terraform destroy
