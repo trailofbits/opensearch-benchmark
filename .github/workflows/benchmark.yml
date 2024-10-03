@@ -134,6 +134,6 @@ jobs:
 
      - name: Destroy benchmark environment
        working-directory: infra
-       run: terraform destroy
+       run: terraform destroy -auto-approve
        env:
           TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
