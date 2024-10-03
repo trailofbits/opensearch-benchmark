@@ -71,6 +71,24 @@ on:
         type: string
         default: os-snapshots-osb
       
+env:
+  TF_VAR_ssh_priv_key: ~/.ssh/id_rsa
+  TF_VAR_ssh_pub_key: ~/.ssh/id_rsa.pub
+  TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
+  TF_VAR_snapshot_user_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
+  TF_VAR_datastore_host: ${{ secrets.DATASTORE_HOST }}
+  TF_VAR_datastore_username: ${{ secrets.DATASTORE_USERNAME }}
+  TF_VAR_datastore_password: ${{ secrets.DATASTORE_PASSWORD }}
+  TF_VAR_aws_region: ca-central-1
+  TF_VAR_aws_subnet_zone: ca-central-1a
+  TF_VAR_target_cluster_type: ${{ inputs.cluster_type}}
+  TF_VAR_s3_bucket_name: ${{ inputs.s3_bucket_name }}
+  TF_VAR_prefix_list_id: pl-06f77c0b59dbf70fe
+  TF_VAR_workload: ${{ inputs.workload}}
+  TF_VAR_workload_params: ${{ inputs.workload_params }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
 jobs:
   run-osb:
     runs-on: ubuntu-latest
@@ -89,7 +107,7 @@ jobs:
        working-directory: infra
 
      - name: Switch Terraform workspace
-       run: terraform workspace new gh-nightly
+       run: terraform workspace new gh-nightly-${{ github.run_id }}
        working-directory: infra
 
      - name: Get current time
@@ -100,23 +118,7 @@ jobs:
        run: terraform apply -auto-approve
        working-directory: infra
        env:
-          TF_VAR_ssh_priv_key: ~/.ssh/id_rsa
-          TF_VAR_ssh_pub_key: ~/.ssh/id_rsa.pub
-          TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
-          TF_VAR_snapshot_user_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
-          TF_VAR_datastore_host: ${{ secrets.DATASTORE_HOST }}
-          TF_VAR_datastore_username: ${{ secrets.DATASTORE_USERNAME }}
-          TF_VAR_datastore_password: ${{ secrets.DATASTORE_PASSWORD }}
-          TF_VAR_aws_region: ca-central-1
-          TF_VAR_aws_subnet_zone: ca-central-1a
-          TF_VAR_target_cluster_type: ${{ inputs.cluster_type}}
-          TF_VAR_s3_bucket_name: ${{ inputs.s3_bucket_name }}
-          TF_VAR_prefix_list_id: pl-06f77c0b59dbf70fe
           TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
-          TF_VAR_workload: ${{ inputs.workload}}
-          TF_VAR_workload_params: ${{ inputs.workload_params }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
      
      - name: Restore snapshot
        continue-on-error: true
@@ -133,5 +135,4 @@ jobs:
      - name: Destroy benchmark environment
        run: terraform destroy
        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
