@@ -124,13 +124,13 @@ jobs:
        continue-on-error: true
        working-directory: infra
        run: |
-          ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/restore_snapshot.sh;'"
+          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/restore_snapshot.sh;'"
      
      - name: Run benchmark
        continue-on-error: true
        working-directory: infra
        run: |
-          ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/benchmark.sh;'"
+          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/benchmark.sh;'"
 
      - name: Destroy benchmark environment
        working-directory: infra
