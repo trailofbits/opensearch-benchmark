@@ -34,6 +34,12 @@ on:
         type: string
         default: dev
 
+env:
+  WORKLOADS: ${{ inputs.workloads || 'pmc' }}
+  WORKLOAD_PARAMS: ${{ inputs.workload_params || 'number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0' }}
+  CLUSTER_TYPES: ${{ inputs.cluster_types || 'OpenSearch' }}
+  BENCHMARK_TYPE: ${{ inputs.benchmark_type || 'dev' }}
+
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest
@@ -45,6 +51,7 @@ jobs:
         run: |
           res=$(python3 .github/generate-matrix.py "${{ inputs.workloads }}" "${{ inputs.workload_params }}" "${{ inputs.cluster_types}}")
           echo "matrix=$res" >> $GITHUB_OUTPUT
+          echo "$res"
 
   run-benchmarks:
     needs: generate-matrix
