@@ -83,7 +83,7 @@ jobs:
 
      - name: Get current time
        id: now
-       run: echo "::set-output name=now::$(date +%s)"
+       run: echo "now=$(date +%s)" >> $GITHUB_OUTPUT
 
      - name: Create benchmark environment
        run: terraform apply -auto-approve
