@@ -24,6 +24,11 @@ on:
         required: true
         type: string
         default: os-snapshots-osb
+      benchmark_type:
+        description: 'Benchmark type'
+        required: true
+        type: string
+        default: dev
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -130,7 +135,9 @@ jobs:
        continue-on-error: true
        working-directory: infra
        run: |
-          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/benchmark.sh;'"
+          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic \"/benchmark.sh $BENCHMARK_TYPE;\""
+       env:
+          BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
 
      - name: Destroy benchmark environment
        working-directory: infra

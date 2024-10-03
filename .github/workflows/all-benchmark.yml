@@ -38,6 +38,7 @@ jobs:
       s3_bucket_name: ${{ matrix.s3_bucket_name }}
       workload: ${{ matrix.workload}}
       workload_params: ${{ matrix.workload_params }}
+      benchmark_type: dev
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
