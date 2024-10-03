@@ -122,11 +122,13 @@ jobs:
        continue-on-error: true
        run: |
           ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/restore_snapshot.sh;'"
+       working-directory: infra
      
      - name: Run benchmark
        continue-on-error: true
        run: |
           ssh -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/benchmark.sh;'"
+       working-directory: infra
 
      - name: Destroy benchmark environment
        run: terraform destroy
