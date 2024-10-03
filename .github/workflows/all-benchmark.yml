@@ -6,5 +6,27 @@ on:
     - cron: "0 0 * * *"
 
 jobs:
-  call-os-pmc-8client:
-    uses: ./.github/workflows/os-pmc-8client.yml
+  run-benchmarks:
+    strategy:
+      matrix:
+        cluster_type: [OpenSearch, Elasticsearch]
+        workload: [big5, pmc, noaa, nyc_taxis]
+        include:
+          - cluster_type: OpenSearch
+            s3_bucket_name: os-snapshots-osb
+          - cluster_type: Elasticsearch
+            s3_bucket_name: es-snapshots-esb
+          - workload_params: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
+
+    uses: ./.github/workflows/benchmark.yml
+    with:
+      cluster_type: ${{ matrix.cluster_type}}
+      s3_bucket_name: ${{ matrix.s3_bucket_name }}
+      workload: ${{ matrix.workload}}
+      workload_params: ${{ matrix.workload_params }}
+    secrets:
+      SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
+      SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
+      DATASTORE_HOST: ${{ secrets.DATASTORE_HOST }}
+      DATASTORE_USERNAME: ${{ secrets.DATASTORE_USERNAME }}
+      DATASTORE_PASSWORD: ${{ secrets.DATASTORE_PASSWORD }}
