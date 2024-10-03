@@ -4,19 +4,28 @@ on:
   schedule:
     # Run every day at 00:00
     - cron: "0 0 * * *"
+  pull_request:
+    branches:
+      - main
 
 jobs:
   run-benchmarks:
     strategy:
       matrix:
-        cluster_type: [OpenSearch, Elasticsearch]
-        workload: [big5, pmc, noaa, nyc_taxis]
+        cluster_type: [OpenSearch]
+        workload: [pmc]
         include:
           - cluster_type: OpenSearch
             s3_bucket_name: os-snapshots-osb
-          - cluster_type: Elasticsearch
-            s3_bucket_name: es-snapshots-esb
           - workload_params: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
+        # cluster_type: [OpenSearch, Elasticsearch]
+        # workload: [big5, pmc, noaa, nyc_taxis]
+        # include:
+        #   - cluster_type: OpenSearch
+        #     s3_bucket_name: os-snapshots-osb
+        #   - cluster_type: Elasticsearch
+        #     s3_bucket_name: es-snapshots-esb
+        #   - workload_params: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
 
     uses: ./.github/workflows/benchmark.yml
     with:
