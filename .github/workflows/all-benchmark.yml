@@ -11,34 +11,54 @@ on:
   push:
     branches:
       - '*'
+  workflow_dispatch:
+    inputs:
+      workloads:
+        description: 'Workloads to run'
+        required: true
+        type: string
+        default: pmc
+      workload_params:
+        description: 'Workload parameters'
+        required: true
+        type: string
+        default: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
+      cluster_types:
+        description: 'Cluster types'
+        required: true
+        type: string
+        default: OpenSearch
+      benchmark_type:
+        description: 'Benchmark type'
+        required: true
+        type: string
+        default: dev
 
 jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set-matrix
+        run: |
+          res=$(python3 .github/generate-matrix.py "${{ inputs.workloads }}" "${{ inputs.workload_params }}" "${{ inputs.cluster_types}}")
+          echo "matrix=$res" >> $GITHUB_OUTPUT
+
   run-benchmarks:
+    needs: generate-matrix
     strategy:
       max-parallel: 3
-      matrix:
-        cluster_type: [OpenSearch]
-        workload: [pmc]
-        include:
-          - cluster_type: OpenSearch
-            s3_bucket_name: os-snapshots-osb
-          - workload_params: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
-        # cluster_type: [OpenSearch, Elasticsearch]
-        # workload: [big5, pmc, noaa, nyc_taxis]
-        # include:
-        #   - cluster_type: OpenSearch
-        #     s3_bucket_name: os-snapshots-osb
-        #   - cluster_type: Elasticsearch
-        #     s3_bucket_name: es-snapshots-esb
-        #   - workload_params: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
 
     uses: ./.github/workflows/benchmark.yml
     with:
       cluster_type: ${{ matrix.cluster_type}}
       s3_bucket_name: ${{ matrix.s3_bucket_name }}
-      workload: ${{ matrix.workload}}
+      workload: ${{ matrix.workload }}
       workload_params: ${{ matrix.workload_params }}
-      benchmark_type: dev
+      benchmark_type: ${{ inputs.benchmark_type }}
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
