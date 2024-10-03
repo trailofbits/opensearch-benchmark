@@ -1,4 +1,4 @@
-name: OS-PMC-8client
+name: OSB-Benchmark
 
 on:
   workflow_call:
@@ -67,12 +67,14 @@ on:
         default: os-snapshots-osb
       
 jobs:
-  shellcheck:
-    runs-on: ubuntu-24.04
+  run-osb:
+    runs-on: ubuntu-latest
     steps:
      - uses: actions/checkout@v4
        with:
         ref: main
+
+     - uses: hashicorp/setup-terraform@v3
 
      - name: Terraform setup
        run: terraform init
