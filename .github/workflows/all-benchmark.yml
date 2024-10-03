@@ -21,6 +21,11 @@ on:
         required: true
         type: string
         default: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
+      test_procedure:
+        description: 'Test procedure'
+        required: false
+        type: string
+        default: ''
       cluster_types:
         description: 'Cluster types (comma separated)'
         required: true
@@ -33,11 +38,23 @@ on:
         default: dev
 
 env:
-  WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis' }}
+  WORKLOADS: ${{ inputs.workloads || 'pmc,nyc_taxis' }}
   WORKLOAD_PARAMS: ${{ inputs.workload_params || 'number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0' }}
+  TEST_PROCEDURE: ${{ inputs.test_procedure || '' }}
   CLUSTER_TYPES: ${{ inputs.cluster_types || 'OpenSearch,ElasticSearch' }}
 
+  BIG5_WORKLOADS: 'big5'
+  BIG5_WORKLOAD_PARAMS: "$WORKLOAD_PARAMS,max_num_segments:10,index_merge_policy:tiered"
+  BIG5_TEST_PROCEDURE: "$TEST_PROCEDURE"
+  BIG5_CLUSTER_TYPES: "$CLUSTER_TYPES"
+
+  NOAA_WORKLOADS: 'noaa'
+  NOAA_WORKLOAD_PARAMS: "$WORKLOAD_PARAMS"
+  NOAA_TEST_PROCEDURE: "aggs"
+  NOAA_CLUSTER_TYPES: "$CLUSTER_TYPES"
+
 jobs:
+  # Generate matrix for workloads which share the same parameters
   generate-matrix:
     runs-on: ubuntu-latest
     outputs:
@@ -46,12 +63,13 @@ jobs:
       - uses: actions/checkout@v4
       - id: set-matrix
         run: |
-          res=$(python3 .github/generate-matrix.py "$WORKLOADS" "$WORKLOAD_PARAMS" "$CLUSTER_TYPES")
+          res=$(python3 .github/generate-matrix.py "$WORKLOADS" "$WORKLOAD_PARAMS" "$TEST_PROCEDURE" "$CLUSTER_TYPES")
           echo "matrix=$res" >> $GITHUB_OUTPUT
           echo "$res"
         env:
           WORKLOADS: ${{ env.WORKLOADS }}
           WORKLOAD_PARAMS: ${{ env.WORKLOAD_PARAMS }}
+          TEST_PROCEDURE: ${{ env.TEST_PROCEDURE }}
           CLUSTER_TYPES: ${{ env.CLUSTER_TYPES }}
 
   run-benchmarks:
@@ -66,6 +84,89 @@ jobs:
       s3_bucket_name: ${{ matrix.s3_bucket_name }}
       workload: ${{ matrix.workload }}
       workload_params: ${{ matrix.workload_params }}
+      test_procedure: ${{ matrix.test_procedure }}
+      benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'dev' }} # TODO: switch to official once it's tested
+    secrets:
+      SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
+      SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
+      DATASTORE_HOST: ${{ vars.DATASTORE_HOST }}
+      DATASTORE_USERNAME: ${{ secrets.DATASTORE_USERNAME }}
+      DATASTORE_PASSWORD: ${{ secrets.DATASTORE_PASSWORD }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  # Generate matrix for Big5 workload
+  generate-big5-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-big5-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set-big5-matrix
+        run: |
+          res=$(python3 .github/generate-matrix.py "$BIG5_WORKLOADS" "$BIG5_WORKLOAD_PARAMS" "$BIG5_TEST_PROCEDURE" "$BIG5_CLUSTER_TYPES")
+          echo "matrix=$res" >> $GITHUB_OUTPUT
+          echo "$res"
+        env:
+          WORKLOADS: ${{ env.BIG5_WORKLOADS }}
+          WORKLOAD_PARAMS: ${{ env.BIG5_WORKLOAD_PARAMS }}
+          TEST_PROCEDURE: ${{ env.BIG5_TEST_PROCEDURE }}
+          CLUSTER_TYPES: ${{ env.BIG5_CLUSTER_TYPES }}
+
+  run-big5-benchmarks:
+    needs: generate-big5-matrix
+    strategy:
+      max-parallel: 3
+      matrix: ${{ fromJson(needs.generate-big5-matrix.outputs.matrix) }}
+
+    uses: ./.github/workflows/benchmark.yml
+    with:
+      cluster_type: ${{ matrix.cluster_type}}
+      s3_bucket_name: ${{ matrix.s3_bucket_name }}
+      workload: ${{ matrix.workload }}
+      workload_params: ${{ matrix.workload_params }}
+      test_procedure: ${{ matrix.test_procedure }}
+      benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'dev' }} # TODO: switch to official once it's tested
+    secrets:
+      SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
+      SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
+      DATASTORE_HOST: ${{ vars.DATASTORE_HOST }}
+      DATASTORE_USERNAME: ${{ secrets.DATASTORE_USERNAME }}
+      DATASTORE_PASSWORD: ${{ secrets.DATASTORE_PASSWORD }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  # Generate matrix for NOAA workload
+  generate-noaa-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-noaa-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set-noaa-matrix
+        run: |
+          res=$(python3 .github/generate-matrix.py "$NOAA_WORKLOADS" "$NOAA_WORKLOAD_PARAMS" "$NOAA_TEST_PROCEDURE" "$NOAA_CLUSTER_TYPES")
+          echo "matrix=$res" >> $GITHUB_OUTPUT
+          echo "$res"
+        env:
+          WORKLOADS: ${{ env.NOAA_WORKLOADS }}
+          WORKLOAD_PARAMS: ${{ env.NOAA_WORKLOAD_PARAMS }}
+          TEST_PROCEDURE: ${{ env.NOAA_TEST_PROCEDURE }}
+          CLUSTER_TYPES: ${{ env.NOAA_CLUSTER_TYPES }}
+
+  run-noaa-benchmarks:
+    needs: generate-noaa-matrix
+    strategy:
+      max-parallel: 3
+      matrix: ${{ fromJson(needs.generate-noaa-matrix.outputs.matrix) }}
+
+    uses: ./.github/workflows/benchmark.yml
+    with:
+      cluster_type: ${{ matrix.cluster_type}}
+      s3_bucket_name: ${{ matrix.s3_bucket_name }}
+      workload: ${{ matrix.workload }}
+      workload_params: ${{ matrix.workload_params }}
+      test_procedure: ${{ matrix.test_procedure }}
       benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'dev' }} # TODO: switch to official once it's tested
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}

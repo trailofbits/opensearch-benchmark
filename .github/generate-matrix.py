@@ -3,11 +3,15 @@ import sys
 
 workloads = sys.argv[1].split(',')
 workload_params = sys.argv[2]
-cluster_types = sys.argv[3].split(',')
+test_procedure = sys.argv[3]
+cluster_types = sys.argv[4].split(',')
 
 includes = [
     {
       "workload_params": workload_params
+    },
+    {
+      "test_procedure": test_procedure
     }
 ]
 
