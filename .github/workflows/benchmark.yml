@@ -95,6 +95,22 @@ jobs:
 
      - name: Show env
        run: env
+       env:
+          TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
+          TF_VAR_snapshot_user_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_datastore_host: ${{ secrets.DATASTORE_HOST }}
+          TF_VAR_datastore_username: ${{ secrets.DATASTORE_USERNAME }}
+          TF_VAR_datastore_password: ${{ secrets.DATASTORE_PASSWORD }}
+          TF_VAR_aws_region: ca-central-1
+          TF_VAR_aws_subnet_zone: ca-central-1a
+          TF_VAR_target_cluster_type: ${{ inputs.cluster_type}}
+          TF_VAR_s3_bucket_name: ${{ inputs.s3_bucket_name }}
+          TF_VAR_prefix_list_id: pl-06f77c0b59dbf70fe
+          TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
+          TF_VAR_workload: ${{ inputs.workload}}
+          TF_VAR_workload_params: ${{ inputs.workload_params }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
      - name: Create benchmark environment
        run: terraform apply -auto-approve
