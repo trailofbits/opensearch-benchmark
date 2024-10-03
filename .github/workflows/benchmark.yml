@@ -85,6 +85,10 @@ jobs:
        run: terraform init
        working-directory: infra
 
+     - name: Switch Terraform workspace
+       run: terraform workspace new gh-nightly
+       working-directory: infra
+
      - name: Get current time
        id: now
        run: echo "now=$(date +%s)" >> $GITHUB_OUTPUT
