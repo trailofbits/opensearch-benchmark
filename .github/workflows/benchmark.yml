@@ -1,0 +1,115 @@
+---
+name: OSB-Benchmark
+
+on:
+  workflow_call:
+    inputs:
+      workload:
+        description: 'Workload to run'
+        required: true
+        type: string
+        default: big5
+      workload_params:
+        description: 'Workload parameters'
+        required: true
+        type: string
+        default: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
+      cluster_type:
+        description: 'Cluster type'
+        required: true
+        type: string
+        default: OpenSearch
+      s3_bucket_name:
+        description: 'S3 bucket name'
+        required: true
+        type: string
+        default: os-snapshots-osb
+      benchmark_type:
+        description: 'Benchmark type'
+        required: true
+        type: string
+        default: dev
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      SNAPSHOT_AWS_ACCESS_KEY_ID:
+        required: true
+      SNAPSHOT_AWS_SECRET_ACCESS_KEY:
+        required: true
+      DATASTORE_HOST:
+        required: true
+      DATASTORE_USERNAME:
+        required: true
+      DATASTORE_PASSWORD:
+        required: true
+
+env:
+  TF_VAR_ssh_priv_key: ~/.ssh/id_rsa
+  TF_VAR_ssh_pub_key: ~/.ssh/id_rsa.pub
+  TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
+  TF_VAR_snapshot_user_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
+  TF_VAR_datastore_host: ${{ secrets.DATASTORE_HOST }}
+  TF_VAR_datastore_username: ${{ secrets.DATASTORE_USERNAME }}
+  TF_VAR_datastore_password: ${{ secrets.DATASTORE_PASSWORD }}
+  TF_VAR_aws_region: ca-central-1
+  TF_VAR_aws_subnet_zone: ca-central-1a
+  TF_VAR_target_cluster_type: ${{ inputs.cluster_type}}
+  TF_VAR_s3_bucket_name: ${{ inputs.s3_bucket_name }}
+  TF_VAR_prefix_list_id: pl-06f77c0b59dbf70fe
+  TF_VAR_workload: ${{ inputs.workload}}
+  TF_VAR_workload_params: ${{ inputs.workload_params }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+jobs:
+  run-osb:
+    runs-on: ubuntu-latest
+    steps:
+     - uses: actions/checkout@v4
+       with:
+        ref: main
+
+     - uses: hashicorp/setup-terraform@v3
+
+     - name: Set up SSH keys
+       run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -P ""
+
+     - name: Terraform setup
+       working-directory: infra
+       run: terraform init
+
+     - name: Switch Terraform workspace
+       working-directory: infra
+       run: terraform workspace new gh-nightly-${{ github.run_id }}
+
+     - name: Get current time
+       id: now
+       run: echo "now=$(date +%s)" >> $GITHUB_OUTPUT
+
+     - name: Create benchmark environment
+       working-directory: infra
+       run: terraform apply -auto-approve
+       env:
+          TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
+     
+     - name: Restore snapshot
+       continue-on-error: true
+       working-directory: infra
+       run: |
+          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/restore_snapshot.sh;'"
+     
+     - name: Run benchmark
+       continue-on-error: true
+       working-directory: infra
+       run: |
+          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic \"EXTRA_CLIENT_OPTIONS=timeout:240 /benchmark.sh $BENCHMARK_TYPE;\""
+       env:
+          BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
+
+     - name: Destroy benchmark environment
+       working-directory: infra
+       run: terraform destroy -auto-approve
+       env:
+          TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}

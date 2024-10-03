@@ -1,0 +1,77 @@
+---
+name: Nightly Benchmarks
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+    # Run every day at 00:00
+    - cron: "0 0 * * *"
+
+  workflow_dispatch:
+    inputs:
+      workloads:
+        description: 'Workloads to run (comma separated)'
+        required: true
+        type: string
+        default: pmc
+      workload_params:
+        description: 'Workload parameters'
+        required: true
+        type: string
+        default: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
+      cluster_types:
+        description: 'Cluster types (comma separated)'
+        required: true
+        type: string
+        default: OpenSearch
+      benchmark_type:
+        description: 'Benchmark type'
+        required: true
+        type: string
+        default: dev
+
+env:
+  WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis' }}
+  WORKLOAD_PARAMS: ${{ inputs.workload_params || 'number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0' }}
+  CLUSTER_TYPES: ${{ inputs.cluster_types || 'OpenSearch,ElasticSearch' }}
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set-matrix
+        run: |
+          res=$(python3 .github/generate-matrix.py "$WORKLOADS" "$WORKLOAD_PARAMS" "$CLUSTER_TYPES")
+          echo "matrix=$res" >> $GITHUB_OUTPUT
+          echo "$res"
+        env:
+          WORKLOADS: ${{ env.WORKLOADS }}
+          WORKLOAD_PARAMS: ${{ env.WORKLOAD_PARAMS }}
+          CLUSTER_TYPES: ${{ env.CLUSTER_TYPES }}
+
+  run-benchmarks:
+    needs: generate-matrix
+    strategy:
+      max-parallel: 3
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+
+    uses: ./.github/workflows/benchmark.yml
+    with:
+      cluster_type: ${{ matrix.cluster_type}}
+      s3_bucket_name: ${{ matrix.s3_bucket_name }}
+      workload: ${{ matrix.workload }}
+      workload_params: ${{ matrix.workload_params }}
+      benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'dev' }} # TODO: switch to official once it's tested
+    secrets:
+      SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
+      SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
+      DATASTORE_HOST: ${{ vars.DATASTORE_HOST }}
+      DATASTORE_USERNAME: ${{ secrets.DATASTORE_USERNAME }}
+      DATASTORE_PASSWORD: ${{ secrets.DATASTORE_PASSWORD }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
