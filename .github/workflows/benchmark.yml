@@ -80,9 +80,14 @@ jobs:
        working-directory: infra
        run: terraform init
 
+     - name: Compute Terraform workspace name from workload/workload_params/cluster_type
+       id: workspace
+       run: |
+          echo "workspace_name=gh-nightly-$(echo ${{ github.run_id }}-${{ inputs.workload }}-${{ inputs.workload_params }}-${{ inputs.cluster_type }} | md5sum | head -c 8)" >> $GITHUB_OUTPUT
+
      - name: Switch Terraform workspace
        working-directory: infra
-       run: terraform workspace new gh-nightly-${{ github.run_id }}
+       run: terraform workspace new gh-nightly-${{ steps.workspace.outputs.workspace_name }}
 
      - name: Get current time
        id: now
