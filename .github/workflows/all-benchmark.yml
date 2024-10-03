@@ -1,12 +1,17 @@
+---
 name: Nightly Benchmarks
 
 on:
   schedule:
     # Run every day at 00:00
     - cron: "0 0 * * *"
+  push:
+    branches:
+      - '*'
+
   pull_request:
     branches:
-      - main
+      - '*'
 
 jobs:
   run-benchmarks:
