@@ -3,10 +3,15 @@ import argparse
 import os
 import requests
 import pingouin as pg
+import pandas as pd
 from typing import TypedDict, NotRequired, Generator
 from tabulate import tabulate
 from collections import defaultdict
 import warnings
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 warnings.filterwarnings("ignore", category=requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
@@ -105,7 +110,7 @@ def _get_hits(host: str, user: str, password: str, run_group_id: str) -> Generat
             verify=False,
         ).json()
 
-def get_metrics(host: str, user: str, password: str, run_group_id: str) -> dict:
+def get_metrics_run_group(host: str, user: str, password: str, run_group_id: str) -> dict:
     """
     Return combined metrics for each task in the run group
 
@@ -121,6 +126,28 @@ def get_metrics(host: str, user: str, password: str, run_group_id: str) -> dict:
         task = metric_entry['task']
         value = metric_entry['value']
         metrics[task].append(value)
+    return metrics
+
+def get_metrics_run_group_by_run(host: str, user: str, password: str, run_group_id: str) -> dict:
+    """
+    Return combined metrics for each task in the run group, grouped by run.
+
+    The dictionary is formatted like so:
+    {
+        "task": {
+            "run_0": [value1, value2, ...],
+            ...
+        },
+        ...
+    }
+    """
+    metrics = defaultdict(lambda: defaultdict(list))
+    for hit in _get_hits(host, user, password, run_group_id):
+        metric_entry = hit["_source"]
+        task = metric_entry['task']
+        value = metric_entry['value']
+        run_num = metric_entry['meta']['tag_run']
+        metrics[task][run_num].append(value)
     return metrics
 
 def do_t_test(group0_metrics: dict, group1_metrics: dict) -> list[list]:
@@ -141,28 +168,69 @@ def do_t_test(group0_metrics: dict, group1_metrics: dict) -> list[list]:
     results.sort(key=lambda x: x[0])
     return results
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("run_group0", type=str)
-    parser.add_argument("run_group1", type=str)
-    args = parser.parse_args()
-    run_group0 = args.run_group0
-    run_group1 = args.run_group1
-
-    host = os.environ.get("DS_HOSTNAME")
-    username = os.environ.get("DS_USERNAME")
-    password = os.environ.get("DS_PASSWORD")
-    if host is None or username is None or password is None:
-        print("Set environment variables: DS_HOSTNAME, DS_USERNAME, and DS_PASSWORD")
-        exit(1)
-
-    run_group0_metrics = get_metrics(host, username, password, run_group0)
-    run_group1_metrics = get_metrics(host, username, password, run_group1)
+def do_run_group_t_test(run_group0, run_group1, host, username, password):
+    """Do t-test between pairs of run groups"""
+    run_group0_metrics = get_metrics_run_group(host, username, password, run_group0)
+    run_group1_metrics = get_metrics_run_group(host, username, password, run_group1)
     t_test_results = do_t_test(run_group0_metrics, run_group1_metrics)
     header = ["task", "count", "group0-mean", "group1-mean", "t-statistic", "p-value", "cohens-d"]
     t_test_results.insert(0, header)
     print(f"T-test Results for {run_group0} and {run_group1}")
     print(tabulate(t_test_results))
+
+def do_anova_test(run_group_metrics: dict):
+    """Do anova test on run group runs"""
+    results = []
+    for key in run_group_metrics.keys():
+        task_values = run_group_metrics[key]
+        task_df = pd.melt(pd.DataFrame(task_values), var_name="run", value_name="value")
+        anova = pg.anova(data=task_df, dv="value", between="run")
+        f = float(anova['F'].iloc[0])
+        p_val_uncorrected = float(anova['p-unc'].iloc[0])
+        np2 = float(anova['np2'].iloc[0])
+        row = [key, f, p_val_uncorrected, np2]
+        results.append(row)
+    results.sort(key=lambda x: x[0])
+    p_vals_uncorrected = [result[2] for result in results]
+    significant_list, p_vals_corrected = pg.multicomp(p_vals_uncorrected)
+    for result, p_val_corrected, significant in zip(results, p_vals_corrected, significant_list):
+        result.append(float(p_val_corrected))
+        result.append(bool(significant))
+    return results
+
+def do_run_anova_test(run_group: str, host: str, username: str, password: str):
+    """Do anova test for runs in a run group"""
+    run_group_metrics = get_metrics_run_group_by_run(host, username, password, run_group)
+    anova_results = do_anova_test(run_group_metrics)
+    print(f"1-Way ANOVA Across Runs for: {run_group}" )
+    results_header = ["task", "F", "p-val-uncorrected", "np2", "p-val-corrected", "significant"]
+    print(tabulate(anova_results, headers=results_header, floatfmt=".4f"))
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "run_groups",
+        type=str,
+        nargs="+",
+        help="If 1 run group passed, analyze variance of runs. If >1 group passed, analyze variance of run groups.")
+    args = parser.parse_args()
+    run_groups = args.run_groups
+    if len(run_groups) > 2:
+        logger.error("Currently no more than 2 run groups are supported")
+        exit(1)
+    host = os.environ.get("DS_HOSTNAME")
+    username = os.environ.get("DS_USERNAME")
+    password = os.environ.get("DS_PASSWORD")
+    if host is None or username is None or password is None:
+        logger.error("Set environment variables: DS_HOSTNAME, DS_USERNAME, and DS_PASSWORD")
+        exit(1)
+    if len(run_groups) == 1:
+        run_group = run_groups[0]
+        do_run_anova_test(run_group, host, username, password)
+    elif len(run_groups) == 2:
+        run_group0 = run_groups[0]
+        run_group1 = run_groups[1]
+        do_run_group_t_test(run_group0, run_group1, host, username, password)
 
 if __name__ == "__main__":
     main()
