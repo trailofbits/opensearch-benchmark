@@ -159,11 +159,11 @@ def do_t_test(group0_metrics: dict, group1_metrics: dict) -> list[list]:
         group1_values = group1_metrics[key]
         assert(len(group0_values) == len(group1_values))
         res = pg.ttest(group0_values, group1_values)
-        pvalue = f"{float(res['p-val'].iloc[0]):.4f}"
-        statistic = f"{float(res['T'].iloc[0]):.4f}"
-        cohens_d = f"{float(res['cohen-d'].iloc[0]):.4f}"
-        group0_mean = f"{sum(group0_values)/len(group0_values):.4f}"
-        group1_mean = f"{sum(group1_values)/len(group1_values):.4f}"
+        pvalue = float(res['p-val'].iloc[0])
+        statistic = float(res['T'].iloc[0])
+        cohens_d = float(res['cohen-d'].iloc[0])
+        group0_mean = sum(group0_values)/len(group0_values)
+        group1_mean = sum(group1_values)/len(group1_values)
         results.append([key, len(group0_values), group0_mean, group1_mean, statistic, pvalue, cohens_d])
     results.sort(key=lambda x: x[0])
     return results
@@ -174,9 +174,8 @@ def do_run_group_t_test(run_group0, run_group1, host, username, password):
     run_group1_metrics = get_metrics_run_group(host, username, password, run_group1)
     t_test_results = do_t_test(run_group0_metrics, run_group1_metrics)
     header = ["task", "count", "group0-mean", "group1-mean", "t-statistic", "p-value", "cohens-d"]
-    t_test_results.insert(0, header)
     print(f"T-test Results for {run_group0} and {run_group1}")
-    print(tabulate(t_test_results))
+    print(tabulate(t_test_results, headers=header, floatfmt=".4f"))
 
 def do_anova_test(run_group_metrics: dict):
     """Do anova test on run group runs"""
