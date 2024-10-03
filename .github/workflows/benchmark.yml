@@ -106,6 +106,8 @@ jobs:
           TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
           TF_VAR_workload: ${{ inputs.workload}}
           TF_VAR_workload_params: ${{ inputs.workload_params }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
      
      - name: Restore snapshot
        run: |
@@ -117,3 +119,6 @@ jobs:
 
      - name: Destroy benchmark environment
        run: terraform destroy
+       env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
