@@ -119,7 +119,7 @@ jobs:
        working-directory: infra
        if: ${{ inputs.create_snapshot }}
        run: |
-          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/ingest.sh;'"
+          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic \"EXTRA_CLIENT_OPTIONS=timeout:240 /ingest.sh;\""
        env:
           FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
 
