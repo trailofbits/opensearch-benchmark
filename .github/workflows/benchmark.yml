@@ -122,7 +122,7 @@ jobs:
        run: |
           ssh $SSH_OPTIONS \
             -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-            "set -x; bash -ic \"EXTRA_CLIENT_OPTIONS=timeout:240 /ingest.sh;\""
+            "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /ingest.sh;\""
        env:
           FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
 
@@ -133,7 +133,7 @@ jobs:
        run: |
           ssh $SSH_OPTIONS \
             -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-            "set -x; bash -ic '/restore_snapshot.sh;'"
+            "set -x; bash -ixc 'bash -x /restore_snapshot.sh;'"
      
      - name: Run benchmark
        continue-on-error: true
@@ -142,7 +142,7 @@ jobs:
        run: |
           ssh $SSH_OPTIONS \
             -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-            "set -x; bash -ic \"EXTRA_CLIENT_OPTIONS=timeout:240 /benchmark.sh $BENCHMARK_TYPE;\""
+            "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /benchmark.sh $BENCHMARK_TYPE;\""
        env:
           BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
 
