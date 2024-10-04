@@ -27,20 +27,7 @@ fi
 
 # Register the S3 repository for snapshots
 echo "Registering snapshot repository..."
-response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET?pretty" -H 'Content-Type: application/json' -d"
-{
-  \"type\": \"s3\",
-  \"settings\": {
-    \"bucket\": \"$SNAPSHOT_S3_BUCKET\"
-  }
-}
-")
-echo "$response" | jq -e '.error' > /dev/null && {
-  echo "Error in response from cluster"
-  echo "$response"
-  exit 3
-}
-
+register_snapshot_repo "$CLUSTER_HOST" "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$SNAPSHOT_S3_BUCKET"
 
 # Restore the snapshot
 echo "Restoring snapshot..."
