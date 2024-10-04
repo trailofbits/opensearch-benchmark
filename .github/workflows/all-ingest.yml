@@ -22,6 +22,11 @@ on:
         required: true
         type: string
         default: OpenSearch
+      force_snapshot:
+        description: 'Force snapshot creation (delete existing snapshot)'
+        required: false
+        type: boolean
+        default: false
 
 env:
   WORKLOADS: ${{ inputs.workloads }}
@@ -58,6 +63,7 @@ jobs:
       workload: ${{ matrix.workload }}
       workload_params: ${{ matrix.workload_params }}
       create_snapshot: true
+      force_snapshot: ${{ inputs.force_snapshot }}
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
