@@ -17,7 +17,7 @@ INDEX_NAME=$(workload_index_name $WORKLOAD)
 # shellcheck disable=SC2154
 WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 
-SNAPSHOT_NAME=$(echo "$WORKLOAD;$WORKLOAD_PARAMS" | md5sum | cut -d' ' -f1)
+SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD" "$WORKLOAD_PARAMS")
 
 # If SNAPSHOT_S3_BUCKET is not set, skip the snapshot
 if [ -z "$SNAPSHOT_S3_BUCKET" ]; then

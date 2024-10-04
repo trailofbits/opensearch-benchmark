@@ -96,3 +96,15 @@ join_by() {
     shift;
     echo "$*";
 }
+
+snapshot_name() {
+    workload_name=$1
+    workload_params=$2
+
+    # Sort the params alphabetically
+    sorted_params=$(IFS=,; echo "$workload_params" | tr ',' '\n' | sort | tr '\n' ',')
+    # Remove the last ','
+    sorted_params=${sorted_params%,}
+    # Join the workload name and sorted params with `;` and md5sum it (return only the hash)
+    echo "$workload_name;$sorted_params" | md5sum | cut -d' ' -f1
+}
