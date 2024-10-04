@@ -30,8 +30,10 @@ USER_TAGS="run-type:ingest,aws-user-id:$AWS_USERID"
 
 # If the snapshot already exists, skip ingestion (check response.total > 0),
 # unless FORCE_INGESTION is set
+echo "Checking if snapshot already exists..."
+register_snapshot_repo "$CLUSTER_HOST" "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$SNAPSHOT_S3_BUCKET"
 response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME")
-if [[ $(echo "$response" | jq -r '.total') -gt 0 ]] && [ -z "$FORCE_INGESTION" ]; then
+if [[ $(echo "$response" | jq -r '.snapshots | length') -gt 0 ]] && [ -z "$FORCE_INGESTION" ]; then
     echo "There's a snapshot already. Use /restore_snapshot.sh to restore it."
     echo "If you want to recreate the snapshot, set FORCE_INGESTION=true."
     exit 1

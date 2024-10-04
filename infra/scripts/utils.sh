@@ -108,3 +108,26 @@ snapshot_name() {
     # Join the workload name and sorted params with `;` and md5sum it (return only the hash)
     echo "$workload_name;$sorted_params" | md5sum | cut -d' ' -f1
 }
+
+register_snapshot_repo() {
+    local cluster_host=$1
+    local cluster_user=$2
+    local cluster_password=$3
+    local snapshot_s3_bucket=$4
+
+    # Register the S3 repository for snapshots (same for OS/ES)
+    echo "Registering snapshot repository..."
+    response=$(curl -s -ku $cluster_user:$cluster_password -X PUT "$cluster_host/_snapshot/$snapshot_s3_bucket?pretty" -H 'Content-Type: application/json' -d"
+{
+  \"type\": \"s3\",
+  \"settings\": {
+    \"bucket\": \"$snapshot_s3_bucket\"
+  }
+}
+")
+    echo "$response" | jq -e '.error' > /dev/null && {
+        echo "Error in response from Elasticsearch"
+        echo "$response"
+        exit 3
+    }
+}
