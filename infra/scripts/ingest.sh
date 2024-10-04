@@ -28,7 +28,7 @@ SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD" "$WORKLOAD_PARAMS")
 INGESTION_RESULTS=/mnt/ingestion_results
 USER_TAGS="run-type:ingest,aws-user-id:$AWS_USERID"
 
-echo $FORCE_INGESTION
+echo "FORCE INGESTION FLAG: $FORCE_INGESTION"
 
 # If the snapshot already exists, skip ingestion (check response.total > 0),
 # unless FORCE_INGESTION is set

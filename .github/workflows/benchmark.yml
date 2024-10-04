@@ -134,7 +134,7 @@ jobs:
        run: |
           ssh $SSH_OPTIONS \
             -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-            "set -x; bash -ixc \"echo Here:; echo $FORCE_INGESTION; FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /ingest.sh;\""
+            "set -x; bash -ixc \"echo Here:; echo $FORCE_INGESTION;EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /ingest.sh;\""
        env:
           FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
 
