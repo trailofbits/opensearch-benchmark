@@ -129,7 +129,7 @@ jobs:
      - name: Restore snapshot
        continue-on-error: true
        working-directory: infra
-       if: ${{ inputs.perform_benchmark }}
+       if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
        run: |
           ssh $SSH_OPTIONS \
             -t ubuntu@$(terraform output -raw load-generation-ip) -- \
