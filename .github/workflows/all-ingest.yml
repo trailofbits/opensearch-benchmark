@@ -62,6 +62,7 @@ jobs:
       s3_bucket_name: ${{ matrix.s3_bucket_name }}
       workload: ${{ matrix.workload }}
       workload_params: ${{ matrix.workload_params }}
+      perform_benchmark: false
       create_snapshot: true
       force_snapshot: ${{ inputs.force_snapshot }}
     secrets:
