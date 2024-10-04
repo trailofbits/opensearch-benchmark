@@ -128,7 +128,7 @@ jobs:
        run: |
           ssh $SSH_OPTIONS \
             -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-            "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /ingest.sh;\""
+            "echo $FORCE_INGESTION;"
        env:
           FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
 
@@ -141,16 +141,16 @@ jobs:
             -t ubuntu@$(terraform output -raw load-generation-ip) -- \
             "set -x; bash -ixc 'bash -x /restore_snapshot.sh;'"
      
-     - name: Run benchmark
-       continue-on-error: true
-       working-directory: infra
-       if: ${{ inputs.perform_benchmark }}
-       run: |
-          ssh $SSH_OPTIONS \
-            -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-            "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /benchmark.sh $BENCHMARK_TYPE;\""
-       env:
-          BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
+#    - name: Run benchmark
+#      continue-on-error: true
+#      working-directory: infra
+#      if: ${{ inputs.perform_benchmark }}
+#      run: |
+#         ssh $SSH_OPTIONS \
+#           -t ubuntu@$(terraform output -raw load-generation-ip) -- \
+#           "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /benchmark.sh $BENCHMARK_TYPE;\""
+#      env:
+#         BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
 
      - name: Destroy benchmark environment
        working-directory: infra
