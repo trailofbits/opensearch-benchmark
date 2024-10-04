@@ -32,8 +32,13 @@ register_snapshot_repo "$CLUSTER_HOST" "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$SNA
 # Restore the snapshot
 echo "Restoring snapshot..."
 curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$INDEX_NAME?pretty"
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
+response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$INDEX_NAME\"
-}"
+}")
+echo "$response" | jq -e '.error' > /dev/null && {
+  echo "Error in response from cluster"
+  echo "$response"
+  exit 3
+}
 echo "Snapshot restored"

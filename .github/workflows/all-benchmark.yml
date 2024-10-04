@@ -22,7 +22,7 @@ on:
         type: string
         default: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
       cluster_types:
-        description: 'Cluster types (comma separated)'
+        description: 'Cluster types (comma separated list, e.g. OpenSearch,ElasticSearch)'
         required: true
         type: string
         default: OpenSearch
@@ -68,6 +68,7 @@ jobs:
       workload_params: ${{ matrix.workload_params }}
       benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'dev' }} # TODO: switch to official once it's tested
       perform_benchmark: true
+      test_procedure: ${{ matrix.test_procedure }}
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
