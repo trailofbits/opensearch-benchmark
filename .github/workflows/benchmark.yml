@@ -44,6 +44,11 @@ on:
         required: false
         type: boolean
         default: false
+      test_procedure:
+        description: 'Test procedure'
+        required: false
+        type: string
+        default: ''
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -75,6 +80,7 @@ env:
   TF_VAR_prefix_list_id: pl-06f77c0b59dbf70fe
   TF_VAR_workload: ${{ inputs.workload}}
   TF_VAR_workload_params: ${{ inputs.workload_params }}
+  TF_VAR_test_procedure: ${{ inputs.test_procedure }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   SSH_OPTIONS: -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10
@@ -99,7 +105,7 @@ jobs:
      - name: Compute Terraform workspace name from workload/workload_params/cluster_type
        id: workspace
        run: |
-          echo "workspace_name=$(echo ${{ github.run_id }}-${{ inputs.workload }}-${{ inputs.workload_params }}-${{ inputs.cluster_type }} | md5sum | head -c 8)" >> $GITHUB_OUTPUT
+          echo "workspace_name=$(echo ${{ github.run_id }}-${{ inputs.workload }}-${{ inputs.workload_params }}-${{ inputs.cluster_type }}-${{ inputs.test_procedure }} | md5sum | head -c 8)" >> $GITHUB_OUTPUT
 
      - name: Switch Terraform workspace
        working-directory: infra
