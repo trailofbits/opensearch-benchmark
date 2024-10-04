@@ -95,6 +95,10 @@ jobs:
 
      - uses: hashicorp/setup-terraform@v3
 
+     - name: Switch branch
+       run: |
+         git checkout evan/fix-snapshot
+
      - name: Set up SSH keys
        run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -P ""
 
