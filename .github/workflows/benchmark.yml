@@ -29,6 +29,11 @@ on:
         required: false
         type: string
         default: dev
+      perform_benchmark:
+        description: 'Perform benchmark'
+        required: true
+        type: boolean
+        default: true
       create_snapshot:
         description: 'Ingest data / Create snapshot'
         required: false
@@ -121,12 +126,14 @@ jobs:
      - name: Restore snapshot
        continue-on-error: true
        working-directory: infra
+       if: ${{ inputs.perform_benchmark }}
        run: |
           ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/restore_snapshot.sh;'"
      
      - name: Run benchmark
        continue-on-error: true
        working-directory: infra
+       if: ${{ inputs.perform_benchmark }}
        run: |
           ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic \"EXTRA_CLIENT_OPTIONS=timeout:240 /benchmark.sh $BENCHMARK_TYPE;\""
        env:
