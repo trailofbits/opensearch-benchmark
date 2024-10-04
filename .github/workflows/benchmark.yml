@@ -77,6 +77,7 @@ env:
   TF_VAR_workload_params: ${{ inputs.workload_params }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  SSH_OPTIONS: -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10
 
 jobs:
   run-osb:
@@ -119,7 +120,9 @@ jobs:
        working-directory: infra
        if: ${{ inputs.create_snapshot }}
        run: |
-          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic \"EXTRA_CLIENT_OPTIONS=timeout:240 /ingest.sh;\""
+          ssh $SSH_OPTIONS \
+            -t ubuntu@$(terraform output -raw load-generation-ip) -- \
+            "set -x; bash -ic \"EXTRA_CLIENT_OPTIONS=timeout:240 /ingest.sh;\""
        env:
           FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
 
@@ -128,14 +131,18 @@ jobs:
        working-directory: infra
        if: ${{ inputs.perform_benchmark }}
        run: |
-          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/restore_snapshot.sh;'"
+          ssh $SSH_OPTIONS \
+            -t ubuntu@$(terraform output -raw load-generation-ip) -- \
+            "set -x; bash -ic '/restore_snapshot.sh;'"
      
      - name: Run benchmark
        continue-on-error: true
        working-directory: infra
        if: ${{ inputs.perform_benchmark }}
        run: |
-          ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic \"EXTRA_CLIENT_OPTIONS=timeout:240 /benchmark.sh $BENCHMARK_TYPE;\""
+          ssh $SSH_OPTIONS \
+            -t ubuntu@$(terraform output -raw load-generation-ip) -- \
+            "set -x; bash -ic \"EXTRA_CLIENT_OPTIONS=timeout:240 /benchmark.sh $BENCHMARK_TYPE;\""
        env:
           BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
 
