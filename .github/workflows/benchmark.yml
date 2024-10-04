@@ -34,6 +34,11 @@ on:
         required: false
         type: boolean
         default: false
+      force_snapshot:
+        description: 'Force snapshot creation (delete existing snapshot)'
+        required: false
+        type: boolean
+        default: false
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -110,6 +115,8 @@ jobs:
        if: ${{ inputs.create_snapshot }}
        run: |
           ssh -o StrictHostKeyChecking=no -t ubuntu@$(terraform output -raw load-generation-ip) -- "set -x; bash -ic '/ingest.sh;'"
+       env:
+          FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
 
      - name: Restore snapshot
        continue-on-error: true
