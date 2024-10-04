@@ -26,7 +26,7 @@ on:
         default: os-snapshots-osb
       benchmark_type:
         description: 'Benchmark type'
-        required: true
+        required: false
         type: string
         default: dev
       create_snapshot:
