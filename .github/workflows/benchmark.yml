@@ -95,12 +95,6 @@ jobs:
 
      - uses: hashicorp/setup-terraform@v3
 
-     - name: Switch branch
-       run: |
-         git checkout main
-         git fetch origin
-         git checkout evan/fix-snapshot
-
      - name: Set up SSH keys
        run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -P ""
 
@@ -134,7 +128,7 @@ jobs:
        run: |
           ssh $SSH_OPTIONS \
             -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-            "set -x; bash -ixc \"echo Here:; echo $FORCE_INGESTION;EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /ingest.sh;\""
+            "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /ingest.sh;\""
        env:
           FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
 

@@ -28,8 +28,6 @@ SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD" "$WORKLOAD_PARAMS")
 INGESTION_RESULTS=/mnt/ingestion_results
 USER_TAGS="run-type:ingest,aws-user-id:$AWS_USERID"
 
-echo "FORCE INGESTION FLAG: $FORCE_INGESTION"
-
 # If the snapshot already exists, skip ingestion (check response.total > 0),
 # unless FORCE_INGESTION is set
 echo "Checking if snapshot already exists..."
@@ -40,8 +38,6 @@ if [[ $(echo "$response" | jq -r '.snapshots | length') -gt 0 ]] && [ -z "$FORCE
     echo "If you want to recreate the snapshot, set FORCE_INGESTION=true."
     exit 1
 fi
-
-exit 1
 
 # Ingest data in the cluster
 opensearch-benchmark execute-test \
