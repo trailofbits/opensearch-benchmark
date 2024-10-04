@@ -121,3 +121,8 @@ variable "snapshot_version" {
     error_message = "Snapshot version must be: YYYY-mm-dd_HH-MM-ss"
   }
 }
+
+variable "host_id" {
+  description = "Cluster host ID"
+  type        = string
+}

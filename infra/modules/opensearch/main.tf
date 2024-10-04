@@ -15,6 +15,7 @@ resource "aws_instance" "target-cluster" {
   instance_type          = var.instance_type
   key_name               = var.ssh_key_name
   vpc_security_group_ids = var.security_groups
+  host_id                = var.host_id
 
   associate_public_ip_address = true
 
@@ -34,6 +35,8 @@ resource "aws_instance" "target-cluster" {
   private_dns_name_options {
     hostname_type = "resource-name"
   }
+
+  tenancy = "host"
 
   tags = var.tags
 }
