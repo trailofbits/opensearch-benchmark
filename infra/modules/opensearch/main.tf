@@ -97,6 +97,15 @@ resource "aws_instance" "load-generation" {
           }
         ))
       ),
+      benchmark_single_script = yamlencode(
+        base64gzip(templatefile("${path.module}/../../scripts/benchmark_single.sh",
+          {
+            workload        = var.workload
+            workload_params = var.workload_params,
+            test_procedure  = var.test_procedure,
+          }
+        ))
+      ),
       utils_script = yamlencode(
         base64gzip(file("${path.module}/../../scripts/utils.sh"))
       ),

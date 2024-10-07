@@ -56,8 +56,8 @@ resource "aws_instance" "load-generation" {
       load_script = yamlencode(base64gzip(templatefile(
         "${path.module}/../../scripts/load_generation.sh",
         {
-          workload = var.workload,
-          aws_userid   = replace(data.aws_caller_identity.current.arn, "/.+//", "")
+          workload   = var.workload,
+          aws_userid = replace(data.aws_caller_identity.current.arn, "/.+//", "")
         }
       ))),
       es_cluster            = aws_instance.target-cluster.public_dns
@@ -92,6 +92,15 @@ resource "aws_instance" "load-generation" {
       ),
       benchmark_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/benchmark.sh",
+          {
+            workload        = var.workload
+            workload_params = var.workload_params,
+            test_procedure  = var.test_procedure,
+          }
+        ))
+      ),
+      benchmark_single_script = yamlencode(
+        base64gzip(templatefile("${path.module}/../../scripts/benchmark_single.sh",
           {
             workload        = var.workload
             workload_params = var.workload_params,
