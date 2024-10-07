@@ -172,7 +172,7 @@ jobs:
           mkdir -p ~/.ssh
           cp ssh-key/id_rsa ssh-key.pub/id_rsa.pub ~/.ssh
           chmod 600 ~/.ssh/id_rsa
-          chmod 644 ~/.ssh/id
+          chmod 644 ~/.ssh/id_rsa.pub
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
