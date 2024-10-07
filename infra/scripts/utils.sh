@@ -114,6 +114,8 @@ register_snapshot_repo() {
     local cluster_user=$2
     local cluster_password=$3
     local snapshot_s3_bucket=$4
+    local cluster_type=$5
+    local workload=$6
 
     # Register the S3 repository for snapshots (same for OS/ES)
     echo "Registering snapshot repository..."
@@ -121,7 +123,8 @@ register_snapshot_repo() {
 {
   \"type\": \"s3\",
   \"settings\": {
-    \"bucket\": \"$snapshot_s3_bucket\"
+    \"bucket\": \"$snapshot_s3_bucket\",
+    \"base_path\": \"$cluster_type/$workload\",
   }
 }
 ")
