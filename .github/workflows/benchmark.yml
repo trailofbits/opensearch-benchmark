@@ -187,7 +187,6 @@ jobs:
         run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
 
       - name: Ingest data / Create snapshot
-        continue-on-error: true
         working-directory: infra
         run: |
             ssh $SSH_OPTIONS \
@@ -197,7 +196,6 @@ jobs:
             FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
 
       - name: Restore snapshot
-        continue-on-error: true
         working-directory: infra
         if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
         run: |
@@ -209,6 +207,7 @@ jobs:
   run-osb:
     needs: [prepare_workspace, ingest-data]
     runs-on: ubuntu-latest
+    if: ${{ inputs.perform_benchmark }}
     continue-on-error: true
     strategy:
       fail-fast: false
