@@ -90,9 +90,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
      - uses: actions/checkout@v4
-       with:
-        ref: main
-
      - uses: hashicorp/setup-terraform@v3
 
      - name: Set up SSH keys
