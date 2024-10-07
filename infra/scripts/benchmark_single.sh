@@ -2,8 +2,8 @@
 
 source /utils.sh
 
-if [ $# -ne 1 ]; then
-    echo "Usage: bash benchmark.sh <run-type>"
+if [ $# -ne 2 ]; then
+    echo "Usage: bash benchmark.sh <run-type> <run-id>"
     echo "  where <run-type> is 'official' or 'dev'"
     exit 1
 fi
