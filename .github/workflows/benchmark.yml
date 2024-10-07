@@ -155,7 +155,10 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
       - name: List files
-        run: ls -l
+        run: |
+          ls -lah && ls -lah infra
+          head -c10 ssh-key
+          head -c10 ssh-key.pub
 
       - name: Switch Terraform workspace
         working-directory: infra
