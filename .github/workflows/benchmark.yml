@@ -115,7 +115,7 @@ jobs:
         env:
             TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
       - name: List files
-        run: ls -lah && ls -lah infra
+        run: ls -lah && ls -lah infra && pwd
       - name: Upload SSH key artifact
         uses: actions/upload-artifact@v4
         with:
@@ -130,17 +130,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terraform-state
-          path: ${{ github.workspace }}/infra/terraform.tfstate
+          path: ./infra/terraform.tfstate
       - name: Upload terraform dir
         uses: actions/upload-artifact@v4
         with:
           name: terraform-dir
-          path: ${{ github.workspace }}/infra/.terraform
+          path: ./infra/.terraform
       - name: Upload terraform lock file
         uses: actions/upload-artifact@v4
         with:
           name: terraform-lock
-          path: ${{ github.workspace }}/infra/.terraform.lock.hcl
+          path: ./infra/.terraform.lock.hcl
 
   run-osb:
     needs: prepare_workspace
