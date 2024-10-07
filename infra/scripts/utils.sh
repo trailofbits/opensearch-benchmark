@@ -124,7 +124,7 @@ register_snapshot_repo() {
   \"type\": \"s3\",
   \"settings\": {
     \"bucket\": \"$snapshot_s3_bucket\",
-    \"base_path\": \"$cluster_type/$workload\",
+    \"base_path\": \"$cluster_type/$workload\"
   }
 }
 ")
