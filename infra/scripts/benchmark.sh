@@ -64,20 +64,16 @@ do
         else
             USER_TAGS+=",run-type:$RUN_TYPE"
         fi
-        opensearch-benchmark execute-test \
-                --pipeline=benchmark-only \
-                --workload=$WORKLOAD  \
-                --target-hosts="$CLUSTER_HOST" \
-                --workload-params="$WORKLOAD_PARAMS" \
-                --client-options="$CLIENT_OPTIONS" \
-                --kill-running-processes \
-                --include-tasks="type:search" \
-                --results-file="$RESULTS_FILE" \
-                --test-execution-id="$TEST_EXECUTION_ID" \
-                --test-procedure="$TEST_PROCEDURE" \
-                --distribution-version=$DISTRIBUTION_VERSION \
-                --user-tag="$USER_TAGS" \
-                --telemetry="node-stats"
+        benchmark_single \
+            "$WORKLOAD" \
+            "$CLUSTER_HOST" \
+            "$WORKLOAD_PARAMS" \
+            "$CLIENT_OPTIONS" \
+            "$RESULTS_FILE" \
+            "$TEST_EXECUTION_ID" \
+            "$TEST_PROCEDURE" \
+            "$DISTRIBUTION_VERSION" \
+            "$USER_TAGS"
 done
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"

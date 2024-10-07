@@ -131,3 +131,30 @@ register_snapshot_repo() {
         exit 3
     }
 }
+
+benchmark_single() {
+    workload=$1
+    cluster_host=$2
+    workload_params=$3
+    client_options=$4
+    results_file=$5
+    test_execution_id=$6
+    test_procedure=$7
+    distribution_version=$8
+    user_tags=$9
+
+    opensearch-benchmark execute-test \
+        --pipeline=benchmark-only \
+        --workload=$workload  \
+        --target-hosts="$cluster_host" \
+        --workload-params="$workload_params" \
+        --client-options="$client_options" \
+        --kill-running-processes \
+        --include-tasks="type:search" \
+        --results-file="$results_file" \
+        --test-execution-id="$test_execution_id" \
+        --test-procedure="$test_procedure" \
+        --distribution-version=$distribution_version \
+        --user-tag="$user_tags" \
+        --telemetry="node-stats"
+}
