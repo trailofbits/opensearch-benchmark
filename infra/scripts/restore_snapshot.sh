@@ -33,6 +33,7 @@ register_snapshot_repo \
   "$CLUSTER_PASSWORD" \
   "$SNAPSHOT_S3_BUCKET" \
   "$ENGINE_TYPE" \
+  "$CLUSTER_VERSION" \
   "$WORKLOAD"
 
 # Restore the snapshot

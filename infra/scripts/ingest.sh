@@ -37,6 +37,7 @@ register_snapshot_repo \
   "$CLUSTER_PASSWORD" \
   "$SNAPSHOT_S3_BUCKET" \
   "$ENGINE_TYPE" \
+  "$CLUSTER_VERSION" \
   "$WORKLOAD"
 
 response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME")
