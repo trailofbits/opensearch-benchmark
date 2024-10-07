@@ -57,6 +57,7 @@ jobs:
   run-benchmarks:
     needs: generate-matrix
     strategy:
+      fail-fast: false
       max-parallel: 3
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
 

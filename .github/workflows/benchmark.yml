@@ -88,11 +88,9 @@ env:
 jobs:
   run-osb:
     runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
      - uses: actions/checkout@v4
-       with:
-        ref: main
-
      - uses: hashicorp/setup-terraform@v3
 
      - name: Set up SSH keys
@@ -128,7 +126,7 @@ jobs:
        run: |
           ssh $SSH_OPTIONS \
             -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-            "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /ingest.sh;\""
+            "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /ingest.sh;\""
        env:
           FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
 
