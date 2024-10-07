@@ -152,26 +152,11 @@ jobs:
         working-directory: infra
         run: terraform init
       
-      - name: Restore SSH key artifact
+      - name: Download artifacts
         uses: actions/download-artifact@v4
-        with:
-          name: ssh-key
-      - name: Restore SSH pub key artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ssh-key.pub
-      - name: Restore Terraform state artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-state
-      - name: Restore terraform dir
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-dir
-      - name: Restore terraform lock file
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-lock
+      - name: List files
+        run: ls -l
+
       - name: Switch Terraform workspace
         working-directory: infra
         run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
