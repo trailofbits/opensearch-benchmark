@@ -188,6 +188,7 @@ jobs:
 
       - name: Ingest data / Create snapshot
         working-directory: infra
+        if: ${{ inputs.create_snapshot }}
         run: |
             ssh $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
@@ -207,7 +208,7 @@ jobs:
   run-osb:
     needs: [prepare_workspace, ingest-data]
     runs-on: ubuntu-latest
-    if: ${{ inputs.perform_benchmark }}
+    if: ${{ inputs.perform_benchmark && needs.ingest-data.outputs.success }}
     continue-on-error: true
     strategy:
       fail-fast: false
