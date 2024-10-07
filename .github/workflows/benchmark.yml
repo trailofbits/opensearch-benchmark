@@ -136,11 +136,13 @@ jobs:
         with:
           name: terraform-dir
           path: ${{ github.workspace }}/infra/.terraform/
+          include-hidden-files: true
       - name: Upload terraform lock file
         uses: actions/upload-artifact@v4
         with:
           name: terraform-lock
           path: ${{ github.workspace }}/infra/.terraform.lock.hcl
+          include-hidden-files: true
 
   run-osb:
     needs: prepare_workspace
@@ -159,8 +161,9 @@ jobs:
       - name: List files
         run: |
           ls -lah && ls -lah infra
-          head -c10 ssh-key
-          head -c10 ssh-key.pub
+          ls -lah ssh-key
+          ls -lah ssh-key.pub
+          ls -lah terraform-state
 
       - name: Switch Terraform workspace
         working-directory: infra
