@@ -88,6 +88,7 @@ env:
 jobs:
   run-osb:
     runs-on: ubuntu-latest
+    continue-on-error: false
     steps:
      - uses: actions/checkout@v4
      - uses: hashicorp/setup-terraform@v3
