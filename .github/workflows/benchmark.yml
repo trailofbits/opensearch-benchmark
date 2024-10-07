@@ -128,17 +128,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terraform-state
-          path: infra/terraform.tfstate
+          path: ${{ github.workspace }}/infra/terraform.tfstate
       - name: Upload terraform dir
         uses: actions/upload-artifact@v4
         with:
           name: terraform-dir
-          path: infra/.terraform
+          path: ${{ github.workspace }}/infra/.terraform
       - name: Upload terraform lock file
         uses: actions/upload-artifact@v4
         with:
           name: terraform-lock
-          path: infra/.terraform.lock.hcl
+          path: ${{ github.workspace }}/infra/.terraform.lock.hcl
 
   run-osb:
     needs: prepare_workspace
