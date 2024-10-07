@@ -164,6 +164,24 @@ jobs:
           ls -lah ssh-key
           ls -lah ssh-key.pub
           ls -lah terraform-state
+          ls -lah terraform-dir
+          ls -lah terraform-lock
+      
+      - name: Set up SSH keys
+        run: |
+          mkdir -p ~/.ssh
+          cp ssh-key/id_rsa ssh-key.pub/id_rsa.pub ~/.ssh
+          chmod 600 ~/.ssh/id_rsa
+          chmod 644 ~/.ssh/id
+      - name: Set up Terraform state
+        run: |
+          mkdir -p infra/terraform.tfstate.d
+          cp -rv terraform-state/* infra/terraform.tfstate.d/
+      - name: Set up Terraform files
+        run: |
+          mkdir -p infra/.terraform
+          cp -rv terraform-dir/* infra/.terraform/
+          cp terraform-lock/.terraform.lock.hcl infra/.terraform.lock.hcl
 
       - name: Switch Terraform workspace
         working-directory: infra
