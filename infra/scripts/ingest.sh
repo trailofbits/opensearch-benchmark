@@ -62,22 +62,6 @@ if [ -z "$SNAPSHOT_S3_BUCKET" ]; then
     exit 0
 fi
 
-# Register the S3 repository for snapshots (same for OS/ES)
-echo "Registering snapshot repository..."
-response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X PUT "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET?pretty" -H 'Content-Type: application/json' -d"
-{
-  \"type\": \"s3\",
-  \"settings\": {
-    \"bucket\": \"$SNAPSHOT_S3_BUCKET\"
-  }
-}
-")
-echo "$response" | jq -e '.error' > /dev/null && {
-  echo "Error in response from Elasticsearch"
-  echo "$response"
-  exit 3
-}
-
 # Delete the snapshot if it already exists
 echo "Deleting snapshot..."
 curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME"
