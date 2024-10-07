@@ -208,7 +208,7 @@ jobs:
   run-osb:
     needs: [prepare_workspace, ingest-data]
     runs-on: ubuntu-latest
-    if: ${{ inputs.perform_benchmark && needs.ingest-data.outputs.success }}
+    if: ${{ inputs.perform_benchmark && needs.ingest-data.result == 'success' }}
     continue-on-error: true
     strategy:
       fail-fast: false
