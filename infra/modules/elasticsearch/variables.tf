@@ -14,8 +14,8 @@ variable "es_version" {
   type        = string
   default     = "8.15.0"
   validation {
-    condition     = contains(["8.15.0", "8.15.1"], var.es_version)
-    error_message = "Supported ElasticSearch versions are: 8.15.0, 8.15.1"
+    condition     = contains(["8.15.0", "8.15.1", "8.8.1"], var.es_version)
+    error_message = "Supported ElasticSearch versions are: 8.15.0, 8.15.1, 8.8.1"
   }
 }
 
