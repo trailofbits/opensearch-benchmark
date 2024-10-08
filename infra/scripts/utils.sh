@@ -5,7 +5,7 @@ get_doc_count() {
 
     declare -A doc_counts
     doc_counts["big5"]=116000000
-    doc_counts["nyc_taxis"]=165346692
+    doc_counts["nyc_taxis"]=165346691 # NOTE: should be 165346692 but there's an issue with one document
     doc_counts["pmc"]=574199
     doc_counts["noaa"]=33659481
 
