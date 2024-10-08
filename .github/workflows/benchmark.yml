@@ -162,7 +162,7 @@ jobs:
       - name: Set up SSH keys
         run: |
           mkdir -p ~/.ssh
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }} /id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
           chmod 600 ~/.ssh/id_rsa
           chmod 644 ~/.ssh/id_rsa.pub
       - name: Set up Terraform state
@@ -222,7 +222,7 @@ jobs:
       - name: Set up SSH keys
         run: |
           mkdir -p ~/.ssh
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }} /id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
           chmod 600 ~/.ssh/id_rsa
           chmod 644 ~/.ssh/id_rsa.pub
       - name: Set up Terraform state
@@ -267,7 +267,7 @@ jobs:
       - name: Set up SSH keys
         run: |
           mkdir -p ~/.ssh
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }} /id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
           chmod 600 ~/.ssh/id_rsa
           chmod 644 ~/.ssh/id_rsa.pub
       - name: Set up Terraform state
