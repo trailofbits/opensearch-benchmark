@@ -27,6 +27,16 @@ on:
         required: false
         type: boolean
         default: false
+      es_version:
+        description: 'Elasticsearch version'
+        required: false
+        type: string
+        default: 8.15.0
+      os_version:
+        description: 'OpenSearch version'
+        required: false
+        type: string
+        default: 2.16.0
 
 env:
   WORKLOADS: ${{ inputs.workloads }}
@@ -66,6 +76,8 @@ jobs:
       perform_benchmark: false
       create_snapshot: true
       force_snapshot: ${{ inputs.force_snapshot }}
+      es_version: ${{ inputs.es_version }}
+      os_version: ${{ inputs.os_version }}
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}

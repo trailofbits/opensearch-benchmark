@@ -31,6 +31,16 @@ on:
         required: true
         type: string
         default: dev
+      es_version:
+        description: 'Elasticsearch version'
+        required: false
+        type: string
+        default: 8.15.0
+      os_version:
+        description: 'OpenSearch version'
+        required: false
+        type: string
+        default: 2.16.0
 
 env:
   WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis' }}
@@ -70,6 +80,8 @@ jobs:
       benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'dev' }} # TODO: switch to official once it's tested
       perform_benchmark: true
       test_procedure: ${{ matrix.test_procedure }}
+      es_version: ${{ inputs.es_version }}
+      os_version: ${{ inputs.os_version }}
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
