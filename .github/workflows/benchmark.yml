@@ -159,14 +159,6 @@ jobs:
         run: terraform init
       - name: Download artifacts
         uses: actions/download-artifact@v4
-      - name: List files
-        run: |
-          ls -lah && ls -lah infra
-          ls -lah ssh-key
-          ls -lah ssh-key.pub
-          ls -lah terraform-state
-          ls -lah terraform-dir
-          ls -lah terraform-lock
       - name: Set up SSH keys
         run: |
           mkdir -p ~/.ssh
