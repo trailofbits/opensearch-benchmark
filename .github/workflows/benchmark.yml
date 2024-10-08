@@ -209,6 +209,7 @@ jobs:
     needs: [prepare_workspace, ingest-data]
     runs-on: ubuntu-latest
     if: ${{ inputs.perform_benchmark && needs.ingest-data.result == 'success' }}
+    name: run-osb-${{matrix.run_group_id}}-${{matrix.run_id}}
     continue-on-error: true
     strategy:
       fail-fast: false
