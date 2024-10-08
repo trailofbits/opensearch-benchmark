@@ -27,7 +27,14 @@ fi
 
 # Register the S3 repository for snapshots
 echo "Registering snapshot repository..."
-register_snapshot_repo "$CLUSTER_HOST" "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$SNAPSHOT_S3_BUCKET"
+register_snapshot_repo \
+  "$CLUSTER_HOST" \
+  "$CLUSTER_USER" \
+  "$CLUSTER_PASSWORD" \
+  "$SNAPSHOT_S3_BUCKET" \
+  "$ENGINE_TYPE" \
+  "$CLUSTER_VERSION" \
+  "$WORKLOAD"
 
 # Restore the snapshot
 echo "Restoring snapshot..."

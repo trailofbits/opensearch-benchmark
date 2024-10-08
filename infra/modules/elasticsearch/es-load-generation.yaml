@@ -30,6 +30,11 @@ write_files:
     content: ${benchmark_script}
     owner: root:root
     permissions: '0755'
+  - path: /benchmark_single.sh
+    encoding: gz+b64
+    content: ${benchmark_single_script}
+    owner: root:root
+    permissions: '0755'
   - path: /ingest.sh
     encoding: gz+b64
     content: ${ingest_script}

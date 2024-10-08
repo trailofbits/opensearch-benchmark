@@ -2,13 +2,14 @@
 
 source /utils.sh
 
-if [ $# -ne 1 ]; then
-    echo "Usage: bash benchmark.sh <run-type>"
+if [ $# -ne 2 ]; then
+    echo "Usage: bash benchmark.sh <run-type> <run-id>"
     echo "  where <run-type> is 'official' or 'dev'"
     exit 1
 fi
 
 RUN_TYPE=$1
+RUN_ID=$2
 
 if [ "$RUN_TYPE" != "official" ] && [ "$RUN_TYPE" != "dev" ]; then
     echo "Error: <run-type> must be 'official' or 'dev'"
@@ -37,7 +38,7 @@ WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 TEST_PROCEDURE="$${TEST_PROCEDURE:-${test_procedure}}"
 
 CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
-RUN_GROUP_ID="$(date '+%Y_%m_%d_%H_%M_%S')"
+RUN_GROUP_ID="$${RUN_GROUP_ID:-$(date '+%Y_%m_%d_%H_%M_%S')}"
 AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 -s http://169.254.169.254/latest/meta-data/instance-id)"
 SHARD_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$WORKLOAD/_settings" | jq --raw-output ".$WORKLOAD.settings.index.number_of_shards")"
 REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$WORKLOAD/_settings" | jq --raw-output ".$WORKLOAD.settings.index.number_of_replicas")"
@@ -52,28 +53,25 @@ mkdir -p "$EXECUTION_DIR"
 
 # Queries only
 echo "Running Queries Only"
-for i in $(seq 0 4)
-do
-        check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
-        TEST_EXECUTION_ID="cluster-$RUN_GROUP_ID-$i"
-        RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
-        USER_TAGS="$GROUP_USER_TAGS,run:$i"
-        # tag first run as a warmup
-        if [[ $i -eq 0 ]]; then
-            USER_TAGS+=",run-type:warmup"
-        else
-            USER_TAGS+=",run-type:$RUN_TYPE"
-        fi
-        benchmark_single \
-            "$WORKLOAD" \
-            "$CLUSTER_HOST" \
-            "$WORKLOAD_PARAMS" \
-            "$CLIENT_OPTIONS" \
-            "$RESULTS_FILE" \
-            "$TEST_EXECUTION_ID" \
-            "$TEST_PROCEDURE" \
-            "$DISTRIBUTION_VERSION" \
-            "$USER_TAGS"
-done
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
+TEST_EXECUTION_ID="cluster-$RUN_GROUP_ID-$RUN_ID"
+RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
+USER_TAGS="$GROUP_USER_TAGS,run:$RUN_ID"
+# tag first run as a warmup
+if [[ $RUN_ID -eq 0 ]]; then
+    USER_TAGS+=",run-type:warmup"
+else
+    USER_TAGS+=",run-type:$RUN_TYPE"
+fi
+benchmark_single \
+    "$WORKLOAD" \
+    "$CLUSTER_HOST" \
+    "$WORKLOAD_PARAMS" \
+    "$CLIENT_OPTIONS" \
+    "$RESULTS_FILE" \
+    "$TEST_EXECUTION_ID" \
+    "$TEST_PROCEDURE" \
+    "$DISTRIBUTION_VERSION" \
+    "$USER_TAGS"
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"

@@ -114,6 +114,9 @@ register_snapshot_repo() {
     local cluster_user=$2
     local cluster_password=$3
     local snapshot_s3_bucket=$4
+    local cluster_type=$5
+    local cluster_version=$6
+    local workload=$7
 
     # Register the S3 repository for snapshots (same for OS/ES)
     echo "Registering snapshot repository..."
@@ -121,7 +124,8 @@ register_snapshot_repo() {
 {
   \"type\": \"s3\",
   \"settings\": {
-    \"bucket\": \"$snapshot_s3_bucket\"
+    \"bucket\": \"$snapshot_s3_bucket\",
+    \"base_path\": \"$cluster_type/$cluster_version/$workload\"
   }
 }
 ")
@@ -130,4 +134,31 @@ register_snapshot_repo() {
         echo "$response"
         exit 3
     }
+}
+
+benchmark_single() {
+    workload=$1
+    cluster_host=$2
+    workload_params=$3
+    client_options=$4
+    results_file=$5
+    test_execution_id=$6
+    test_procedure=$7
+    distribution_version=$8
+    user_tags=$9
+
+    opensearch-benchmark execute-test \
+        --pipeline=benchmark-only \
+        --workload=$workload  \
+        --target-hosts="$cluster_host" \
+        --workload-params="$workload_params" \
+        --client-options="$client_options" \
+        --kill-running-processes \
+        --include-tasks="type:search" \
+        --results-file="$results_file" \
+        --test-execution-id="$test_execution_id" \
+        --test-procedure="$test_procedure" \
+        --distribution-version=$distribution_version \
+        --user-tag="$user_tags" \
+        --telemetry="node-stats"
 }
