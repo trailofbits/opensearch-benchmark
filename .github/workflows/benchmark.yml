@@ -122,28 +122,28 @@ jobs:
       - name: Upload SSH key artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ssh-key
+          name: ssh-key-${{ steps.workspace.outputs.workspace_name }}
           path: ~/.ssh/id_rsa
       - name: Upload SSH pub key artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ssh-key.pub
+          name: ssh-key.pub-${{ steps.workspace.outputs.workspace_name }}
           path: ~/.ssh/id_rsa.pub
       - name: Upload Terraform state artifact
         uses: actions/upload-artifact@v4
         with:
-          name: terraform-state
+          name: terraform-state-${{ steps.workspace.outputs.workspace_name }}
           path: ${{ github.workspace }}/infra/terraform.tfstate.d/
       - name: Upload terraform dir
         uses: actions/upload-artifact@v4
         with:
-          name: terraform-dir
+          name: terraform-dir-${{ steps.workspace.outputs.workspace_name }}
           path: ${{ github.workspace }}/infra/.terraform/
           include-hidden-files: true
       - name: Upload terraform lock file
         uses: actions/upload-artifact@v4
         with:
-          name: terraform-lock
+          name: terraform-lock-${{ steps.workspace.outputs.workspace_name }}
           path: ${{ github.workspace }}/infra/.terraform.lock.hcl
           include-hidden-files: true
 
@@ -170,18 +170,18 @@ jobs:
       - name: Set up SSH keys
         run: |
           mkdir -p ~/.ssh
-          cp ssh-key/id_rsa ssh-key.pub/id_rsa.pub ~/.ssh
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }} /id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
           chmod 600 ~/.ssh/id_rsa
           chmod 644 ~/.ssh/id_rsa.pub
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
-          cp -rv terraform-state/* infra/terraform.tfstate.d/
+          cp -rv terraform-state-${{ needs.prepare_workspace.outputs.workspace_name }}/* infra/terraform.tfstate.d/
       - name: Set up Terraform files
         run: |
           mkdir -p infra/.terraform
-          cp -rv terraform-dir/* infra/.terraform/
-          cp terraform-lock/.terraform.lock.hcl infra/.terraform.lock.hcl
+          cp -rv terraform-dir-${{ needs.prepare_workspace.outputs.workspace_name }}/* infra/.terraform/
+          cp terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}/.terraform.lock.hcl infra/.terraform.lock.hcl
       - name: Switch Terraform workspace
         working-directory: infra
         run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
