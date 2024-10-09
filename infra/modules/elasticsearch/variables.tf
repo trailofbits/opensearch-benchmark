@@ -116,3 +116,8 @@ variable "workload" {
   type        = string
   default     = "big5"
 }
+
+variable "snapshot_version" {
+  description = "Version of the snapshot to restore"
+  type        = string
+}

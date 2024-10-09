@@ -13,6 +13,10 @@ SNAPSHOT_S3_BUCKET="${s3_bucket_name}"
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
+SNAPSHOT_VERSION="${snapshot_version}"
+
+# This comes from the user `terraform.tfvars` configuration file
+# shellcheck disable=SC2154
 WORKLOAD="$${WORKLOAD:-${workload}}"
 
 # Based on the workload, we can figure out the index name. It is mostly the same, but somtimes not.
@@ -38,7 +42,8 @@ register_snapshot_repo \
   "$SNAPSHOT_S3_BUCKET" \
   "$ENGINE_TYPE" \
   "$CLUSTER_VERSION" \
-  "$WORKLOAD"
+  "$WORKLOAD" \
+  "$SNAPSHOT_VERSION"
 
 response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME")
 if [[ $(echo "$response" | jq -r '.snapshots | length') -gt 0 ]] && [ -z "$FORCE_INGESTION" ]; then

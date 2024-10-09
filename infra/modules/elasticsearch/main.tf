@@ -75,18 +75,20 @@ resource "aws_instance" "load-generation" {
       ingest_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",
           {
-            workload        = var.workload
-            s3_bucket_name  = var.s3_bucket_name,
-            workload_params = var.workload_params,
+            workload         = var.workload
+            s3_bucket_name   = var.s3_bucket_name,
+            workload_params  = var.workload_params,
+            snapshot_version = var.snapshot_version,
           }
         ))
       ),
       restore_snapshot_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
           {
-            workload        = var.workload
-            s3_bucket_name  = var.s3_bucket_name,
-            workload_params = var.workload_params,
+            workload         = var.workload
+            s3_bucket_name   = var.s3_bucket_name,
+            workload_params  = var.workload_params,
+            snapshot_version = var.snapshot_version,
           }
         ))
       ),
