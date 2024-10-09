@@ -166,6 +166,11 @@ def do_t_test(group0_metrics: dict, group1_metrics: dict) -> list[list]:
         group1_mean = sum(group1_values)/len(group1_values)
         results.append([key, len(group0_values), group0_mean, group1_mean, statistic, pvalue, cohens_d])
     results.sort(key=lambda x: x[0])
+    p_vals_uncorrected = [result[5] for result in results]
+    significant_list, p_vals_corrected = pg.multicomp(p_vals_uncorrected)
+    for result, p_val_corrected, significant in zip(results, p_vals_corrected, significant_list):
+        result.append(float(p_val_corrected))
+        result.append(bool(significant))
     return results
 
 def do_run_group_t_test(run_group0, run_group1, host, username, password):
@@ -173,7 +178,7 @@ def do_run_group_t_test(run_group0, run_group1, host, username, password):
     run_group0_metrics = get_metrics_run_group(host, username, password, run_group0)
     run_group1_metrics = get_metrics_run_group(host, username, password, run_group1)
     t_test_results = do_t_test(run_group0_metrics, run_group1_metrics)
-    header = ["task", "count", "group0-mean", "group1-mean", "t-statistic", "p-value", "cohens-d"]
+    header = ["task", "count", "group0-mean", "group1-mean", "t-statistic", "p-value", "cohens-d", "p-val-corrected", "significant"]
     print(f"T-test Results for {run_group0} and {run_group1}")
     print(tabulate(t_test_results, headers=header, floatfmt=".4f"))
 
