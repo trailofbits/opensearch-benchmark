@@ -65,7 +65,7 @@ resource "aws_instance" "load-generation" {
       distribution_version  = var.distribution_version,
       es_version            = var.es_version,
       workload              = var.workload
-      big5_es_index_8_15    = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.15.json"))),
+      big5_es_index_8       = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.json"))),
       benchmark_environment = var.benchmark_environment
       datastore_host        = var.datastore_host
       datastore_username    = var.datastore_username
