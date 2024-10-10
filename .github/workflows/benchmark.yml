@@ -170,7 +170,6 @@ jobs:
   ingest-data:
     needs: prepare_workspace
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
