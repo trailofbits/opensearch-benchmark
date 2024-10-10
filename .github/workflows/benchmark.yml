@@ -106,6 +106,7 @@ jobs:
       now_run_group_id: ${{ steps.now.outputs.now_run_group_id }}
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y unzip
       - uses: hashicorp/setup-terraform@v3
       - name: Set up SSH keys
         run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -P ""
@@ -165,6 +166,7 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y unzip
       - uses: hashicorp/setup-terraform@v3
       - name: Terraform setup
         working-directory: infra
@@ -225,6 +227,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y unzip
       - uses: hashicorp/setup-terraform@v3
       - name: Terraform setup
         working-directory: infra
@@ -270,6 +273,7 @@ jobs:
     continue-on-error: false
     steps:
       - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y unzip
       - uses: hashicorp/setup-terraform@v3
       - name: Terraform setup
         working-directory: infra
