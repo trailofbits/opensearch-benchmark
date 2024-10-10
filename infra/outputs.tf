@@ -10,3 +10,7 @@ output "cluster-password" {
   value     = random_password.cluster-password.result
   sensitive = true
 }
+
+output "snapshot-version" {
+  value = data.external.latest_snapshot_version.result.latest_version
+}

@@ -116,3 +116,9 @@ variable "workload" {
   type        = string
   default     = "big5"
 }
+
+variable "snapshot_version" {
+  description = "Version of the snapshot to deploy (latest, new, or a specific version)"
+  type        = string
+  default     = "latest"
+}

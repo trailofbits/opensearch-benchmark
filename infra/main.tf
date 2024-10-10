@@ -9,6 +9,11 @@ terraform {
       source  = "hashicorp/random"
       version = "3.6.2"
     }
+
+    external = {
+      source  = "hashicorp/external"
+      version = "2.3.4"
+    }
   }
 }
 
@@ -138,6 +143,19 @@ resource "random_password" "cluster-password" {
   min_numeric = 1
 }
 
+data "external" "latest_snapshot_version" {
+  program = ["python3", "${path.module}/get_latest_snapshot_version.py"]
+  query = {
+    s3_bucket_name        = var.s3_bucket_name
+    aws_access_key_id     = var.snapshot_user_aws_access_key_id
+    aws_secret_access_key = var.snapshot_user_aws_secret_access_key
+    cluster_type          = var.target_cluster_type == "ElasticSearch" ? "ES" : "OS"
+    cluster_version       = var.target_cluster_type == "ElasticSearch" ? var.es_version : var.os_version
+    workload              = var.workload
+    snapshot_version      = var.snapshot_version
+  }
+}
+
 module "es-cluster" {
   count = var.target_cluster_type == "ElasticSearch" ? 1 : 0
 
@@ -159,6 +177,7 @@ module "es-cluster" {
   workload              = var.workload
 
   s3_bucket_name                      = var.s3_bucket_name
+  snapshot_version                    = data.external.latest_snapshot_version.result.latest_version
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
   snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key
   workload_params                     = var.workload_params
@@ -195,6 +214,7 @@ module "os-cluster" {
   workload              = var.workload
 
   s3_bucket_name                      = var.s3_bucket_name
+  snapshot_version                    = data.external.latest_snapshot_version.result.latest_version
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
   snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key
   workload_params                     = var.workload_params

@@ -65,7 +65,7 @@ resource "aws_instance" "load-generation" {
       distribution_version  = var.distribution_version,
       es_version            = var.es_version,
       workload              = var.workload
-      big5_es_index_8_15    = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.15.json"))),
+      big5_es_index_8       = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.json"))),
       benchmark_environment = var.benchmark_environment
       datastore_host        = var.datastore_host
       datastore_username    = var.datastore_username
@@ -75,18 +75,20 @@ resource "aws_instance" "load-generation" {
       ingest_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",
           {
-            workload        = var.workload
-            s3_bucket_name  = var.s3_bucket_name,
-            workload_params = var.workload_params,
+            workload         = var.workload
+            s3_bucket_name   = var.s3_bucket_name,
+            workload_params  = var.workload_params,
+            snapshot_version = var.snapshot_version,
           }
         ))
       ),
       restore_snapshot_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
           {
-            workload        = var.workload
-            s3_bucket_name  = var.s3_bucket_name,
-            workload_params = var.workload_params,
+            workload         = var.workload
+            s3_bucket_name   = var.s3_bucket_name,
+            workload_params  = var.workload_params,
+            snapshot_version = var.snapshot_version,
           }
         ))
       ),

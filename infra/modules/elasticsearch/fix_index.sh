@@ -19,9 +19,15 @@ CURRENT_ES_VERSION=$(curl -ku "$CLUSTER_USER:$CLUSTER_PASSWORD" "$CLUSTER_HOST" 
 CURRENT_ES_VERSION=$(echo "$CURRENT_ES_VERSION" | cut -d. -f1-2)
 # Check if there is a replacement index.json file for the current ES version
 if [ ! -f "$SCRIPT_DIR/es_indexes/$WORKLOAD/es_index_$CURRENT_ES_VERSION.json" ]; then
-    echo "No index.json file found for Workload $WORKLOAD ES version $CURRENT_ES_VERSION"
-    exit 0
+    # Get only the first number of the version (e.g. "7.10.2" -> "7")
+    CURRENT_ES_VERSION=$(echo "$CURRENT_ES_VERSION" | cut -d. -f1)
+    if [ ! -f "$SCRIPT_DIR/es_indexes/$WORKLOAD/es_index_$CURRENT_ES_VERSION.json" ]; then
+        echo "No index.json file found for Workload $WORKLOAD ES version $CURRENT_ES_VERSION"
+        exit 0
+    fi
 fi
+
+echo "Using index.json file for Workload $WORKLOAD ES version $CURRENT_ES_VERSION"
 
 cp "$SCRIPT_DIR/es_indexes/$WORKLOAD/es_index_$CURRENT_ES_VERSION.json" "$BENCHMARK_HOME/.benchmark/benchmarks/workloads/default/$WORKLOAD/index.json"
 echo "Fixing index.json for Workload $WORKLOAD ES version $CURRENT_ES_VERSION"
