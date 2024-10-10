@@ -99,7 +99,7 @@ env:
 
 jobs:
   prepare_workspace:
-    runs-on: [self-hosted, ubuntu-latest-micro]
+    runs-on: [self-hosted, ubuntu-latest-2x2]
     outputs:
       workspace_name: ${{ steps.workspace.outputs.workspace_name }}
       now: ${{ steps.now.outputs.now }}
@@ -161,7 +161,7 @@ jobs:
 
   ingest-data:
     needs: prepare_workspace
-    runs-on: [self-hosted, ubuntu-latest-micro]
+    runs-on: [self-hosted, ubuntu-latest-2x2]
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -211,7 +211,7 @@ jobs:
 
   run-osb:
     needs: [prepare_workspace, ingest-data]
-    runs-on: [self-hosted, ubuntu-latest-micro]
+    runs-on: [self-hosted, ubuntu-latest-2x2]
     if: ${{ inputs.perform_benchmark && needs.ingest-data.result == 'success' }}
     name: run-osb-${{matrix.run_group_id}}-${{matrix.run_id}}
     continue-on-error: true
@@ -265,7 +265,7 @@ jobs:
 
   destroy_workspace:
     needs: [prepare_workspace, run-osb, ingest-data]
-    runs-on: [self-hosted, ubuntu-latest-micro]
+    runs-on: [self-hosted, ubuntu-latest-2x2]
     if: ${{ always() }}
     continue-on-error: false
     steps:
