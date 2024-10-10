@@ -43,6 +43,8 @@ if input_map["snapshot_version"] == "latest":
         )
     )
     latest_version = next(sorted_versions, None)
+    if latest_version is None:
+        latest_version = new_snapshot_version()
 elif input_map["snapshot_version"] == "new":
     latest_version = new_snapshot_version()
 else:
