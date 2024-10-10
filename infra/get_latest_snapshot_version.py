@@ -16,54 +16,40 @@ def is_version_format(version: str) -> bool:
 input_map = json.loads(input())
 
 s3_prefix = f"{input_map['cluster_type']}/{input_map['cluster_version']}/{input_map['workload']}"
-if input_map["snapshot_version"] == "latest":
-    cmd = [
-        "aws",
-        "s3",
-        "ls",
-        f"s3://{input_map['s3_bucket_name']}/{s3_prefix}/",
+cmd = [
+    "aws",
+    "s3",
+    "ls",
+    f"s3://{input_map['s3_bucket_name']}/{s3_prefix}/",
+]
+try:
+    res = subprocess.check_output(cmd, universal_newlines=True).strip()
+    subdirs = [
+        x.split()[1] for x in res.splitlines() if x.strip() and len(x.split()) == 2
     ]
-    try:
-        res = subprocess.check_output(cmd, universal_newlines=True).strip()
-        subdirs = [
-            x.split()[1] for x in res.splitlines() if x.strip() and len(x.split()) == 2
-        ]
-        subdirs = [x[:-1] for x in subdirs if x.endswith("/")]
-        versions = [x for x in subdirs if is_version_format(x)]
-        sorted_versions = (
-            x
-            for x in sorted(
-                versions,
-                key=lambda x: datetime.strptime(x, "%Y-%m-%d_%H-%M-%S"),
-                reverse=True,
-            )
+    subdirs = [x[:-1] for x in subdirs if x.endswith("/")]
+except subprocess.CalledProcessError as e:
+    print(f"Error while calling aws s3 ls: {e}", file=sys.stderr)
+    sys.exit(1)
+
+if input_map["snapshot_version"] == "latest":
+    versions = [x for x in subdirs if is_version_format(x)]
+    sorted_versions = (
+        x
+        for x in sorted(
+            versions,
+            key=lambda x: datetime.strptime(x, "%Y-%m-%d_%H-%M-%S"),
+            reverse=True,
         )
-        latest_version = next(sorted_versions, None)
-    except subprocess.CalledProcessError as e:
-        print(f"Error while calling aws s3 ls: {e}", file=sys.stderr)
-        sys.exit(1)
+    )
+    latest_version = next(sorted_versions, None)
 elif input_map["snapshot_version"] == "new":
     latest_version = new_snapshot_version()
 else:
+    subdirs = [x for x in subdirs if x == input_map["snapshot_version"]]
     latest_version = input_map["snapshot_version"]
-    cmd = [
-        "aws",
-        "s3",
-        "ls",
-        f"s3://{input_map['s3_bucket_name']}/{s3_prefix}/{latest_version}",
-    ]
-    try:
-        res = subprocess.check_output(cmd, universal_newlines=True).strip()
-        subdirs = [
-            x.split()[1] for x in res.splitlines() if x.strip() and len(x.split()) == 2
-        ]
-        subdirs = [x[:-1] for x in subdirs if x.endswith("/")]
-        if len(subdirs) != 1:
-            print(f"Snapshot version {latest_version} not found", file=sys.stderr)
-            sys.exit(1)
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error while calling aws s3 ls: {e}", file=sys.stderr)
+    if len(subdirs) != 1:
+        print(f"Snapshot version {latest_version} not found", file=sys.stderr)
         sys.exit(1)
 
 output = {"latest_version": latest_version}
