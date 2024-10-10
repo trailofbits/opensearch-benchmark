@@ -45,7 +45,7 @@ env:
 
 jobs:
   generate-matrix:
-    runs-on: [self-hosted, ubuntu-latest-micro]
+    runs-on: [self-hosted, standard, ubuntu-latest-micro]
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
