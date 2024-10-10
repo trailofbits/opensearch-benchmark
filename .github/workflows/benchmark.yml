@@ -107,6 +107,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - uses: hashicorp/setup-terraform@v3
       - name: Set up SSH keys
         run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -P ""
@@ -167,6 +169,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - uses: hashicorp/setup-terraform@v3
       - name: Terraform setup
         working-directory: infra
@@ -228,6 +232,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - uses: hashicorp/setup-terraform@v3
       - name: Terraform setup
         working-directory: infra
@@ -274,6 +280,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       - uses: hashicorp/setup-terraform@v3
       - name: Terraform setup
         working-directory: infra
