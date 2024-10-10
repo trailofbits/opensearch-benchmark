@@ -152,6 +152,7 @@ data "external" "latest_snapshot_version" {
     cluster_type          = var.target_cluster_type == "ElasticSearch" ? "ES" : "OS"
     cluster_version       = var.target_cluster_type == "ElasticSearch" ? var.es_version : var.os_version
     workload              = var.workload
+    snapshot_version      = var.snapshot_version
   }
 }
 
@@ -176,7 +177,7 @@ module "es-cluster" {
   workload              = var.workload
 
   s3_bucket_name                      = var.s3_bucket_name
-  snapshot_version                    = var.snapshot_version == "latest" ? data.external.latest_snapshot_version.result.latest_version : var.snapshot_version
+  snapshot_version                    = data.external.latest_snapshot_version.result.latest_version
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
   snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key
   workload_params                     = var.workload_params
@@ -213,7 +214,7 @@ module "os-cluster" {
   workload              = var.workload
 
   s3_bucket_name                      = var.s3_bucket_name
-  snapshot_version                    = var.snapshot_version == "latest" ? data.external.latest_snapshot_version.result.latest_version : var.snapshot_version
+  snapshot_version                    = data.external.latest_snapshot_version.result.latest_version
   snapshot_user_aws_access_key_id     = var.snapshot_user_aws_access_key_id
   snapshot_user_aws_secret_access_key = var.snapshot_user_aws_secret_access_key
   workload_params                     = var.workload_params

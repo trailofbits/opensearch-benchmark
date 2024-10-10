@@ -12,5 +12,5 @@ output "cluster-password" {
 }
 
 output "snapshot-version" {
-  value = var.snapshot_version == "latest" ? data.external.latest_snapshot_version.result.latest_version : var.snapshot_version
+  value = data.external.latest_snapshot_version.result.latest_version
 }
