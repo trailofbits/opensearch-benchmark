@@ -3,8 +3,14 @@
 import sqlite3
 from typing import TypedDict, NotRequired
 
-class Meta(TypedDict):
-    distribution_version: NotRequired[str]
+Meta = TypedDict(
+    "Meta",
+    {
+        "distribution_version": NotRequired[str],
+        "tag_run-group": NotRequired[str],
+        "tag_engine-type": NotRequired[str]
+    },
+)
 
 Source = TypedDict(
     "Source",
@@ -41,7 +47,7 @@ class OSResponse(TypedDict):
 def _define_schema(db: sqlite3.Connection):
     db.executescript(
         """
-        CREATE TABLE IF NOT EXISTS runs(id, index_name, exec_time, environment, workload, distribution_version, PRIMARY KEY(id));
+        CREATE TABLE IF NOT EXISTS runs(id, index_name, exec_time, environment, workload, distribution_version, run_group, engine_type, PRIMARY KEY(id));
         CREATE TABLE IF NOT EXISTS tasks                    (run_id, task, timestamp, PRIMARY KEY(run_id, task));
         CREATE TABLE IF NOT EXISTS latency                  (id, run_id, task, sample_type, value, PRIMARY KEY(id));
         CREATE TABLE IF NOT EXISTS service_time             (id, run_id, task, sample_type, value, PRIMARY KEY(id));
@@ -57,12 +63,30 @@ def _get_hits(host: str, index: str, user: str, password: str):
 
     response: OSResponse = requests.get(
         url=f"https://{host}/{index}/_search",
-        params={"scroll": "1m"},
+        params={"scroll": "10m"},
         json={
-            "size": 1000,
+            "size": 5000,
             "query": {
-                "match_all": {},
-            },
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "meta.tag_run-type": "official"
+                            },
+                        },
+                        {
+                            "term": {
+                                "sample-type": "normal"
+                            }
+                        },
+                        {
+                            "exists": {
+                                "field": "task"
+                            }
+                        }
+                    ]
+                }
+            }
         },
         auth=(user, password),
         verify=False,
@@ -74,7 +98,7 @@ def _get_hits(host: str, index: str, user: str, password: str):
                 yield hit
             response = requests.get(
                 url=f"https://{host}/_search/scroll",
-                json={"scroll": "1m", "scroll_id": response["_scroll_id"]},
+                json={"scroll": "10m", "scroll_id": response["_scroll_id"]},
                 auth=(user, password),
                 verify=False,
             ).json()
@@ -90,19 +114,15 @@ def _get_hits(host: str, index: str, user: str, password: str):
 def _ingest_data(db: sqlite3.Connection, host: str, index: str, user: str, password: str):
     for hit in _get_hits(host, index, user, password):
         source = hit["_source"]
-        if "meta" not in source:
-            continue
-
-        if "task" not in source or "sample-type" not in source:
-            continue
+        meta = source["meta"]
 
         if "value" not in source or source["name"] not in ("latency", "service_time", "processing_time", "client_processing_time", "throughput"):
             continue
 
         db.execute(
             """
-            INSERT OR IGNORE INTO runs(id, index_name, exec_time, environment, workload, distribution_version)
-            VALUES(:exec_id, :index, :exec_time, :environment, :workload, :distribution_version)
+            INSERT OR IGNORE INTO runs(id, index_name, exec_time, environment, workload, distribution_version, run_group, engine_type)
+            VALUES(:exec_id, :index, :exec_time, :environment, :workload, :distribution_version, :run_group, :engine_type)
             """,
             {
                 "exec_id": source["test-execution-id"],
@@ -110,7 +130,9 @@ def _ingest_data(db: sqlite3.Connection, host: str, index: str, user: str, passw
                 "exec_time": source["test-execution-timestamp"],
                 "environment": source["environment"],
                 "workload": source["workload"],
-                "distribution_version": source["meta"].get("distribution_version", None)
+                "distribution_version": meta.get("distribution_version", None),
+                "run_group": meta.get("tag_run-group", None),
+                "engine_type": meta.get("tag_engine-type", None),
             },
         )
 
@@ -127,7 +149,7 @@ def _ingest_data(db: sqlite3.Connection, host: str, index: str, user: str, passw
 
         db.execute(
             f"""
-            INSERT INTO "{source["name"]}"(id, run_id, task, sample_type, value) VALUES(:id, :run_id, :task, :sample_type, :value)
+            INSERT OR IGNORE INTO "{source["name"]}"(id, run_id, task, sample_type, value) VALUES(:id, :run_id, :task, :sample_type, :value)
             """,
             {
                 "id": hit["_id"],
@@ -144,7 +166,7 @@ def _ingest_data(db: sqlite3.Connection, host: str, index: str, user: str, passw
 def _main():
     import os
     host = os.environ.get("DS_HOSTNAME", "opense-clust-aeqazh9qc4u7-dcbe5cce2775e15e.elb.us-east-1.amazonaws.com")
-    index = os.environ.get("INDEX_NAME", "benchmark-metrics-2024-09")
+    index = os.environ.get("INDEX_NAME", "benchmark-metrics*")
     user = os.environ["DS_USERNAME"]
     password = os.environ["DS_PASSWORD"]
     output_file = os.environ.get("OUTPUT_DB", "data.db")
