@@ -36,7 +36,7 @@ if "big5" in workloads:
     includes += [
         {
             "workload": "big5",
-            "workload_params": "max_num_segments:10,index_merge_policy:tiered," + workload_params
+            "workload_params": "max_num_segments:10," + workload_params
         }
     ]
 
