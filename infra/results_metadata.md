@@ -14,12 +14,15 @@ User tags are custom fields added to enrich the metadata. They are recorded in d
 | instance-type | AWS instance type of cluster and load generation machines |
 | aws-account-id | AWS account ID which deployed the infrastructure |
 | aws-loadgen-instance-id | AWS instance ID for the load generation machine |
+| aws-user-id | AWS IAM user that ran the benchmark |
 | cluster-version | Version of the cluster |
 | workload-distribution-version | Distribution version passed to OpenSearch-Benchmark and used to select the workload  |
 | shard-count | Number of primary shards in the cluster index |
 | replica-count | Number of replica shards for each primary shard  |
 | run | Zero-indexed number for a run in a run group |
 | run-type | Type of run. Options are `official`, `dev`, `ingest`, and `warmup` |
+| snapshot-s3-bucket | S3 bucket storing the snapshot |
+| snapshot-base-path | Snapshot base path in S3 bucket. Format: "cluster_type/cluster_version/workload/snapshot_version" |
 
 - Explanation of `run-type` options:
     - `official`: Runs that should be included in reports
