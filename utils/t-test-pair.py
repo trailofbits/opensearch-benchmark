@@ -150,6 +150,7 @@ def get_metrics_run_group_by_run(host: str, user: str, password: str, run_group_
         metrics[task][run_num].append(value)
     return metrics
 
+# currently unused
 def do_t_test(group0_metrics: dict, group1_metrics: dict) -> list[list]:
     """Do t-test for all tasks in the groups"""
     assert(group0_metrics.keys() == group1_metrics.keys())
@@ -173,14 +174,21 @@ def do_t_test(group0_metrics: dict, group1_metrics: dict) -> list[list]:
         result.append(bool(significant))
     return results
 
-def do_run_group_t_test(run_group0, run_group1, host, username, password):
+def do_run_groups_test(run_group0, run_group1, host, username, password):
     """Do t-test between pairs of run groups"""
     run_group0_metrics = get_metrics_run_group(host, username, password, run_group0)
     run_group1_metrics = get_metrics_run_group(host, username, password, run_group1)
-    t_test_results = do_t_test(run_group0_metrics, run_group1_metrics)
-    header = ["task", "count", "group0-mean", "group1-mean", "t-statistic", "p-value", "cohens-d", "p-val-corrected", "significant"]
+    run_group_metrics = defaultdict(lambda: defaultdict(list))
+    # combine metrics
+    for k,v in run_group0_metrics.items():
+        run_group_metrics[k][run_group0] = v
+    for k,v in run_group1_metrics.items():
+        run_group_metrics[k][run_group1] = v
+    t_test_results = do_anova_test(run_group_metrics)
+    print(f"1-Way ANOVA Between Run Groups: {run_group0}, {run_group1}" )
+    results_header = ["task", "count", "F", "p-val-uncorrected", "np2", "p-val-corrected", "significant"]
     print(f"T-test Results for {run_group0} and {run_group1}")
-    print(tabulate(t_test_results, headers=header, floatfmt=".4f"))
+    print(tabulate(t_test_results, headers=results_header, floatfmt=".4f"))
 
 def do_anova_test(run_group_metrics: dict):
     """Do anova test on run group runs"""
@@ -192,22 +200,24 @@ def do_anova_test(run_group_metrics: dict):
         f = float(anova['F'].iloc[0])
         p_val_uncorrected = float(anova['p-unc'].iloc[0])
         np2 = float(anova['np2'].iloc[0])
-        row = [key, f, p_val_uncorrected, np2]
+        counts = [len(value) for value in task_values.values()]
+        assert len(set(counts)) == 1 # make sure counts are the same
+        row = [key, counts[0], f, p_val_uncorrected, np2]
         results.append(row)
     results.sort(key=lambda x: x[0])
-    p_vals_uncorrected = [result[2] for result in results]
+    p_vals_uncorrected = [result[3] for result in results]
     significant_list, p_vals_corrected = pg.multicomp(p_vals_uncorrected)
     for result, p_val_corrected, significant in zip(results, p_vals_corrected, significant_list):
         result.append(float(p_val_corrected))
         result.append(bool(significant))
     return results
 
-def do_run_anova_test(run_group: str, host: str, username: str, password: str):
+def do_runs_test(run_group: str, host: str, username: str, password: str):
     """Do anova test for runs in a run group"""
     run_group_metrics = get_metrics_run_group_by_run(host, username, password, run_group)
     anova_results = do_anova_test(run_group_metrics)
     print(f"1-Way ANOVA Across Runs for: {run_group}" )
-    results_header = ["task", "F", "p-val-uncorrected", "np2", "p-val-corrected", "significant"]
+    results_header = ["task", "count", "F", "p-val-uncorrected", "np2", "p-val-corrected", "significant"]
     print(tabulate(anova_results, headers=results_header, floatfmt=".4f"))
 
 def main():
@@ -230,11 +240,11 @@ def main():
         exit(1)
     if len(run_groups) == 1:
         run_group = run_groups[0]
-        do_run_anova_test(run_group, host, username, password)
+        do_runs_test(run_group, host, username, password)
     elif len(run_groups) == 2:
         run_group0 = run_groups[0]
         run_group1 = run_groups[1]
-        do_run_group_t_test(run_group0, run_group1, host, username, password)
+        do_run_groups_test(run_group0, run_group1, host, username, password)
 
 if __name__ == "__main__":
     main()
