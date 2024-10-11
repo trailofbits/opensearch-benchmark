@@ -488,7 +488,3 @@ def main() -> int:
 
     print(f"Report URL: {report_url}")
     return 0
-
-
-if __name__ == "__main__":
-    main()
