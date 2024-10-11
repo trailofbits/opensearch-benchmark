@@ -29,8 +29,25 @@ try:
     ]
     subdirs = [x[:-1] for x in subdirs if x.endswith("/")]
 except subprocess.CalledProcessError as e:
-    print(f"Error while calling aws s3 ls: {e}", file=sys.stderr)
-    sys.exit(1)
+    ignore_error = False
+    if e.returncode == 1:
+        cmd = [
+            "aws",
+            "s3",
+            "ls",
+            f"s3://{input_map['s3_bucket_name']}/",
+        ]
+        try:
+            subprocess.check_output(cmd, universal_newlines=True)
+            ignore_error = True
+        except subprocess.CalledProcessError as e:
+            pass
+
+    if not ignore_error:
+        print(f"Error while calling aws s3 ls: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    input_map["snapshot_version"] = "new"
 
 if input_map["snapshot_version"] == "latest":
     versions = [x for x in subdirs if is_version_format(x)]
