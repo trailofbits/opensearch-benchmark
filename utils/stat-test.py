@@ -1,4 +1,4 @@
-"""Run t-test on pairs of run groups"""
+"""Statistically test for differences between runs or run groups"""
 import argparse
 import os
 import requests
