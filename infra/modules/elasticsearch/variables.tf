@@ -118,6 +118,10 @@ variable "workload" {
 }
 
 variable "snapshot_version" {
-  description = "Version of the snapshot to restore"
+  description = "Specific version of the snapshot to restore"
   type        = string
+  validation {
+    condition     = can(regex("^\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}$", var.snapshot_version))
+    error_message = "Snapshot version must be: YYYY-mm-dd_HH-MM-ss"
+  }
 }
