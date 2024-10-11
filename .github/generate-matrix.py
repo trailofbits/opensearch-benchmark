@@ -15,45 +15,45 @@ includes = []
 
 # OpenSearch requires a specific s3_bucket_name
 if "OpenSearch" in cluster_types:
-    includes += [
+    includes = [
         {
             "cluster_type": "OpenSearch",
             "s3_bucket_name": "os-snapshots-osb"
         }
-    ]
+    ] + includes
 
 # ElasticSearch requires a specific s3_bucket_name
 if "ElasticSearch" in cluster_types:
-    includes += [
+    includes = [
         {
             "cluster_type": "ElasticSearch",
             "s3_bucket_name": "es-snapshots-osb"
         }
-    ]
+    ] + includes
 
 # big5 requires extra workload params
 if "big5" in workloads:
-    includes += [
+    includes = [
         {
             "workload": "big5",
             "workload_params": "max_num_segments:10," + workload_params
         }
-    ]
+    ] + includes
 
 # noaa requires a specific test procedure
 if "noaa" in workloads:
-    includes += [
+    includes = [
         {
             "workload": "noaa",
             "test_procedure": "aggs",
         }
-    ]
+    ] + includes
 
-includes += [
+includes = [
     {
       "workload_params": workload_params
     }
-]
+] + includes
 
 output = {
   "cluster_type": cluster_types,
