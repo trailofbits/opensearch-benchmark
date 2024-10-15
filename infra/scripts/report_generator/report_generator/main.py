@@ -210,7 +210,7 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
         ],
     }
 
-    spreadsheet = (
+    spreadsheet: dict = (
         service.spreadsheets()
         .create(body=request_properties, fields="spreadsheetId")
         .execute()
@@ -701,6 +701,49 @@ def import_benchmark_scenario(
     return True
 
 
+# Hides the specified columns in the given sheet
+def hide_columns(
+    service: Resource, spreadsheet_id: str, sheet_name: str, column_list: list[str]
+):
+    spreadsheet_properties: dict = (
+        service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    )
+
+    sheet_id: Optional[int] = None
+    for sheet in spreadsheet_properties.get("sheets", ""):
+        if sheet["properties"]["title"] == sheet_name:
+            sheet_id = sheet["properties"]["sheetId"]
+            break
+
+    if sheet_id is None:
+        print(
+            f"Failed to locate the sheet named '{sheet_name}'. Failed to hide the columns"
+        )
+        return
+
+    request_list: list[dict] = []
+    for column in column_list:
+        request_list.append(
+            {
+                "updateDimensionProperties": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "dimension": "COLUMNS",
+                        "startIndex": ord(column) - ord("A"),
+                        "endIndex": ord(column) - ord("A") + 1,
+                    },
+                    "properties": {"hiddenByUser": True},
+                    "fields": "hiddenByUser",
+                }
+            }
+        )
+
+    body: dict = {"requests": request_list}
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id, body=body
+    ).execute()
+
+
 # Creates a new report based on the benchmark data located at the given path
 def create_report(creds: Credentials, benchmark_data: Path) -> Optional[str]:
     # Make sure we have data to process first
@@ -742,6 +785,7 @@ def create_report(creds: Credentials, benchmark_data: Path) -> Optional[str]:
         current_base_row_index += len(benchmark_scenario.operation_list) + 1
 
     adjust_sheet_columns(service, spreadsheet_id, "Results")
+    hide_columns(service, spreadsheet_id, "Results", ["C", "P"])
 
     return f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
 
