@@ -224,8 +224,11 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
         "values": [
             [
                 "Sheet Name",
-                "Clients",
+                "Run Group",
+                "Params",
+                "Procedure",
                 "Operation",
+                "Category",
                 "STDEV 50",
                 "STDEV 90",
                 "Average 50",
@@ -234,8 +237,11 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
                 "RSD 90",
                 "",
                 "Sheet Name",
-                "Clients",
+                "Run Group",
+                "Params",
+                "Procedure",
                 "Operation",
+                "Category",
                 "STDEV 50",
                 "STDEV 90",
                 "Average 50",
@@ -243,7 +249,8 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
                 "RSD 50",
                 "RSD 90",
                 "",
-                "Comparison OS/ES",
+                "Comparison\n|ES-OS| / AVG(ES,OS)",
+                "Comparison\nES/OS",
             ],
         ],
     }
@@ -255,7 +262,181 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
         body=request_properties,
     ).execute()
 
+    # Add the categories now so that we can query the row count when generating the
+    # VLOOKUP formula for the category column
+    add_categories_sheet(service, spreadsheet_id)
+    adjust_sheet_columns(service, spreadsheet_id, "Categories")
+
     return spreadsheet_id
+
+
+# Adds a 'categories' sheet
+def add_categories_sheet(service: Resource, spreadsheet_id: str):
+    request_properties: dict = {
+        "requests": [{"addSheet": {"properties": {"title": "Categories"}}}]
+    }
+
+    response: dict = (
+        service.spreadsheets()
+        .batchUpdate(spreadsheetId=spreadsheet_id, body=request_properties)
+        .execute()
+    )
+
+    spec_list: dict = [
+        {
+            "workload": "big5",
+            "categories": {
+                "Sorting": [
+                    "asc_sort_timestamp",
+                    "asc_sort_timestamp_can_match_shortcut",
+                    "asc_sort_timestamp_no_can_match_shortcut",
+                    "asc_sort_with_after_timestamp",
+                    "desc_sort_timestamp",
+                    "desc_sort_timestamp_can_match_shortcut",
+                    "desc_sort_timestamp_no_can_match_shortcut",
+                    "sort_keyword_can_match_shortcut",
+                    "desc_sort_with_after_timestamp",
+                    "sort_keyword_no_can_match_shortcut",
+                    "sort_numeric_asc",
+                    "sort_numeric_asc_with_match",
+                    "sort_numeric_desc",
+                    "sort_numeric_desc_with_match",
+                ],
+                "Team Aggregations": [
+                    "cardinality-agg-high",
+                    "cardinality-agg-low",
+                    "composite_terms-keyword",
+                    "composite-terms",
+                    "keyword-terms",
+                    "keyword-terms-low-cardinality",
+                    "multi_terms-keyword",
+                ],
+                "Date Histogram": [
+                    "composite-date_histogram-daily",
+                    "date_histogram_hourly_agg",
+                    "date_histogram_minute_agg",
+                    "range-auto-date-histo",
+                    "range-auto-date-histo-with-metrics",
+                ],
+                "General Operations": [
+                    "scroll",
+                    "default",
+                ],
+                "Text Querying": [
+                    "query-string-on-message",
+                    "query-string-on-message-filtered",
+                    "query-string-on-message-filtered-sorted-num",
+                    "term",
+                ],
+                "Range Queries": [
+                    "range",
+                    "keyword-in-range",
+                    "range_field_conjunction_big_range_big_term_query",
+                    "range_field_conjunction_small_range_big_term_query",
+                    "range_field_conjunction_small_range_small_term_query",
+                    "range_field_disjunction_big_range_small_term_query",
+                    "range-agg-1",
+                    "range-agg-2",
+                    "range-numeric",
+                ],
+            },
+        },
+        {
+            "workload": "noaa",
+            "categories": {
+                "Date Histogram": [
+                    "date-histo-entire-range",
+                    "date-histo-geohash-grid",
+                    "date-histo-geotile-grid",
+                    "date-histo-histo",
+                    "date-histo-numeric-terms",
+                    "date-histo-string-significant-terms-via-default-strategy",
+                    "date-histo-string-significant-terms-via-global-ords",
+                    "date-histo-string-significant-terms-via-map",
+                    "date-histo-string-terms-via-default-strategy",
+                    "date-histo-string-terms-via-global-ords",
+                    "date-histo-string-terms-via-map",
+                    "range-auto-date-histo",
+                    "range-auto-date-histo-with-metrics",
+                    "range-auto-date-histo-with-time-zone",
+                ],
+                "Team Aggregations": [
+                    "keyword-terms",
+                    "keyword-terms-low-cardinality",
+                    "keyword-terms-low-cardinality-min",
+                    "keyword-terms-min",
+                    "keyword-terms-numeric-terms",
+                    "numeric-terms-numeric-terms",
+                ],
+                "Range Queries": [
+                    "range-aggregation",
+                    "range-date-histo",
+                    "range-date-histo-with-metrics",
+                    "range-numeric-significant-terms",
+                ],
+            },
+        },
+        {
+            "workload": "nyc_taxis",
+            "categories": {
+                "Aggregation": [
+                    "distance_amount_agg",
+                    "date_histogram_agg",
+                    "autohisto_agg",
+                ],
+                "Other": [
+                    "range",
+                    "default",
+                ],
+                "Sorting": [
+                    "desc_sort_tip_amount",
+                    "asc_sort_tip_amount",
+                ],
+            },
+        },
+        {
+            "workload": "pmc",
+            "categories": {
+                "Other": [
+                    "default",
+                ],
+                "Text Querying": [
+                    "term",
+                    "phrase",
+                ],
+                "Aggregation": [
+                    "articles_monthly_agg_uncached",
+                    "articles_monthly_agg_uncached",
+                ],
+                "Other": [
+                    "scroll",
+                ],
+            },
+        },
+    ]
+
+    # Generate the rows in the spreadsheet
+    row_list: list[list[str]] = [["Workload", "Operation", "Category"]]
+
+    for spec in spec_list:
+        workload_name: str = spec["workload"]
+
+        for category_name in spec["categories"].keys():
+            for operation_name in spec["categories"][category_name]:
+                row_list.append([workload_name, operation_name, category_name])
+                print(f"{workload_name}, {operation_name}, {category_name}")
+
+    request_properties: dict = {
+        "majorDimension": "ROWS",
+        "values": row_list,
+    }
+
+    service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id,
+        range="Categories!A1",
+        valueInputOption="USER_ENTERED",
+        body=request_properties,
+    ).execute()
 
 
 # Adjusts the columns in the given sheet according to their contents
@@ -316,6 +497,21 @@ def import_benchmark_scenario(
             csv_reader = csv.reader(csv_file)
             row_list = list(csv_reader)
 
+        # Get the name of the workload
+        workload_column_index: Optional[int] = None
+
+        for header_column_index, header_column in enumerate(row_list[0]):
+            if header_column == "workload":
+                workload_column_index = header_column_index
+                break
+
+        if workload_column_index is None:
+            raise ValueError(
+                "Failed to extract the workload name from the benchmark data"
+            )
+
+        workload_name: str = row_list[1][workload_column_index]
+
         # Create a new sheet for this product
         sheet_name: str = f"{product_identifier}-{benchmark_scenario.name}"
         request_properties: dict = {
@@ -346,27 +542,64 @@ def import_benchmark_scenario(
             body=request_properties,
         ).execute()
 
+        # Determine what's the category range for this specific workload. Note that these indexes
+        # are 1-based
+        result: dict = (
+            service.spreadsheets()
+            .values()
+            .get(spreadsheetId=spreadsheet_id, range="Categories!A:A")
+            .execute()
+        )
+
+        category_range_start: Optional[int] = None
+        category_range_end: Optional[int] = None
+
+        category_sheet_row_list: list[list[str]] = result.get("values", [])
+        for row_index, category_sheet_row in enumerate(category_sheet_row_list):
+            if category_range_start is None:
+                if category_sheet_row[0] == workload_name:
+                    category_range_start = row_index + 1
+                else:
+                    continue
+
+            if category_range_end is None:
+                if category_sheet_row[0] != workload_name:
+                    category_range_end = row_index
+                    break
+
+            if category_range_start is not None and category_range_end is not None:
+                break
+
+        if category_range_start is None or category_range_end is None:
+            raise ValueError(
+                f"Failed to determine the category range for the following workload and sheet: {sheet_name}, {workload_name}"
+            )
+
         # Add the benchmark data to the Results sheet
         sheet_and_operation_rows: list[str] = []
         current_row: int = starting_row_index
 
         for operation in benchmark_scenario.operation_list:
-            row_list: list[str] = [
-                sheet_name,
-                "",
-                operation,
-            ]
-
             column1: str
             column2: str
+            operation_column: str
             if product_identifier == "os":
                 column1 = "A"
-                column2 = "C"
-            else:
-                column1 = "K"
-                column2 = "M"
+                column2 = "E"
+                operation_column = "E"
 
-            row_list = row_list + [
+            else:
+                column1 = "N"
+                column2 = "R"
+                operation_column = "R"
+
+            row_list: list[str] = [
+                sheet_name,
+                f'=INDIRECT({column1}{current_row}&"!H{current_row}")',
+                f'=CONCATENATE("index_merge_policy=", INDIRECT({column1}{current_row}&"!J{current_row}"), ", max_num_segments=", INDIRECT({column1}{current_row}&"!K{current_row}"), ", bulk_indexing_clients=", INDIRECT(A{column1}{current_row}&"!L{current_row}"), ", target_throughput=", INDIRECT({column1}{current_row}&"!M{current_row}"), ", number_of_replicas=", INDIRECT({column1}{current_row}&"!N{current_row}"))',
+                f'=INDIRECT({column1}{current_row}&"!I{current_row}")',
+                operation,
+                f"=VLOOKUP({operation_column}{current_row}, Categories!B${category_range_start}:C${category_range_end}, 2, FALSE)",
                 f'=STDEV.S(FILTER(INDIRECT({column1}{current_row}&"!F2:F"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
                 f'=STDEV.S(FILTER(INDIRECT({column1}{current_row}&"!G2:G"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
                 f'=AVERAGE(FILTER(INDIRECT({column1}{current_row}&"!F2:F"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
@@ -375,13 +608,13 @@ def import_benchmark_scenario(
 
             if product_identifier == "os":
                 row_list = row_list + [
-                    f"=D{current_row}/F{current_row}",
-                    f"=E{current_row}/G{current_row}",
+                    f"=G{current_row}/I{current_row}",
+                    f"=H{current_row}/J{current_row}",
                 ]
             else:
                 row_list = row_list + [
-                    f"=N{current_row}/P{current_row}",
-                    f"=O{current_row}/Q{current_row}",
+                    f"=T{current_row}/V{current_row}",
+                    f"=U{current_row}/W{current_row}",
                 ]
 
             sheet_and_operation_rows.append(row_list)
@@ -396,7 +629,7 @@ def import_benchmark_scenario(
         if product_identifier == "os":
             insert_range = f"Results!A{starting_row_index}"
         else:
-            insert_range = f"Results!K{starting_row_index}"
+            insert_range = f"Results!N{starting_row_index}"
 
         service.spreadsheets().values().update(
             spreadsheetId=spreadsheet_id,
@@ -404,6 +637,9 @@ def import_benchmark_scenario(
             valueInputOption="USER_ENTERED",
             body=request_properties,
         ).execute()
+
+    adjust_sheet_columns(service, spreadsheet_id, sheet_name)
+    return True
 
     # Add the comparison column
     comparison_rows: list[str] = []
@@ -470,6 +706,7 @@ def create_report(creds: Credentials, benchmark_data: Path) -> Optional[str]:
         current_base_row_index += len(benchmark_scenario.operation_list) + 1
 
     adjust_sheet_columns(service, spreadsheet_id, "Results")
+
     return f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
 
 
