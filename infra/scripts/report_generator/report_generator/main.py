@@ -632,7 +632,7 @@ def import_benchmark_scenario(
             row_list: list[str] = [
                 sheet_name,
                 f'=INDIRECT({column1}{current_row}&"!H{current_row}")',
-                f'=CONCATENATE("index_merge_policy=", INDIRECT({column1}{current_row}&"!J{current_row}"), ", max_num_segments=", INDIRECT({column1}{current_row}&"!K{current_row}"), ", bulk_indexing_clients=", INDIRECT(A{column1}{current_row}&"!L{current_row}"), ", target_throughput=", INDIRECT({column1}{current_row}&"!M{current_row}"), ", number_of_replicas=", INDIRECT({column1}{current_row}&"!N{current_row}"))',
+                f'=CONCATENATE("index_merge_policy=", INDIRECT({column1}{current_row}&"!J{current_row}"), ", max_num_segments=", INDIRECT({column1}{current_row}&"!K{current_row}"), ", bulk_indexing_clients=", INDIRECT({column1}{current_row}&"!L{current_row}"), ", target_throughput=", INDIRECT({column1}{current_row}&"!M{current_row}"), ", number_of_replicas=", INDIRECT({column1}{current_row}&"!N{current_row}"))',
                 f'=INDIRECT({column1}{current_row}&"!I{current_row}")',
                 operation,
                 f"=VLOOKUP({operation_column}{current_row}, Categories!B${category_range_start}:C${category_range_end}, 2, FALSE)",
@@ -675,14 +675,19 @@ def import_benchmark_scenario(
         ).execute()
 
     adjust_sheet_columns(service, spreadsheet_id, sheet_name)
-    return True
 
     # Add the comparison column
     comparison_rows: list[str] = []
     current_row = starting_row_index
 
     for operation in benchmark_scenario.operation_list:
-        comparison_rows.append([f"=(Q{current_row}-G{current_row})/Q{current_row}"])
+        comparison_rows.append(
+            [
+                f"=ABS(J{current_row}-V{current_row})*IF(J{current_row}>V{current_row},-1,1)/((J{current_row}+V{current_row})/2)",
+                f"=V{current_row}/J{current_row}",
+            ]
+        )
+
         current_row += 1
 
     request_properties: dict = {
@@ -692,7 +697,7 @@ def import_benchmark_scenario(
 
     service.spreadsheets().values().update(
         spreadsheetId=spreadsheet_id,
-        range=f"Results!U{starting_row_index}",
+        range=f"Results!AA{starting_row_index}",
         valueInputOption="USER_ENTERED",
         body=request_properties,
     ).execute()
