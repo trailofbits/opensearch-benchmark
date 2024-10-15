@@ -424,7 +424,6 @@ def add_categories_sheet(service: Resource, spreadsheet_id: str):
         for category_name in spec["categories"].keys():
             for operation_name in spec["categories"][category_name]:
                 row_list.append([workload_name, operation_name, category_name])
-                print(f"{workload_name}, {operation_name}, {category_name}")
 
     request_properties: dict = {
         "majorDimension": "ROWS",
@@ -512,7 +511,7 @@ def import_benchmark_scenario(
 
         workload_name: str = row_list[1][workload_column_index]
 
-        # Create a new sheet for this product
+        # Create a new sheet for this product+workload
         sheet_name: str = f"{product_identifier}-{benchmark_scenario.name}"
         request_properties: dict = {
             "requests": [{"addSheet": {"properties": {"title": sheet_name}}}]
@@ -524,15 +523,52 @@ def import_benchmark_scenario(
             .execute()
         )
 
-        # Import the data in the sheet we just created
+        # Load the benchmark data from file
         row_list: list[list[str]]
         with open(csv_path, "r") as csv_file:
             csv_reader = csv.reader(csv_file)
             row_list = list(csv_reader)
 
+        input_columns: dict[str, int] = {}
+        for index, header_column in enumerate(row_list[0]):
+            input_columns[header_column] = index
+
+        # When changing this, make sure to update the formulas
+        output_column_order: list[str] = [
+            "environment",
+            "user-tags\\.run",
+            "workload",
+            "operation",
+            "name",
+            "value\\.50_0",
+            "value\\.90_0",
+            "user-tags\\.run-group",
+            "test-procedure",
+            "workload\\.index_merge_policy",
+            "workload\\.max_num_segments",
+            "workload\\.bulk_indexing_clients",
+            "workload\\.target_throughput",
+            "workload\\.number_of_replicas",
+            "distribution-version",
+        ]
+
+        processed_row_list: list[list[str]] = [output_column_order]
+
+        for row_index, row in enumerate(row_list):
+            if row_index == 0:
+                continue
+
+            processed_row: list[str] = []
+            for column_name in output_column_order:
+                source_column_index: int = input_columns[column_name]
+                processed_row.append(row[source_column_index])
+
+            processed_row_list.append(processed_row)
+
+        # Import the data in the sheet we just created
         request_properties: dict = {
             "majorDimension": "ROWS",
-            "values": row_list,
+            "values": processed_row_list,
         }
 
         service.spreadsheets().values().update(
