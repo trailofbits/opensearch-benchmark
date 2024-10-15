@@ -198,15 +198,55 @@ def authenticate_from_token(token_file_path) -> Optional[Credentials]:
     return creds
 
 
-# Creates a new spreadsheet, made of only the results sheet and its basic columns
-def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
-    # Create a blank spreadsheet
+# Resizes the given spreadsheet
+def resize_sheet(
+    service: Resource, spreadsheet_id: str, sheet_name: str, width: int, height: int
+):
+    spreadsheet_properties: dict = (
+        service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    )
+
+    sheet_id: Optional[int] = None
+    for sheet in spreadsheet_properties.get("sheets", ""):
+        if sheet["properties"]["title"] == sheet_name:
+            sheet_id = sheet["properties"]["sheetId"]
+            break
+
+    if sheet_id is None:
+        print(f"Failed to locate the sheet named '{sheet_name}'. Formatting has failed")
+        return
+
+    body: dict = {
+        "requests": [
+            {
+                "updateSheetProperties": {
+                    "properties": {
+                        "sheetId": sheet_id,
+                        "gridProperties": {"rowCount": height, "columnCount": width},
+                    },
+                    "fields": "gridProperties(rowCount,columnCount)",
+                }
+            }
+        ]
+    }
+
+    response = (
+        service.spreadsheets()
+        .batchUpdate(spreadsheetId=spreadsheet_id, body=body)
+        .execute()
+    )
+
+
+# Creates a blank new spreadsheet
+def create_blank_spreadsheet(
+    service: Resource, title: str, sheet_name: str, width: int, height: int
+) -> Optional[str]:
     request_properties: dict = {
         "properties": {
             "title": title,
         },
         "sheets": [
-            {"properties": {"title": "Results"}},
+            {"properties": {"title": sheet_name}},
         ],
     }
 
@@ -217,8 +257,16 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
     )
 
     spreadsheet_id: str = spreadsheet.get("spreadsheetId")
+    resize_sheet(service, spreadsheet_id, sheet_name, width, height)
 
-    # Add the column titles
+    return spreadsheet_id
+
+
+# Creates a new spreadsheet, made of only the results sheet and its basic columns
+def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
+    # Create a new spreadsheet and add the initial columns
+    spreadsheet_id: str = create_blank_spreadsheet(service, title, "Results", 50, 100)
+
     request_properties: dict = {
         "majorDimension": "ROWS",
         "values": [
@@ -270,18 +318,22 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
     return spreadsheet_id
 
 
-# Adds a 'categories' sheet
-def add_categories_sheet(service: Resource, spreadsheet_id: str):
-    request_properties: dict = {
-        "requests": [{"addSheet": {"properties": {"title": "Categories"}}}]
-    }
+# Returns all the operation categories for the given workload
+def get_workload_operation_categories(workload: str) -> list[str]:
+    category_list: Optional[list[str]] = None
 
-    response: dict = (
-        service.spreadsheets()
-        .batchUpdate(spreadsheetId=spreadsheet_id, body=request_properties)
-        .execute()
-    )
+    spec_list: dict = get_category_operation_map()
+    for spec in spec_list:
+        if spec["workload"] == workload:
+            category_list = []
+            for category_name in spec["categories"].keys():
+                category_list.append(category_name)
 
+    return category_list
+
+
+# Returns the category/operation map
+def get_category_operation_map() -> dict:
     spec_list: dict = [
         {
             "workload": "big5",
@@ -415,7 +467,21 @@ def add_categories_sheet(service: Resource, spreadsheet_id: str):
         },
     ]
 
+    return spec_list
+
+
+# Adds a 'categories' sheet
+def add_categories_sheet(service: Resource, spreadsheet_id: str):
+    request_properties: dict = {
+        "requests": [{"addSheet": {"properties": {"title": "Categories"}}}]
+    }
+
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id, body=request_properties
+    ).execute()
+
     # Generate the rows in the spreadsheet
+    spec_list: dict = get_category_operation_map()
     row_list: list[list[str]] = [["Workload", "Operation", "Category"]]
 
     for spec in spec_list:
@@ -698,6 +764,44 @@ def import_benchmark_scenario(
     service.spreadsheets().values().update(
         spreadsheetId=spreadsheet_id,
         range=f"Results!AA{starting_row_index}",
+        valueInputOption="USER_ENTERED",
+        body=request_properties,
+    ).execute()
+
+    # Add the summary
+    operation_count: int = len(benchmark_scenario.operation_list)
+
+    row_list: list[list[str]] = []
+    row_list.append(
+        ["Summary", "", "", "Workload:", workload_name, "", f"=C{starting_row_index}"]
+    )
+    row_list.append(["Total Tasks", str(operation_count)])
+    row_list.append(
+        [
+            "Tasks faster than ES",
+            f'=COUNTIF(AA{starting_row_index}:AA{starting_row_index + operation_count},">0")',
+        ]
+    )
+    row_list.append(["Categories faster than ES", "Category", "Count", "Total"])
+
+    for category_name in get_workload_operation_categories(workload_name):
+        row_list.append(
+            [
+                "",
+                category_name,
+                f'=COUNTIFS(F${starting_row_index}:F${starting_row_index + operation_count}, "{category_name}", AA${starting_row_index}:AA${starting_row_index + operation_count}, ">0")',
+                f'=COUNTIF(F${starting_row_index}:F${starting_row_index + operation_count}, "{category_name}")',
+            ]
+        )
+
+    request_properties: dict = {
+        "majorDimension": "ROWS",
+        "values": row_list,
+    }
+
+    service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id,
+        range=f"Results!AD{starting_row_index}",
         valueInputOption="USER_ENTERED",
         body=request_properties,
     ).execute()
