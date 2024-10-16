@@ -3,6 +3,7 @@
 ## Create your own environment for benchmarking
 
 - Install `terraform`.
+- Install AWS CLI
 - In the AWS Console, go to "Security Credentials" and create a new "Access Key"
 - Set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 - Copy `terraform.tfvars.template` to `terraform.tfvars`.
