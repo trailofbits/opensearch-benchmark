@@ -99,13 +99,4 @@ echo "$response" | jq -e '.error' > /dev/null && {
 }
 echo "Snapshot done"
 
-# Restore the snapshot
-echo "Restoring snapshot..."
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$INDEX_NAME?pretty"
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
-{
-  \"indices\": \"$INDEX_NAME\"
-}"
-echo "Snapshot restored"
-
-check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
+/restore_snapshot.sh

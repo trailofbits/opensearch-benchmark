@@ -43,14 +43,33 @@ register_snapshot_repo \
 
 # Restore the snapshot
 echo "Restoring snapshot..."
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$INDEX_NAME?pretty"
-response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
+
+# Keep trying to restore the snapshot until it's successful (up to 5 times)
+retries=5
+while true; do
+  curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$INDEX_NAME?pretty"
+  response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
 {
   \"indices\": \"$INDEX_NAME\"
 }")
-echo "$response" | jq -e '.error' > /dev/null && {
-  echo "Error in response from cluster"
-  echo "$response"
-  exit 3
-}
-echo "Snapshot restored"
+  echo "$response" | jq -e '.error' > /dev/null && {
+    echo "Error in response from cluster"
+    echo "$response"
+    exit 3
+  }
+
+  # Check if the snapshot was restored successfully
+  if [[ $(echo "$response" | jq -r '._shards.skipped') == "0" && $(echo "$response" | jq -r '._shards.failed') == "0" ]]; then
+      break
+  fi
+  if [ $retries -eq 0 ]; then
+      echo "Snapshot restore failed"
+      exit 1
+  fi
+
+  echo "Snapshot restore failed. Retrying in 10 seconds..."
+  sleep 5
+  retries=$((retries - 1))
+done
+
+check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
