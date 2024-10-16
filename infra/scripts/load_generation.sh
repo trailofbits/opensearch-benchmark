@@ -10,6 +10,7 @@ DISTRIBUTION_VERSION=$4
 CLUSTER_VERSION=$5
 ENGINE_TYPE=$6
 INSTANCE_TYPE=$7
+CLUSTER_INSTANCE_ID=$8
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
@@ -36,6 +37,7 @@ echo "export INSTANCE_TYPE=$INSTANCE_TYPE" >> ~/.bashrc
 echo "export CLUSTER_VERSION=$CLUSTER_VERSION" >> ~/.bashrc
 echo "export CLUSTER_PASSWORD=$CLUSTER_PASSWORD" >> ~/.bashrc
 echo "export AWS_USERID=$AWS_USERID" >> ~/.bashrc
+echo "export CLUSTER_INSTANCE_ID=$CLUSTER_INSTANCE_ID" >> ~/.bashrc
 
 pip install opensearch-benchmark
 
