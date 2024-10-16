@@ -84,6 +84,8 @@ jobs:
       es_version: ${{ inputs.es_version }}
       os_version: ${{ inputs.os_version }}
       aws_region: ${{ inputs.aws_region || 'ca-central-1' }}
+      # assumes the only possible event is workflow_dispatch
+      ci_tag: "manual"
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}

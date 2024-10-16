@@ -60,7 +60,7 @@ runcmd:
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
   - [ mv, /id_rsa, /home/ubuntu/.ssh/id_rsa ]
   - [ chown, ubuntu:ubuntu, /home/ubuntu/.ssh/id_rsa ]
-  - [ sudo, -u, ubuntu, /load_generation.sh, ${es_cluster}, elastic, ${es_password}, ${distribution_version}, ${es_version}, "ES", ${instance_type}, ${cluster_instance_id}]
+  - [ sudo, -u, ubuntu, /load_generation.sh, ${es_cluster}, elastic, ${es_password}, ${distribution_version}, ${es_version}, "ES", ${instance_type}, ${cluster_instance_id}, ${ci_tag}]
   - [ sudo, -u, ubuntu, /fix_index.sh, https://${es_cluster}:9200, elastic, ${es_password} ]
   - [sed, -i, '/^env.name =/c\env.name = ${benchmark_environment}', /mnt/.benchmark/benchmark.ini]
   - [sed, -i, '/^datastore\./s/^/# /',  /mnt/.benchmark/benchmark.ini]
