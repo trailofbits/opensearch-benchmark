@@ -13,10 +13,6 @@ variable "es_version" {
   description = "Version of ElasticSearch to deploy"
   type        = string
   default     = "8.15.0"
-  validation {
-    condition     = contains(["8.8.1", "8.15.0", "8.15.1"], var.es_version)
-    error_message = "Supported ElasticSearch versions are: 8.8.1, 8.15.0, 8.15.1"
-  }
 }
 
 variable "distribution_version" {
