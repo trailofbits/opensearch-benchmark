@@ -44,6 +44,7 @@ REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD
 # assumes same machine for cluster
 GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,aws-user-id:$AWS_USERID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
 GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION,shard-count:$SHARD_COUNT,replica-count:$REPLICA_COUNT"
+GROUP_USER_TAGS+=",run-type:$RUN_TYPE"
 
 REPOSITORY_SET=$(curl -sku "$CLUSTER_USER:$CLUSTER_PASSWORD" -X GET "$CLUSTER_HOST/_cluster/state/metadata" | jq --raw-output '.metadata | has("repositories") and .repositories != null')
 if [ "$REPOSITORY_SET" == "true" ]; then
@@ -70,12 +71,6 @@ do
         TEST_EXECUTION_ID="cluster-$RUN_GROUP_ID-$i"
         RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
         USER_TAGS="$GROUP_USER_TAGS,run:$i"
-        # tag first run as a warmup
-        if [[ $i -eq 0 ]]; then
-            USER_TAGS+=",run-type:warmup"
-        else
-            USER_TAGS+=",run-type:$RUN_TYPE"
-        fi
         benchmark_single \
             "$WORKLOAD" \
             "$CLUSTER_HOST" \

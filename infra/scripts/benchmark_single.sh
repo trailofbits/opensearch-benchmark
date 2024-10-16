@@ -45,6 +45,7 @@ REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD
 # assumes same machine for cluster
 GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,aws-user-id:$AWS_USERID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
 GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION,shard-count:$SHARD_COUNT,replica-count:$REPLICA_COUNT"
+GROUP_USER_TAGS+=",run-type:$RUN_TYPE"
 
 set -x
 
@@ -57,12 +58,6 @@ check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$I
 TEST_EXECUTION_ID="cluster-$RUN_GROUP_ID-$RUN_ID"
 RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
 USER_TAGS="$GROUP_USER_TAGS,run:$RUN_ID"
-# tag first run as a warmup
-if [[ $RUN_ID -eq 0 ]]; then
-    USER_TAGS+=",run-type:warmup"
-else
-    USER_TAGS+=",run-type:$RUN_TYPE"
-fi
 benchmark_single \
     "$WORKLOAD" \
     "$CLUSTER_HOST" \

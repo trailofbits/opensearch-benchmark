@@ -20,15 +20,14 @@ User tags are custom fields added to enrich the metadata. They are recorded in d
 | shard-count | Number of primary shards in the cluster index |
 | replica-count | Number of replica shards for each primary shard  |
 | run | Zero-indexed number for a run in a run group |
-| run-type | Type of run. Options are `official`, `dev`, `ingest`, and `warmup` |
+| run-type | Type of run. Options are `official`, `dev`, and `ingest` |
 | snapshot-s3-bucket | S3 bucket storing the snapshot |
 | snapshot-base-path | Snapshot base path in S3 bucket. Format: "cluster_type/cluster_version/workload/snapshot_version" |
 
 - Explanation of `run-type` options:
-    - `official`: Runs that should be included in reports
+    - `official`: Runs that should be included in reports (includes warmup runs)
     - `dev`: Runs executed during development. Can be ignored
     - `ingest`: Data ingestion runs. Can be ignored
-    - `warmup`: Warm up runs. Can be ignored
 
 ## Built-in Fields
 Built-in fields are created by OpenSearch Benchmark, but may have user-controlled input. This section describes key built-in fields for metadata.
