@@ -1,3 +1,4 @@
+import _csv
 import argparse
 import csv
 import itertools
@@ -6,16 +7,14 @@ import logging
 import os
 from collections.abc import Collection, Mapping
 from datetime import datetime
+from io import TextIOWrapper
 from operator import attrgetter
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from opensearchpy import OpenSearch
 from opensearchpy.transport import Transport
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class BenchmarkResult:
@@ -51,6 +50,12 @@ class BenchmarkResult:
 
 
 class VerboseTransport(Transport):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        # Set up logging
+        logging.basicConfig(level=logging.INFO)
+        self.Logger = logging.getLogger(__name__)
+        super().__init__(*args, **kwargs)
+
     def perform_request(
         self,
         method: str,
@@ -62,17 +67,89 @@ class VerboseTransport(Transport):
         headers: Mapping[str, str] | None = None,
     ) -> Any:
         # Log the request details
-        logger.info(f"Request Method: {method}")
-        logger.info(f"Request URL: {url}")
-        logger.info(f"Request Headers: {headers}")
-        logger.info(f"Request Params: {params}")
+        self.Logger.info(f"Request Method: {method}")
+        self.Logger.info(f"Request URL: {url}")
+        self.Logger.info(f"Request Headers: {headers}")
+        self.Logger.info(f"Request Params: {params}")
         if body:
-            logger.info(f"Request Body: {json.dumps(body, indent=2)}")
+            self.Logger.info(f"Request Body: {json.dumps(body, indent=2)}")
 
-        logger.info(f"Hosts: {self.hosts}")
+        self.Logger.info(f"Hosts: {self.hosts}")
 
         # Perform the actual request
         return super().perform_request(method, url, params, body, timeout, ignore, headers)
+
+
+def handle_results_response(
+    response: Any,
+    debug_response: bool,
+    results: list[BenchmarkResult],
+    all_workload_params_names_set: set[str],
+) -> bool:
+    if response is None:
+        print(f"Failed to get results: { response }")
+        return False
+
+    hits = response.get("hits")
+
+    if hits is None:
+        print("Failed to find the top hits key")
+        return False
+
+    documents = hits.get("hits")
+
+    if documents is None:
+        print("Failed to get any documents")
+        return False
+
+    if debug_response:
+        print(f"Documents: {len(documents)}")
+        print(json.dumps(response))
+
+    for document in documents:
+
+        source = document["_source"]
+        engine_version = source["distribution-version"]
+        workload = source["workload"]
+        operation = source["operation"]
+        metric_name = source["name"]
+        metric_value = source["value"]
+        test_procedure = source["test_procedure"]
+        workload_params_dict = source["workload-params"]
+        p50 = metric_value["50_0"]
+        p90 = metric_value["90_0"]
+        user_tags = source["user-tags"]
+        run = user_tags["run"]
+        engine = user_tags["engine-type"]
+        run_group_str = user_tags["run-group"]
+        shard_count = user_tags["shard-count"]
+        replica_count = user_tags["replica-count"]
+
+        # Parse into a proper date for sorting purposes
+        run_group_date = datetime.strptime(run_group_str, "%Y_%m_%d_%H_%M_%S")
+
+        for workload_param in workload_params_dict:
+            all_workload_params_names_set.add(f"workload\\.{workload_param}")
+
+        results.append(
+            BenchmarkResult(
+                run_group_date,
+                engine,
+                engine_version,
+                run,
+                workload,
+                test_procedure,
+                workload_params_dict,
+                shard_count,
+                replica_count,
+                operation,
+                metric_name,
+                p50,
+                p90,
+            )
+        )
+
+    return True
 
 
 def main() -> int:
@@ -102,21 +179,24 @@ def main() -> int:
     )
     args_parser.add_argument(
         "--from",
-        help="Download results starting from this date (inclusive). Format is YYYY-MM-DD",
+        help="Download results starting from this date (inclusive). "
+        "Format is YYYY-MM-DD or YYYY-MM-DD hh:mm:ssZ",
         dest="from_arg",
         type=str,
         required=True,
     )
     args_parser.add_argument(
         "--to",
-        help="Download results up to this date (inclusive). Format is YYYY-MM-DD. Default is now",
+        help="Download results up to this date (inclusive). "
+        "Format is YYYY-MM-DD or YYYY-MM-DD hh:mm:ssZ. Default is now",
         dest="to_arg",
         type=str,
         default=None,
     )
     args_parser.add_argument(
         "--run-type",
-        help="Which benchmark data run type (normally dev or official) to download (default: %(default)s)",
+        help="Which benchmark data run type (normally dev or official) to download "
+        "(default: %(default)s)",
         type=str,
         default="official",
     )
@@ -148,37 +228,52 @@ def main() -> int:
         return 1
 
     try:
-        start_date = args.from_arg
-        datetime.strptime(start_date, "%Y-%m-%d")
+        start_date_str = args.from_arg
+        if "T" not in start_date_str:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").replace(
+                tzinfo=ZoneInfo("UTC")
+            )
+        else:
+            start_date = datetime.fromisoformat(start_date_str)
     except ValueError:
-        print("Wrong format for the 'from' parameter, please use a date in YYYY-MM-DD format")
+        print(
+            "Wrong format for the 'from' parameter, "
+            "please use a date in YYYY-MM-DD or YYYY-MM-DD hh:mm:ssZ format"
+        )
         return 1
 
     if args.to_arg is None:
-        end_date = "now"
+        end_date = datetime.now(tz=ZoneInfo("UTC"))
     else:
         try:
-            end_date = args.to_arg
-            datetime.strptime(end_date, "%Y-%m-%d")
+            end_date_str = args.to_arg
+            if "T" not in end_date_str:
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").replace(
+                    tzinfo=ZoneInfo("UTC")
+                )
+            else:
+                end_date = datetime.fromisoformat(end_date_str)
         except ValueError:
-            print("Wrong format for the 'to' parameter, please use a date in YYYY-MM-DD format")
+            print(
+                "Wrong format for the 'to' parameter, "
+                "please use a date in YYYY-MM-DD or YYYY-MM-DD hh:mm:ssZ format"
+            )
             return 1
 
     if start_date > end_date:
         print("Wrong date range. The date in --from needs to be the same or before the one in --to")
         return 1
 
-    query = {
-        "size": 10000,
+    query: dict[str, Any] = {
         "query": {
             "bool": {
                 "must": [
                     {
                         "range": {
                             "test-execution-timestamp": {
-                                "gte": start_date,
-                                "lte": end_date,
-                                "format": "strict_year_month_day",
+                                "gte": start_date.isoformat(timespec="seconds"),
+                                "lte": end_date.isoformat(timespec="seconds"),
+                                "format": "strict_date_time_no_millis",
                             }
                         }
                     },
@@ -210,186 +305,164 @@ def main() -> int:
         transport_class=transport_class,
     )
 
-    response = client.search(body=query, index="benchmark-results*")
+    all_workload_params_names_set: set[str] = set()
+    all_workload_params_names: list[str] = []
+    workload_params_name_to_pos: dict[str, int] = {}
+    results: list[BenchmarkResult] = []
 
-    if response is None:
-        print(f"Failed to get results: { response }")
-        return 1
-
-    hits = response.get("hits")
-
-    if hits is None:
-        print("Failed to find the top hits key")
-        return 1
-
-    documents = hits.get("hits")
-
-    if documents is None:
-        print("Failed to get any documents")
-        return 1
-
-    if args.debug_response:
-        print(f"Documents: {len(documents)}")
-
-    results: list = []
-
+    response = client.count(body=query)
     if args.debug_response:
         print(json.dumps(response))
 
-    if args.benchmark_data is not None:
-        all_workload_params_names_set = set()
-        all_workload_params_names = []
-        workload_params_name_to_pos = {}
+    documents_count = response["count"]
 
-        for document in documents:
-            source = document["_source"]
-            engine_version = source["distribution-version"]
-            workload = source["workload"]
-            operation = source["operation"]
-            metric_name = source["name"]
-            metric_value = source["value"]
-            test_procedure = source["test_procedure"]
-            workload_params_dict = source["workload-params"]
-            p50 = metric_value["50_0"]
-            p90 = metric_value["90_0"]
-            user_tags = source["user-tags"]
-            run = user_tags["run"]
-            engine = user_tags["engine-type"]
-            run_group_str = user_tags["run-group"]
-            shard_count = user_tags["shard-count"]
-            replica_count = user_tags["replica-count"]
+    print(f"Found {documents_count} documents to download")
 
-            # Parse into a proper date for sorting purposes
-            run_group_date = datetime.strptime(run_group_str, "%Y_%m_%d_%H_%M_%S")
+    if documents_count == 0:
+        return 0
 
-            for workload_param in workload_params_dict:
-                all_workload_params_names_set.add(f"workload\\.{workload_param}")
+    # Request batches of 10000 documents, which is the maximum
+    query.update({"size": 10000})
 
-            results.append(
-                BenchmarkResult(
-                    run_group_date,
-                    engine,
-                    engine_version,
-                    run,
-                    workload,
-                    test_procedure,
-                    workload_params_dict,
-                    shard_count,
-                    replica_count,
-                    operation,
-                    metric_name,
-                    p50,
-                    p90,
-                )
-            )
+    # If we have less than 10000 documents
+    if documents_count < 10000:
+        response = client.search(body=query, index="benchmark-results*")
+        if not handle_results_response(
+            response, args.debug_response, results, all_workload_params_names_set
+        ):
+            return 1
+    else:
+        response = client.search(body=query, scroll="1m", index="benchmark-results*")
+        if not handle_results_response(
+            response, args.debug_response, results, all_workload_params_names_set
+        ):
+            return 1
+        pagination_id = response["_scroll_id"]
 
-        all_workload_params_names = list(all_workload_params_names_set)
-
-        for index in range(len(all_workload_params_names)):
-            workload_params_name_to_pos[all_workload_params_names[index]] = index
-
-        fields_sort_priority = [
-            "RunGroup",
-            "Engine",
-            "EngineVersion",
-            "Workload",
-            "TestProcedure",
-            "WorkloadParams",
-            "Run",
-            "MetricName",
-        ]
-        sorted_benchmark_results: list[BenchmarkResult] = sorted(
-            results, key=attrgetter(*fields_sort_priority)
-        )
-
-        # These pre and post headers exists to support a dynamic number of columns
-        # of workload params which will be placed in between
-        headers_pre = [
-            "user-tags\\.run-group",
-            "user-tags\\.engine-type",
-            "distribution-version",
-            "workload",
-            "test-procedure",
-        ]
-
-        headers_post = [
-            "user-tags\\.shard-count",
-            "user-tags\\.replica-count",
-            "user-tags\\.run",
-            "operation",
-            "name",
-            "value\\.50_0",
-            "value\\.90_0",
-        ]
-
-        current_run_group = None
-        current_engine = None
-        current_engine_version = None
-        current_workload = None
-        current_test_procedure = None
-        csv_file = None
-        csv_writer = None
-
-        all_workload_params_len = len(all_workload_params_names)
-        for result in sorted_benchmark_results:
-            new_run_group = result.RunGroup
-            new_engine = result.Engine
-            new_engine_version = result.EngineVersion
-            new_workload = result.Workload
-            new_test_procedure = result.TestProcedure
-
-            # Every time any of these columns changes values, we open a new file.
-            # Given how we have previously sorted
-            if (
-                current_run_group != new_run_group
-                or current_engine != new_engine
-                or current_engine_version != new_engine_version
-                or current_workload != new_workload
-                or current_test_procedure != current_test_procedure
+        while len(response["hits"]["hits"]) > 0:
+            response = client.scroll(scroll_id=pagination_id, scroll="1m")
+            if not handle_results_response(
+                response, args.debug_response, results, all_workload_params_names_set
             ):
-                current_run_group = new_run_group
-                current_engine = new_engine
-                current_engine_version = new_engine_version
-                current_workload = new_workload
-                current_test_procedure = new_test_procedure
+                return 1
 
-                if csv_file is not None:
-                    csv_file.close()
-                csv_file_path = (
-                    benchmark_data_folder / f"{int(current_run_group.timestamp())}-{current_engine}"
-                    f"-{current_engine_version}-{current_workload}-{current_test_procedure}.csv"
-                )
-                csv_file = csv_file_path.open("w", newline="")
-                csv_writer = csv.writer(csv_file, delimiter=",", quotechar='"')
-                headers = itertools.chain(headers_pre, all_workload_params_names, headers_post)
-                csv_writer.writerow(headers)
+    results_count = len(results)
+    print(f"Received {results_count} results")
 
-            values_pre = [
-                result.RunGroup,
-                result.Engine,
-                result.EngineVersion,
-                result.Workload,
-                result.TestProcedure,
-            ]
-            values_post = [
-                result.ShardCount,
-                result.ReplicaCount,
-                result.Run,
-                result.Operation,
-                result.MetricName,
-                result.P50,
-                result.P90,
-            ]
+    all_workload_params_names = list(all_workload_params_names_set)
 
-            # Ensure the size is equal to the list of all workload params we encountered
-            workload_params_values = [""] * all_workload_params_len
+    for index in range(len(all_workload_params_names)):
+        workload_params_name_to_pos[all_workload_params_names[index]] = index
 
-            # Then match the workload param name to the correct column position
-            for key, value in result.WorkloadParams.items():
-                workload_params_values[workload_params_name_to_pos[f"workload\\.{key}"]] = value
+    fields_sort_priority = [
+        "RunGroup",
+        "Engine",
+        "EngineVersion",
+        "Workload",
+        "TestProcedure",
+        "WorkloadParams",
+        "Run",
+        "MetricName",
+    ]
+    sorted_benchmark_results: list[BenchmarkResult] = sorted(
+        results, key=attrgetter(*fields_sort_priority)
+    )
 
-            values = itertools.chain(values_pre, workload_params_values, values_post)
-            csv_writer.writerow(values)
+    # These pre and post headers exists to support a dynamic number of columns
+    # of workload params which will be placed in between
+    headers_pre = [
+        "user-tags\\.run-group",
+        "user-tags\\.engine-type",
+        "distribution-version",
+        "workload",
+        "test-procedure",
+    ]
+
+    headers_post = [
+        "user-tags\\.shard-count",
+        "user-tags\\.replica-count",
+        "user-tags\\.run",
+        "operation",
+        "name",
+        "value\\.50_0",
+        "value\\.90_0",
+    ]
+
+    current_run_group: datetime | None = None
+    current_engine: str | None = None
+    current_engine_version: str | None = None
+    current_workload: str | None = None
+    current_test_procedure: str | None = None
+    csv_file: TextIOWrapper | None = None
+    csv_writer: _csv._writer | None = None
+
+    all_workload_params_len = len(all_workload_params_names)
+    for result in sorted_benchmark_results:
+        new_run_group = result.RunGroup
+        new_engine = result.Engine
+        new_engine_version = result.EngineVersion
+        new_workload = result.Workload
+        new_test_procedure = result.TestProcedure
+
+        # Every time any of these columns changes values, we open a new file.
+        # This is given the sorting of fields in fields_sort_priority,
+        # which guarantees we should not find results from the same batch later.
+        if (
+            current_run_group != new_run_group
+            or current_engine != new_engine
+            or current_engine_version != new_engine_version
+            or current_workload != new_workload
+            or current_test_procedure != current_test_procedure
+        ):
+            current_run_group = new_run_group
+            current_engine = new_engine
+            current_engine_version = new_engine_version
+            current_workload = new_workload
+            current_test_procedure = new_test_procedure
+
+            if csv_file is not None:
+                csv_file.close()
+            csv_file_path = (
+                benchmark_data_folder
+                / f"{current_run_group.strftime("%Y-%m-%dT%H%M%SZ")}-{current_engine}"
+                f"-{current_engine_version}-{current_workload}-{current_test_procedure}.csv"
+            )
+            csv_file = csv_file_path.open("w", newline="")
+            csv_writer = csv.writer(csv_file, delimiter=",", quotechar='"')
+            headers = itertools.chain(headers_pre, all_workload_params_names, headers_post)
+            csv_writer.writerow(headers)
+
+        values_pre = [
+            result.RunGroup,
+            result.Engine,
+            result.EngineVersion,
+            result.Workload,
+            result.TestProcedure,
+        ]
+        values_post = [
+            result.ShardCount,
+            result.ReplicaCount,
+            result.Run,
+            result.Operation,
+            result.MetricName,
+            result.P50,
+            result.P90,
+        ]
+
+        # Ensure the size is equal to the list of all workload params we encountered
+        workload_params_values = [""] * all_workload_params_len
+
+        # Then match the workload param name to the correct column position
+        for key, value in result.WorkloadParams.items():
+            workload_params_values[workload_params_name_to_pos[f"workload\\.{key}"]] = value
+
+        values = itertools.chain(values_pre, workload_params_values, values_post)
+
+        assert csv_writer is not None
+        csv_writer.writerow(values)
+
+    if results_count > 0:
+        print(f"Written all results to {benchmark_data_folder}")
 
     return 0
 
