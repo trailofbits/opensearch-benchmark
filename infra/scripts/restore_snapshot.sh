@@ -72,4 +72,5 @@ while true; do
   retries=$((retries - 1))
 done
 
+echo "Snapshot restored"
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
