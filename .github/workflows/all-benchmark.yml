@@ -77,7 +77,7 @@ jobs:
       s3_bucket_name: ${{ matrix.s3_bucket_name }}
       workload: ${{ matrix.workload }}
       workload_params: ${{ matrix.workload_params }}
-      benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'dev' }} # TODO: switch to official once it's tested
+      benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'official' }}
       perform_benchmark: true
       test_procedure: ${{ matrix.test_procedure }}
       es_version: ${{ inputs.es_version || '8.15.0' }}
