@@ -44,7 +44,7 @@ REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD
 # assumes same machine for cluster
 GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,aws-user-id:$AWS_USERID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
 GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION,shard-count:$SHARD_COUNT,replica-count:$REPLICA_COUNT"
-GROUP_USER_TAGS+=",run-type:$RUN_TYPE"
+GROUP_USER_TAGS+=",run-type:$RUN_TYPE,aws-cluster-instance-id:$CLUSTER_INSTANCE_ID"
 
 REPOSITORY_SET=$(curl -sku "$CLUSTER_USER:$CLUSTER_PASSWORD" -X GET "$CLUSTER_HOST/_cluster/state/metadata" | jq --raw-output '.metadata | has("repositories") and .repositories != null')
 if [ "$REPOSITORY_SET" == "true" ]; then

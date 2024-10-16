@@ -71,6 +71,7 @@ resource "aws_instance" "load-generation" {
       datastore_username    = var.datastore_username
       datastore_password    = var.datastore_password
       instance_type         = var.instance_type
+      cluster_instance_id   = aws_instance.target-cluster.id
 
       ingest_script = yamlencode(
         base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",

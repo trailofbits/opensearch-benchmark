@@ -14,6 +14,7 @@ User tags are custom fields added to enrich the metadata. They are recorded in d
 | instance-type | AWS instance type of cluster and load generation machines |
 | aws-account-id | AWS account ID which deployed the infrastructure |
 | aws-loadgen-instance-id | AWS instance ID for the load generation machine |
+| aws-cluster-instance-id | AWS instance ID for the cluster machine |
 | aws-user-id | AWS IAM user that ran the benchmark |
 | cluster-version | Version of the cluster |
 | workload-distribution-version | Distribution version passed to OpenSearch-Benchmark and used to select the workload  |
