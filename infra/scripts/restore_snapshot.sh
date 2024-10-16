@@ -59,7 +59,7 @@ while true; do
   }
 
   # Check if the snapshot was restored successfully
-  if [[ $(echo "$response" | jq -r '._shards.skipped') == "0" && $(echo "$response" | jq -r '._shards.failed') == "0" ]]; then
+  if [[ $(echo "$response" | jq -r '.snapshot.shards.failed') == "0" ]]; then
       break
   fi
   if [ $retries -eq 0 ]; then
@@ -67,7 +67,7 @@ while true; do
       exit 1
   fi
 
-  echo "Snapshot restore failed. Retrying in 10 seconds..."
+  echo "Snapshot restore failed. Retrying in 5 seconds..."
   sleep 5
   retries=$((retries - 1))
 done
