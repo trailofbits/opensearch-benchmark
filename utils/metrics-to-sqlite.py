@@ -8,7 +8,8 @@ Meta = TypedDict(
     {
         "distribution_version": NotRequired[str],
         "tag_run-group": NotRequired[str],
-        "tag_engine-type": NotRequired[str]
+        "tag_engine-type": NotRequired[str],
+        "tag_run-type": NotRequired[str],
     },
 )
 
@@ -47,7 +48,7 @@ class OSResponse(TypedDict):
 def _define_schema(db: sqlite3.Connection):
     db.executescript(
         """
-        CREATE TABLE IF NOT EXISTS runs(id, index_name, exec_time, environment, workload, distribution_version, run_group, engine_type, PRIMARY KEY(id));
+        CREATE TABLE IF NOT EXISTS runs(id, index_name, exec_time, environment, workload, distribution_version, run_group, engine_type, run_type, PRIMARY KEY(id));
         CREATE TABLE IF NOT EXISTS tasks                    (run_id, task, timestamp, PRIMARY KEY(run_id, task));
         CREATE TABLE IF NOT EXISTS latency                  (id, run_id, task, sample_type, value, PRIMARY KEY(id));
         CREATE TABLE IF NOT EXISTS service_time             (id, run_id, task, sample_type, value, PRIMARY KEY(id));
@@ -58,6 +59,7 @@ def _define_schema(db: sqlite3.Connection):
     )
     db.commit()
 
+
 def _get_hits(host: str, index: str, user: str, password: str):
     import requests
 
@@ -65,28 +67,38 @@ def _get_hits(host: str, index: str, user: str, password: str):
         url=f"https://{host}/{index}/_search",
         params={"scroll": "10m"},
         json={
-            "size": 5000,
+            "size": 10000,
             "query": {
                 "bool": {
                     "must": [
                         {
-                            "term": {
-                                "meta.tag_run-type": "official"
+                            "terms": {
+                                "meta.tag_run-type": [
+                                    "official",
+                                    "dev",
+                                ],
+                                "name": [
+                                    "latency",
+                                    "service_time",
+                                    "processing_time",
+                                    "client_processing_time",
+                                    "throughput",
+                                ],
                             },
                         },
                         {
                             "term": {
-                                "sample-type": "normal"
-                            }
+                                "sample-type": "normal",
+                            },
                         },
                         {
                             "exists": {
-                                "field": "task"
-                            }
-                        }
+                                "field": "task",
+                            },
+                        },
                     ]
                 }
-            }
+            },
         },
         auth=(user, password),
         verify=False,
@@ -111,18 +123,21 @@ def _get_hits(host: str, index: str, user: str, password: str):
             verify=False,
         ).json()
 
-def _ingest_data(db: sqlite3.Connection, host: str, index: str, user: str, password: str):
+
+def _ingest_data(
+    db: sqlite3.Connection, host: str, index: str, user: str, password: str
+):
     for hit in _get_hits(host, index, user, password):
         source = hit["_source"]
         meta = source["meta"]
 
-        if "value" not in source or source["name"] not in ("latency", "service_time", "processing_time", "client_processing_time", "throughput"):
+        if "value" not in source:
             continue
 
         db.execute(
             """
-            INSERT OR IGNORE INTO runs(id, index_name, exec_time, environment, workload, distribution_version, run_group, engine_type)
-            VALUES(:exec_id, :index, :exec_time, :environment, :workload, :distribution_version, :run_group, :engine_type)
+            INSERT OR IGNORE INTO runs(id, index_name, exec_time, environment, workload, distribution_version, run_group, engine_type, run_type)
+            VALUES(:exec_id, :index, :exec_time, :environment, :workload, :distribution_version, :run_group, :engine_type, :run_type)
             """,
             {
                 "exec_id": source["test-execution-id"],
@@ -133,6 +148,7 @@ def _ingest_data(db: sqlite3.Connection, host: str, index: str, user: str, passw
                 "distribution_version": meta.get("distribution_version", None),
                 "run_group": meta.get("tag_run-group", None),
                 "engine_type": meta.get("tag_engine-type", None),
+                "run_type": meta.get("tag_run-type", None),
             },
         )
 
@@ -144,7 +160,7 @@ def _ingest_data(db: sqlite3.Connection, host: str, index: str, user: str, passw
                 "run_id": source["test-execution-id"],
                 "task": source["task"],
                 "timestamp": source["@timestamp"],
-            }
+            },
         )
 
         db.execute(
@@ -157,7 +173,7 @@ def _ingest_data(db: sqlite3.Connection, host: str, index: str, user: str, passw
                 "task": source["task"],
                 "value": source["value"],
                 "sample_type": source["sample-type"],
-            }
+            },
         )
 
         db.commit()
@@ -165,11 +181,19 @@ def _ingest_data(db: sqlite3.Connection, host: str, index: str, user: str, passw
 
 def _main():
     import os
-    host = os.environ.get("DS_HOSTNAME", "opense-clust-aeqazh9qc4u7-dcbe5cce2775e15e.elb.us-east-1.amazonaws.com")
+    from datetime import datetime
+
+    now = datetime.now()
+    host = os.environ.get(
+        "DS_HOSTNAME",
+        "opense-clust-aeqazh9qc4u7-dcbe5cce2775e15e.elb.us-east-1.amazonaws.com",
+    )
     index = os.environ.get("INDEX_NAME", "benchmark-metrics*")
     user = os.environ["DS_USERNAME"]
     password = os.environ["DS_PASSWORD"]
-    output_file = os.environ.get("OUTPUT_DB", "data.db")
+    output_file = os.environ.get(
+        "OUTPUT_DB", now.strftime("amz_benchmark_data_%Y%m%d.sqlite")
+    )
     with sqlite3.connect(output_file) as db:
         _define_schema(db)
         _ingest_data(db, host, index, user, password)
