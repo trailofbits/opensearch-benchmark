@@ -25,7 +25,7 @@ fi
 # shellcheck disable=SC2154
 WORKLOAD="$${WORKLOAD:-${workload}}"
 
-# Based on the workload, we can figure out the index name. It is mostly the same, but somtimes not.
+# Based on the workload, we can figure out the index name. It is mostly the same, but sometimes not.
 INDEX_NAME=$(workload_index_name $WORKLOAD)
 
 # This comes from the user `terraform.tfvars` configuration file
@@ -40,8 +40,20 @@ TEST_PROCEDURE="$${TEST_PROCEDURE:-${test_procedure}}"
 CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
 RUN_GROUP_ID="$${RUN_GROUP_ID:-$(date '+%Y_%m_%d_%H_%M_%S')}"
 AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 -s http://169.254.169.254/latest/meta-data/instance-id)"
-SHARD_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$WORKLOAD/_settings" | jq --raw-output ".$WORKLOAD.settings.index.number_of_shards")"
-REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$WORKLOAD/_settings" | jq --raw-output ".$WORKLOAD.settings.index.number_of_replicas")"
+
+SHARD_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$INDEX_NAME/_settings" | jq --raw-output ".\"$INDEX_NAME\".settings.index.number_of_shards")"
+REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$INDEX_NAME/_settings" | jq --raw-output ".\"$INDEX_NAME\".settings.index.number_of_replicas")"
+
+if [ -z "$SHARD_COUNT" ] || [ "$SHARD_COUNT" == "null" ]; then
+    echo "Failed to retrieve the shard count"
+    exit 1
+fi
+
+if [ -z "$REPLICA_COUNT" ] || [ "$REPLICA_COUNT" == "null" ]; then
+    echo "Failed to retrieve the replica count"
+    exit 1
+fi
+
 # assumes same machine for cluster
 GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,aws-user-id:$AWS_USERID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
 GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION,shard-count:$SHARD_COUNT,replica-count:$REPLICA_COUNT"
