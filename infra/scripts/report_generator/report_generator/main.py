@@ -61,6 +61,18 @@ def get_program_arguments() -> Namespace:
     )
 
     parser.add_argument(
+        "--os-version",
+        help="The OS version",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--es-version",
+        help="The ES version",
+        required=True,
+    )
+
+    parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
 
@@ -82,14 +94,39 @@ class BenchmarkScenario:
     # is skipped
     operation_list: list[str]
 
+    # OS data path
+    os_file_path: Path
+
+    # ES data path
+    es_file_path: Path
+
 
 # Enumerates the operations listed in the given csv file
 def get_benchmark_data_operation_list(file_path: Path) -> list[str]:
-    # Import the data in the sheet we just created
+    # Read the data in the sheet we just created
     row_list: list[list[str]]
     with open(file_path, "r") as csv_file:
         csv_reader = csv.reader(csv_file)
         row_list = list(csv_reader)
+
+    # Find the 'operation' column
+    if len(row_list) < 1:
+        raise ValueError(
+            f"The following .csv file does not have a header row: {file_path}"
+        )
+
+    header_row: list[str] = row_list[0]
+    operation_column: Optional[int] = None
+
+    for index, column in enumerate(header_row):
+        if column == "operation":
+            operation_column = index
+            break
+
+    if operation_column is None:
+        raise ValueError(
+            f"The following .csv file does not have an operation column: {file_path}"
+        )
 
     # List all the unique operations we have in the benchmark data
     operation_list: list[str] = []
@@ -98,7 +135,7 @@ def get_benchmark_data_operation_list(file_path: Path) -> list[str]:
         if index == 0:
             continue
 
-        operation: str = row[3]
+        operation: str = row[operation_column]
         if len(operation) == 0:
             continue
 
@@ -111,58 +148,63 @@ def get_benchmark_data_operation_list(file_path: Path) -> list[str]:
 
 # Enumerates the .csv files in the given folder, looking for suitable benchmark
 # scenarios.
-#
-# More specifically, the function will look for pairs of csv files named
-# `os-<any_name>.csv` / `es-<any_name>.csv` with matching sets of operations
-def get_benchmark_scenarios(folder_path: Path) -> Optional[list[BenchmarkScenario]]:
+def get_benchmark_scenarios(
+    folder_path: Path, os_version: str, es_version: str
+) -> Optional[list[BenchmarkScenario]]:
     benchmark_scenario_list: list[BenchmarkScenario] = []
 
+    csv_file_map: dict = {}
     for directory_path, folder_name_list, file_name_list in walk(folder_path):
-        for os_benchmark_data_file_name in file_name_list:
-            if not os_benchmark_data_file_name.startswith("os-"):
+        for file_name in file_name_list:
+            if not file_name.endswith(".csv"):
                 continue
 
-            file_name_parts: str = os.path.splitext(os_benchmark_data_file_name)
-            if len(file_name_parts) != 2 or file_name_parts[1] != ".csv":
-                continue
-
-            benchmark_name: str = file_name_parts[0][3:]
-
-            os_benchmark_data_file_path: Path = Path(directory_path).joinpath(
-                os_benchmark_data_file_name
-            )
-
-            es_benchmark_data_file_path: Path = Path(directory_path).joinpath(
-                "es-" + benchmark_name + ".csv"
-            )
-
-            if not os.path.isfile(es_benchmark_data_file_path):
-                print(
-                    f"Skipping benchmark '{benchmark_name}' because the ES-specific data could not be found"
-                )
-                continue
-
-            os_operation_list: Optional[list[str]] = get_benchmark_data_operation_list(
-                os_benchmark_data_file_path
-            )
-
-            es_operation_list: Optional[list[str]] = get_benchmark_data_operation_list(
-                es_benchmark_data_file_path
-            )
-
-            if set(os_operation_list) != set(es_operation_list):
-                print(
-                    f"Skipping benchmark '{benchmark_name}' because there's a mismatch in operation list between the ES and OS benchmark data"
-                )
-                continue
-
-            benchmark_scenario: BenchmarkScenario = BenchmarkScenario(
-                Path(directory_path), benchmark_name, os_operation_list
-            )
-
-            benchmark_scenario_list.append(benchmark_scenario)
+            file_id: str = file_name[19:-4]
+            csv_file_map[file_id] = file_name
 
         break
+
+    for file_id, file_name in csv_file_map.items():
+        if not file_id.startswith(f"OS-{os_version}"):
+            continue
+
+        os_benchmark_data_file_path: Path = Path(directory_path).joinpath(file_name)
+
+        es_file_id: str = file_id.replace(f"OS-{os_version}", f"ES-{es_version}")
+        es_file_name: Optional[str] = csv_file_map.get(es_file_id)
+        if es_file_name is None:
+            continue
+
+        es_benchmark_data_file_path: Path = Path(directory_path).joinpath(es_file_name)
+
+        if not os.path.isfile(es_benchmark_data_file_path):
+            continue
+
+        os_operation_list: Optional[list[str]] = get_benchmark_data_operation_list(
+            os_benchmark_data_file_path
+        )
+
+        es_operation_list: Optional[list[str]] = get_benchmark_data_operation_list(
+            es_benchmark_data_file_path
+        )
+
+        if set(os_operation_list) != set(es_operation_list):
+            print(
+                f"Skipping '{os_benchmark_data_file_path}/{es_benchmark_data_file_path}' because there's a mismatch in operation list between the ES and OS benchmark data"
+            )
+            continue
+
+        benchmark_name_separator: int = file_id.rfind("-")
+        benchmark_name: str = file_id[benchmark_name_separator + 1 :]
+        benchmark_scenario: BenchmarkScenario = BenchmarkScenario(
+            Path(directory_path),
+            benchmark_name,
+            os_operation_list,
+            os_benchmark_data_file_path,
+            es_benchmark_data_file_path,
+        )
+
+        benchmark_scenario_list.append(benchmark_scenario)
 
     if len(benchmark_scenario_list) == 0:
         return None
@@ -230,11 +272,9 @@ def resize_sheet(
         ]
     }
 
-    response = (
-        service.spreadsheets()
-        .batchUpdate(spreadsheetId=spreadsheet_id, body=body)
-        .execute()
-    )
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id, body=body
+    ).execute()
 
 
 # Creates a blank new spreadsheet
@@ -330,6 +370,21 @@ def get_workload_operation_categories(workload: str) -> list[str]:
                 category_list.append(category_name)
 
     return category_list
+
+
+# Returns all the operations for the given workload
+def get_workload_operations(workload: str) -> list[str]:
+    operation_list: Optional[list[str]] = None
+
+    spec_list: dict = get_category_operation_map()
+    for spec in spec_list:
+        if spec["workload"] == workload:
+            operation_list = []
+            for category_name in spec["categories"].keys():
+                for operation_name in spec["categories"][category_name]:
+                    operation_list.append(operation_name)
+
+    return operation_list
 
 
 # Returns the category/operation map
@@ -553,8 +608,10 @@ def import_benchmark_scenario(
 ) -> bool:
     for product_identifier in ["os", "es"]:
         # Load the rows from the benchmark data
-        csv_path: Path = benchmark_scenario.base_path.joinpath(
-            product_identifier + "-" + benchmark_scenario.name + ".csv"
+        csv_path: Path = (
+            benchmark_scenario.os_file_path
+            if product_identifier == "os"
+            else benchmark_scenario.es_file_path
         )
 
         row_list: list[list[str]]
@@ -626,8 +683,13 @@ def import_benchmark_scenario(
 
             processed_row: list[str] = []
             for column_name in output_column_order:
-                source_column_index: int = input_columns[column_name]
-                processed_row.append(row[source_column_index])
+                source_column_index: Optional[int] = input_columns.get(column_name)
+                column_value: str = (
+                    "(null)"
+                    if source_column_index is None
+                    else row[source_column_index]
+                )
+                processed_row.append(column_value)
 
             processed_row_list.append(processed_row)
 
@@ -770,6 +832,7 @@ def import_benchmark_scenario(
 
     # Add the summary
     operation_count: int = len(benchmark_scenario.operation_list)
+    last_operation_row: int = starting_row_index + operation_count - 1
 
     row_list: list[list[str]] = []
     row_list.append(
@@ -779,7 +842,7 @@ def import_benchmark_scenario(
     row_list.append(
         [
             "Tasks faster than ES",
-            f'=COUNTIF(AA{starting_row_index}:AA{starting_row_index + operation_count},">0")',
+            f'=COUNTIF(AA{starting_row_index}:AA{last_operation_row},">0")',
         ]
     )
     row_list.append(["Categories faster than ES", "Category", "Count", "Total"])
@@ -789,10 +852,37 @@ def import_benchmark_scenario(
             [
                 "",
                 category_name,
-                f'=COUNTIFS(F${starting_row_index}:F${starting_row_index + operation_count}, "{category_name}", AA${starting_row_index}:AA${starting_row_index + operation_count}, ">0")',
-                f'=COUNTIF(F${starting_row_index}:F${starting_row_index + operation_count}, "{category_name}")',
+                f'=COUNTIFS(F${starting_row_index}:F${last_operation_row}, "{category_name}", AA${starting_row_index}:AA${last_operation_row}, ">0")',
+                f'=COUNTIF(F${starting_row_index}:F${last_operation_row}, "{category_name}")',
             ]
         )
+
+    row_list.append([""])
+    row_list.append(
+        [
+            "Tasks much faster than ES",
+            "Operation",
+            "Amount",
+            "",
+            "Tasks much slower than ES",
+            "Operation",
+            "Amount",
+        ]
+    )
+
+    current_row: int = len(row_list) + 2
+
+    row_list.append(
+        [
+            "",
+            f"=FILTER($E${starting_row_index}:$E${last_operation_row}, AB{starting_row_index}:AB{last_operation_row} > 2)",
+            f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AE{current_row})",
+            "",
+            "",
+            f"=FILTER($E${starting_row_index}:$E${last_operation_row}, AB{starting_row_index}:AB{last_operation_row} < 0.5)",
+            f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AI{current_row})",
+        ]
+    )
 
     request_properties: dict = {
         "majorDimension": "ROWS",
@@ -854,16 +944,9 @@ def hide_columns(
 
 
 # Creates a new report based on the benchmark data located at the given path
-def create_report(creds: Credentials, benchmark_data: Path) -> Optional[str]:
-    # Make sure we have data to process first
-    benchmark_scenario_list: Optional[list[BenchmarkScenario]] = (
-        get_benchmark_scenarios(benchmark_data)
-    )
-
-    if benchmark_scenario_list is None:
-        print("No benchmark scenario found! Make sure that the file names are correct")
-        return None
-
+def create_report(
+    creds: Credentials, benchmark_scenario_list: list[BenchmarkScenario]
+) -> Optional[str]:
     # Initialize the api client
     service: Resource = build("sheets", "v4", credentials=creds)
     if service is None:
@@ -901,6 +984,17 @@ def create_report(creds: Credentials, benchmark_data: Path) -> Optional[str]:
 
 def main() -> int:
     args: Namespace = get_program_arguments()
+
+    # Make sure we have data to process first
+    benchmark_scenario_list: Optional[list[BenchmarkScenario]] = (
+        get_benchmark_scenarios(args.benchmark_data, args.os_version, args.es_version)
+    )
+
+    if benchmark_scenario_list is None:
+        print("No benchmark scenario found! Make sure that the file names are correct")
+        return None
+
+    # Get the credentials
     if args.credentials is not None:
         authenticate_from_credentials(args.credentials, args.token)
 
@@ -908,7 +1002,7 @@ def main() -> int:
     if creds is None:
         return 1
 
-    report_url: Optional[str] = create_report(creds, args.benchmark_data)
+    report_url: Optional[str] = create_report(creds, benchmark_scenario_list)
     if report_url is None:
         return 1
 
