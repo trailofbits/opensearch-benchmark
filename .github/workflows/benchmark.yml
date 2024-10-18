@@ -59,6 +59,10 @@ on:
         required: false
         type: string
         default: 2.16.0
+      aws_region:
+        description: 'AWS region'
+        required: true
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -83,8 +87,8 @@ env:
   TF_VAR_datastore_host: ${{ secrets.DATASTORE_HOST }}
   TF_VAR_datastore_username: ${{ secrets.DATASTORE_USERNAME }}
   TF_VAR_datastore_password: ${{ secrets.DATASTORE_PASSWORD }}
-  TF_VAR_aws_region: ca-central-1
-  TF_VAR_aws_subnet_zone: ca-central-1a
+  TF_VAR_aws_region: ${{ inputs.aws_region }}
+  TF_VAR_aws_subnet_zone: ${{ inputs.aws_region }}a
   TF_VAR_target_cluster_type: ${{ inputs.cluster_type}}
   TF_VAR_s3_bucket_name: ${{ inputs.s3_bucket_name }}
   TF_VAR_prefix_list_id: pl-06f77c0b59dbf70fe

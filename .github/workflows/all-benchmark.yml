@@ -41,6 +41,11 @@ on:
         required: false
         type: string
         default: 2.16.0
+      aws_region:
+        description: 'AWS region'
+        required: false
+        type: string
+        default: eu-north-1
 
 env:
   WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis' }}
@@ -82,6 +87,7 @@ jobs:
       test_procedure: ${{ matrix.test_procedure }}
       es_version: ${{ inputs.es_version || '8.15.0' }}
       os_version: ${{ inputs.os_version || '2.16.0' }}
+      aws_region: ${{ inputs.aws_region || 'ca-central-1' }}
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
