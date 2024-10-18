@@ -148,7 +148,7 @@ def get_benchmark_data_operation_list(file_path: Path) -> list[str]:
 
 # Enumerates the .csv files in the given folder, looking for suitable benchmark
 # scenarios.
-def get_benchmark_scenarios(
+def discover_benchmark_scenarios(
     folder_path: Path, os_version: str, es_version: str
 ) -> Optional[list[BenchmarkScenario]]:
     benchmark_scenario_list: list[BenchmarkScenario] = []
@@ -870,7 +870,7 @@ def import_benchmark_scenario(
         ]
     )
 
-    current_row: int = len(row_list) + 2
+    current_row: int = starting_row_index + len(row_list)
 
     row_list.append(
         [
@@ -892,6 +892,48 @@ def import_benchmark_scenario(
     service.spreadsheets().values().update(
         spreadsheetId=spreadsheet_id,
         range=f"Results!AD{starting_row_index}",
+        valueInputOption="USER_ENTERED",
+        body=request_properties,
+    ).execute()
+
+    # Manually expand the first "Amount" columns
+    # TODO: Any way to make this with a formula?
+    row_list = []
+    for i in range(0, 10):
+        row_list.append(
+            [
+                f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AE{current_row + i})",
+            ]
+        )
+
+    request_properties: dict = {
+        "majorDimension": "ROWS",
+        "values": row_list,
+    }
+
+    service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id,
+        range=f"Results!AF{current_row}",
+        valueInputOption="USER_ENTERED",
+        body=request_properties,
+    ).execute()
+
+    row_list = []
+    for i in range(0, 10):
+        row_list.append(
+            [
+                f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AI{current_row + i})",
+            ]
+        )
+
+    request_properties: dict = {
+        "majorDimension": "ROWS",
+        "values": row_list,
+    }
+
+    service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id,
+        range=f"Results!AJ{current_row}",
         valueInputOption="USER_ENTERED",
         body=request_properties,
     ).execute()
@@ -987,7 +1029,9 @@ def main() -> int:
 
     # Make sure we have data to process first
     benchmark_scenario_list: Optional[list[BenchmarkScenario]] = (
-        get_benchmark_scenarios(args.benchmark_data, args.os_version, args.es_version)
+        discover_benchmark_scenarios(
+            args.benchmark_data, args.os_version, args.es_version
+        )
     )
 
     if benchmark_scenario_list is None:
