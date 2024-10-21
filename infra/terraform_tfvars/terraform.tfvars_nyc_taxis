@@ -4,10 +4,12 @@ ssh_pub_key                         = "~/.ssh/key.pub"
 aws_region                          = "us-east-1"
 aws_subnet_zone                     = "us-east-1a"
 target_cluster_type                 = "ElasticSearch"
-s3_bucket_name                      = "es-snapshots-osb"
 prefix_list_id                      = "pl-06f77c0b59dbf70fe"
 snapshot_user_aws_access_key_id     = "<ACCESS-KEY>"
 snapshot_user_aws_secret_access_key = "<SECRET-KEY>"
+# The default snapshot bucket contains both ES and OS snapshots. Modify below to specify a custom bucket.
+# s3_bucket_name                      = "es-snapshots-osb"
+
 
 # Datastore variables
 benchmark_environment = "<ENVIRONMENT>"

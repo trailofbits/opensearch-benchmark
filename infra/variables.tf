@@ -62,6 +62,7 @@ variable "distribution_version" {
 variable "s3_bucket_name" {
   description = "S3 bucket name for the snapshot"
   type        = string
+  default     = "snapshots-osb"
 }
 
 variable "snapshot_user_aws_access_key_id" {
