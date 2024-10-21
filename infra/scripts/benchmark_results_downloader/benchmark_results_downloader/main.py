@@ -23,6 +23,7 @@ class BenchmarkResult:
         run_group: datetime,
         engine: str,
         engine_version: str,
+        environment: str,
         run: str,
         workload: str,
         test_procedure: str,
@@ -37,6 +38,7 @@ class BenchmarkResult:
         self.RunGroup: datetime = run_group
         self.Engine = engine
         self.EngineVersion = engine_version
+        self.Environment = environment
         self.Run = run
         self.Workload = workload
         self.TestProcedure = test_procedure
@@ -110,6 +112,7 @@ def handle_results_response(
 
         source = document["_source"]
         engine_version = source["distribution-version"]
+        environment = source["environment"]
         workload = source["workload"]
         operation = source["operation"]
         metric_name = source["name"]
@@ -136,6 +139,7 @@ def handle_results_response(
                 run_group_date,
                 engine,
                 engine_version,
+                environment,
                 run,
                 workload,
                 test_procedure,
@@ -199,6 +203,13 @@ def main() -> int:
         "(default: %(default)s)",
         type=str,
         default="official",
+    )
+    args_parser.add_argument(
+        "--environment",
+        help="Which environment prefix to download "
+        "(default: %(default)s)",
+        type=str,
+        default="",
     )
     args_parser.add_argument(
         "--debug-request",
@@ -277,6 +288,7 @@ def main() -> int:
                             }
                         }
                     },
+                    {"prefix": {"environment": {"value": args.environment}}},
                     {"terms": {"user-tags.run-type": [args.run_type]}},
                     {"exists": {"field": "operation"}},
                     {"exists": {"field": "value.50_0"}},
@@ -358,6 +370,7 @@ def main() -> int:
         "RunGroup",
         "Engine",
         "EngineVersion",
+        "Environment",
         "Workload",
         "TestProcedure",
         "WorkloadParams",
@@ -372,6 +385,7 @@ def main() -> int:
     # of workload params which will be placed in between
     headers_pre = [
         "user-tags\\.run-group",
+        "environment",
         "user-tags\\.engine-type",
         "distribution-version",
         "workload",
@@ -434,6 +448,7 @@ def main() -> int:
 
         values_pre = [
             result.RunGroup,
+            result.Environment,
             result.Engine,
             result.EngineVersion,
             result.Workload,
