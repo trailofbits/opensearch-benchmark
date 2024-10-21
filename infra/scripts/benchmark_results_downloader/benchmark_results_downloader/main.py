@@ -206,7 +206,7 @@ def main() -> int:
     )
     args_parser.add_argument(
         "--environment",
-        help="Which environment (partial match) to download "
+        help="Which environment prefix to download "
         "(default: %(default)s)",
         type=str,
         default="",
@@ -288,6 +288,7 @@ def main() -> int:
                             }
                         }
                     },
+                    {"prefix": {"environment": {"value": args.environment}}},
                     {"terms": {"user-tags.run-type": [args.run_type]}},
                     {"exists": {"field": "operation"}},
                     {"exists": {"field": "value.50_0"}},
@@ -411,10 +412,6 @@ def main() -> int:
 
     all_workload_params_len = len(all_workload_params_names)
     for result in sorted_benchmark_results:
-        # If not the environment we're looking for
-        if args.environment not in result.Environment:
-            continue
-
         new_run_group = result.RunGroup
         new_engine = result.Engine
         new_engine_version = result.EngineVersion
