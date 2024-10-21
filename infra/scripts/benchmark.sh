@@ -57,6 +57,11 @@ fi
 GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,aws-user-id:$AWS_USERID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
 GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION,shard-count:$SHARD_COUNT,replica-count:$REPLICA_COUNT"
 GROUP_USER_TAGS+=",run-type:$RUN_TYPE,aws-cluster-instance-id:$CLUSTER_INSTANCE_ID"
+GROUP_USER_TAGS+=",cpu-model-name:$(lscpu | grep "Model name" | cut -d':' -f2 | xargs)"
+GROUP_USER_TAGS+=",cpu-cache-l1d:$(lscpu | grep "L1d" | cut -d':' -f2 | xargs)"
+GROUP_USER_TAGS+=",cpu-cache-l1i:$(lscpu | grep "L1i" | cut -d':' -f2 | xargs)"
+GROUP_USER_TAGS+=",cpu-cache-l2:$(lscpu | grep "L2" | cut -d':' -f2 | xargs)"
+GROUP_USER_TAGS+=",cpu-cache-l3:$(lscpu | grep "L3" | cut -d':' -f2 | xargs)"
 
 REPOSITORY_SET=$(curl -sku "$CLUSTER_USER:$CLUSTER_PASSWORD" -X GET "$CLUSTER_HOST/_cluster/state/metadata" | jq --raw-output '.metadata | has("repositories") and .repositories != null')
 if [ "$REPOSITORY_SET" == "true" ]; then
