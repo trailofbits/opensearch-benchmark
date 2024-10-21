@@ -77,6 +77,10 @@ def _get_hits(host: str, index: str, user: str, password: str):
                                     "official",
                                     "dev",
                                 ],
+                            },
+                        },
+                        {
+                            "terms": {
                                 "name": [
                                     "latency",
                                     "service_time",
@@ -96,7 +100,14 @@ def _get_hits(host: str, index: str, user: str, password: str):
                                 "field": "task",
                             },
                         },
-                    ]
+                    ],
+                    "must_not": [
+                        {
+                            "term": {
+                                "meta.tag_run": "0"
+                            },
+                        },
+                    ],
                 }
             },
         },
@@ -104,8 +115,11 @@ def _get_hits(host: str, index: str, user: str, password: str):
         verify=False,
     ).json()
     num_hits = len(response["hits"]["hits"])
+    i = 1
+    total_hits = num_hits
     try:
         while num_hits > 0:
+            print(f"Request {i}: {num_hits} hits (total: {total_hits})")
             for hit in response["hits"]["hits"]:
                 yield hit
             response = requests.get(
@@ -115,6 +129,8 @@ def _get_hits(host: str, index: str, user: str, password: str):
                 verify=False,
             ).json()
             num_hits = len(response["hits"]["hits"])
+            i += 1
+            total_hits += num_hits
     finally:
         response = requests.delete(
             url=f"https://{host}/_search/scroll",
