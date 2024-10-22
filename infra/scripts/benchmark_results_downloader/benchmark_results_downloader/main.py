@@ -25,6 +25,8 @@ class BenchmarkResult:
         engine_version: str,
         environment: str,
         run: str,
+        snapshot_bucket: str,
+        snapshot_base_path: str,
         workload: str,
         test_procedure: str,
         workload_params: dict[str, str],
@@ -40,6 +42,8 @@ class BenchmarkResult:
         self.EngineVersion = engine_version
         self.Environment = environment
         self.Run = run
+        self.SnapshotBucket = snapshot_bucket
+        self.SnapshotBasePath = snapshot_base_path
         self.Workload = workload
         self.TestProcedure = test_procedure
         self.WorkloadParams = workload_params
@@ -127,6 +131,8 @@ def handle_results_response(
         run_group_str = user_tags["run-group"]
         shard_count = user_tags["shard-count"]
         replica_count = user_tags["replica-count"]
+        snapshot_bucket = user_tags["snapshot-s3-bucket"]
+        snapshot_base_path = user_tags["snapshot-base-path"]
 
         # Parse into a proper date for sorting purposes
         run_group_date = datetime.strptime(run_group_str, "%Y_%m_%d_%H_%M_%S")
@@ -141,6 +147,8 @@ def handle_results_response(
                 engine_version,
                 environment,
                 run,
+                snapshot_bucket,
+                snapshot_base_path,
                 workload,
                 test_procedure,
                 workload_params_dict,
@@ -206,8 +214,7 @@ def main() -> int:
     )
     args_parser.add_argument(
         "--environment",
-        help="Which environment prefix to download "
-        "(default: %(default)s)",
+        help="Which environment prefix to download (default: %(default)s)",
         type=str,
         default="",
     )
@@ -298,6 +305,8 @@ def main() -> int:
                     {"exists": {"field": "user-tags.engine-type"}},
                     {"exists": {"field": "user-tags.shard-count"}},
                     {"exists": {"field": "user-tags.replica-count"}},
+                    {"exists": {"field": "user-tags.snapshot-base-path"}},
+                    {"exists": {"field": "user-tags.snapshot-s3-bucket"}},
                 ],
             },
         },
@@ -371,6 +380,8 @@ def main() -> int:
         "Engine",
         "EngineVersion",
         "Environment",
+        "SnapshotBucket",
+        "SnapshotBasePath",
         "Workload",
         "TestProcedure",
         "WorkloadParams",
@@ -388,6 +399,8 @@ def main() -> int:
         "environment",
         "user-tags\\.engine-type",
         "distribution-version",
+        "user-tags\\.snapshot-s3-bucket",
+        "user-tags\\.snapshot-base-path",
         "workload",
         "test-procedure",
     ]
@@ -451,6 +464,8 @@ def main() -> int:
             result.Environment,
             result.Engine,
             result.EngineVersion,
+            result.SnapshotBucket,
+            result.SnapshotBasePath,
             result.Workload,
             result.TestProcedure,
         ]
