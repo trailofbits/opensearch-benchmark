@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /utils.sh
+source /mnt/utils.sh
 
 if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$DISTRIBUTION_VERSION" ]; then
     echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and DISTRIBUTION_VERSION environment variables"
@@ -47,7 +47,7 @@ register_snapshot_repo \
 
 response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME")
 if [[ $(echo "$response" | jq -r '.snapshots | length') -gt 0 ]] && [ -z "$FORCE_INGESTION" ]; then
-    echo "There's a snapshot already. Use /restore_snapshot.sh to restore it."
+    echo "There's a snapshot already. Use /mnt/restore_snapshot.sh to restore it."
     echo "If you want to recreate the snapshot, set FORCE_INGESTION=true."
     exit 1
 fi
@@ -99,4 +99,4 @@ echo "$response" | jq -e '.error' > /dev/null && {
 }
 echo "Snapshot done"
 
-/restore_snapshot.sh
+/mnt/restore_snapshot.sh

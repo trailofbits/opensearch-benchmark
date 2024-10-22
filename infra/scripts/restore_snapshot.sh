@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /utils.sh
+source /mnt/utils.sh
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154

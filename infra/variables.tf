@@ -1,15 +1,3 @@
-variable "ssh_priv_key" {
-  description = "Path to the SSH Private Key"
-  type        = string
-  default     = "~/.ssh/id_rsa"
-}
-
-variable "ssh_pub_key" {
-  description = "Path to the SSH Public Key"
-  type        = string
-  default     = "~/.ssh/id_rsa.pub"
-}
-
 variable "aws_region" {
   description = "AWS region used for the deployment"
   type        = string

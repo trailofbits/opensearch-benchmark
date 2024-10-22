@@ -215,7 +215,7 @@ jobs:
         run: |
             ssh $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /ingest.sh;\""
+              "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /mnt/ingest.sh;\""
         env:
             FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
 
@@ -225,7 +225,7 @@ jobs:
         run: |
             ssh $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc 'bash -x /restore_snapshot.sh;'"
+              "set -x; bash -ixc 'bash -x /mnt/restore_snapshot.sh;'"
       
 
   run-osb:
@@ -284,7 +284,7 @@ jobs:
         run: |
             ssh $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID bash -x /benchmark_single.sh $BENCHMARK_TYPE $RUN_ID;\""
+              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID bash -x /mnt/benchmark_single.sh $BENCHMARK_TYPE $RUN_ID;\""
         env:
             BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
             RUN_ID: ${{ matrix.run_id }}
