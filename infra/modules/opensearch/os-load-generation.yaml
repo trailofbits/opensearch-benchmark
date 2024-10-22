@@ -14,31 +14,11 @@ write_files:
     content: ${load_script}
     owner: root:root
     permissions: '0755'
-  - path: /benchmark.sh
+  - path: /id_rsa
     encoding: gz+b64
-    content: ${benchmark_script}
-    owner: root:root
-    permissions: '0755'
-  - path: /benchmark_single.sh
-    encoding: gz+b64
-    content: ${benchmark_single_script}
-    owner: root:root
-    permissions: '0755'
-  - path: /ingest.sh
-    encoding: gz+b64
-    content: ${ingest_script}
-    owner: root:root
-    permissions: '0755'
-  - path: /restore_snapshot.sh
-    encoding: gz+b64
-    content: ${restore_snapshot_script}
-    owner: root:root
-    permissions: '0755'
-  - path: /utils.sh
-    encoding: gz+b64
-    content: ${utils_script}
-    owner: root:root
-    permissions: '0755'
+    content: ${ssh_private_key}
+    owner: ubuntu:ubuntu
+    permissions: '0600'
 
 fs_setup:
   - label: None
@@ -67,7 +47,9 @@ packages:
 runcmd:
   - [ sysctl, -p, /etc/sysctl.d/99-custom.conf ]
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
-  - [ sudo, -u, ubuntu, /load_generation.sh, https://${os_cluster}:9200, admin, ${os_password}, ${distribution_version}, ${os_version}, "OS", ${instance_type}, ${cluster_instance_id}]
+  - [ mv, /id_rsa, /home/ubuntu/.ssh/id_rsa ]
+  - [ chown, ubuntu:ubuntu, /home/ubuntu/.ssh/id_rsa ]
+  - [ sudo, -u, ubuntu, /load_generation.sh, ${os_cluster}, admin, ${os_password}, ${distribution_version}, ${os_version}, "OS", ${instance_type}, ${cluster_instance_id}]
   - [sed, -i, '/^env.name =/c\env.name = ${benchmark_environment}', /mnt/.benchmark/benchmark.ini]
   - [sed, -i, '/^datastore\./s/^/# /',  /mnt/.benchmark/benchmark.ini]
   - |

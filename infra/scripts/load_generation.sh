@@ -1,9 +1,10 @@
 #!/bin/bash
 
-source /utils.sh
+source /mnt/utils.sh
 
 # Get script directory
-CLUSTER_HOST=$1
+CLUSTER_HOST_SSH=$1
+CLUSTER_HOST=https://$CLUSTER_HOST_SSH:9200
 CLUSTER_USER=$2
 CLUSTER_PASSWORD=$3
 DISTRIBUTION_VERSION=$4
@@ -29,6 +30,7 @@ export BENCHMARK_HOME=/mnt
 echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
 echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/' >> ~/.bashrc
 echo 'export BENCHMARK_HOME=/mnt' >> ~/.bashrc
+echo "export CLUSTER_HOST_SSH=$CLUSTER_HOST_SSH" >> ~/.bashrc
 echo "export CLUSTER_HOST=$CLUSTER_HOST" >> ~/.bashrc
 echo "export CLUSTER_USER=$CLUSTER_USER" >> ~/.bashrc
 echo "export DISTRIBUTION_VERSION=$DISTRIBUTION_VERSION" >> ~/.bashrc

@@ -49,13 +49,13 @@ The default multiplexer is `byobu`. Here is a [cheatsheet](https://gist.github.c
 To ingest the data in the Target Cluster:
 
 ```shell
-bash /ingest.sh
+bash /mnt/ingest.sh
 ```
 
 Alternatively, if you already have a snapshot and you want to restore it, do:
 
 ```shell
-bash /restore_snapshot.sh
+bash /mnt/restore_snapshot.sh
 ```
 
 ## Benchmark the queries
@@ -63,13 +63,13 @@ bash /restore_snapshot.sh
 - Pass `official` or `dev` to tag the run results
 
 ```shell
-bash /benchmark.sh [official|dev]
+bash /mnt/benchmark.sh [official|dev]
 ```
 
 ## Additional client options
 To specify additional client options use the `EXTRA_CLIENT_OPTIONS` environment variable:
 ```shell
-EXTRA_CLIENT_OPTIONS=timeout:240 bash /ingest.sh
+EXTRA_CLIENT_OPTIONS=timeout:240 bash /mnt/ingest.sh
 ```
 
 ## Get the results
