@@ -155,10 +155,8 @@ data "external" "latest_snapshot_version" {
     snapshot_version      = var.snapshot_version
   }
 }
-resource "aws_ec2_host" "cluster_host" {
-  instance_type     = var.instance_type
-  availability_zone = var.aws_subnet_zone
-  auto_placement    = "off"
+data "aws_ec2_host" "cluster_host" {
+  host_id = var.dedicated_host_id
 }
 
 module "es-cluster" {
@@ -166,7 +164,7 @@ module "es-cluster" {
 
   source                = "./modules/elasticsearch"
   instance_type         = var.instance_type
-  host_id               = aws_ec2_host.cluster_host.id
+  host_id               = data.aws_ec2_host.cluster_host.id
   ami_id                = data.aws_ami.ubuntu_ami.id
   es_version            = var.es_version
   distribution_version  = var.distribution_version
@@ -204,7 +202,7 @@ module "os-cluster" {
 
   source                = "./modules/opensearch"
   instance_type         = var.instance_type
-  host_id               = aws_ec2_host.cluster_host.id
+  host_id               = data.aws_ec2_host.cluster_host.id
   ami_id                = data.aws_ami.ubuntu_ami.id
   os_version            = var.os_version
   distribution_version  = var.distribution_version

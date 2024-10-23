@@ -126,3 +126,8 @@ variable "snapshot_version" {
     error_message = "Snapshot version must be one of: latest, new, or a specific version (YYYY-mm-dd_HH-MM-ss)"
   }
 }
+
+variable "dedicated_host_id" {
+  description = "Host ID of Dedicated Host for cluster instances"
+  type        = string
+}
