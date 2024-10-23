@@ -65,7 +65,7 @@ GROUP_USER_TAGS+=",lg-cpu-cache-l1i:$(lscpu | grep "L1i" | cut -d':' -f2 | xargs
 GROUP_USER_TAGS+=",lg-cpu-cache-l2:$(lscpu | grep "L2" | cut -d':' -f2 | xargs)"
 GROUP_USER_TAGS+=",lg-cpu-cache-l3:$(lscpu | grep "L3" | cut -d':' -f2 | xargs)"
 
-TC_CMD="ssh -o StrictHostKeyChecking=no ubuntu@${CLUSTER_HOST_SSH} -- "
+TC_CMD="ssh -o StrictHostKeyChecking=no ubuntu@$${CLUSTER_HOST_SSH} -- "
 GROUP_USER_TAGS+=",tc-cpu-model-name:$($TC_CMD 'lscpu | grep "Model name" | cut -d':' -f2 | xargs')"
 GROUP_USER_TAGS+=",tc-cpu-cache-l1d:$($TC_CMD 'lscpu | grep "L1d" | cut -d':' -f2 | xargs')"
 GROUP_USER_TAGS+=",tc-cpu-cache-l1i:$($TC_CMD 'lscpu | grep "L1i" | cut -d':' -f2 | xargs')"
