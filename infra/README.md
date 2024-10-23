@@ -40,7 +40,7 @@ If you want to disable uploading to the shared data store, edit `/mnt/.benchmark
 Connect to the load-generation host with:
 
 ```shell
-ssh -i private_key-$(terraform workspace show).pem ubuntu@$(terraform output -raw load-generation-ip)
+ssh -i $(terraform output -raw ssh_private_key_file) ubuntu@$(terraform output -raw load-generation-ip)
 ```
 
 The default multiplexer is `byobu`. Here is a [cheatsheet](https://gist.github.com/devhero/7b9a7281db0ac4ba683f).
