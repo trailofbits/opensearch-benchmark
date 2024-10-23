@@ -11,7 +11,6 @@
 - `terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
 - `terraform init`
 - Modify the `terraform.tfvars` file according to your needs
-  - Create an SSH key without a password (will be used as `ssh_priv_key` and `ssh_pub_key` variables)
 - Note: The data store credentials and cluster password will be saved to the load generation machine.
 - By default, the load generation IP is added to the [shared prefix list](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#PrefixListDetails:prefixListId=pl-06f77c0b59dbf70fe) (id: `pl-06f77c0b59dbf70fe`). This gives access to the shared data store.
   - The workspace name is used a description for the prefix list entry
@@ -41,7 +40,7 @@ If you want to disable uploading to the shared data store, edit `/mnt/.benchmark
 Connect to the load-generation host with:
 
 ```shell
-ssh ubuntu@$(terraform output -raw load-generation-ip)
+ssh -i private_key-$(terraform workspace show).pem ubuntu@$(terraform output -raw load-generation-ip)
 ```
 
 The default multiplexer is `byobu`. Here is a [cheatsheet](https://gist.github.com/devhero/7b9a7281db0ac4ba683f).
