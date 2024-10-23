@@ -30,7 +30,7 @@ CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$C
 SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD" "$WORKLOAD_PARAMS")
 
 INGESTION_RESULTS=/mnt/ingestion_results
-USER_TAGS="run-type:ingest,aws-user-id:$AWS_USERID,ci:$CI_TAG"
+USER_TAGS="run-type:ingest,aws-user-id:$AWS_USERID,ci:$(ci_tag_value)"
 
 # If the snapshot already exists, skip ingestion (check response.total > 0),
 # unless FORCE_INGESTION is set

@@ -126,8 +126,3 @@ variable "snapshot_version" {
     error_message = "Snapshot version must be: YYYY-mm-dd_HH-MM-ss"
   }
 }
-
-variable "ci_tag" {
-  description = "Tag describing whether run was executed with CI"
-  type        = string
-}

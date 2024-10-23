@@ -72,7 +72,6 @@ resource "aws_instance" "load-generation" {
       instance_type         = var.instance_type
       cluster_instance_id   = aws_instance.target-cluster.id
       ssh_private_key       = base64gzip(var.ssh_priv_key)
-      ci_tag                = var.ci_tag
     }
   )
   user_data_replace_on_change = true

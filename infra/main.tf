@@ -188,7 +188,6 @@ module "es-cluster" {
   datastore_username    = var.datastore_username
   datastore_password    = var.datastore_password
   workload              = var.workload
-  ci_tag                = var.ci_tag
 
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_version                    = data.external.latest_snapshot_version.result.latest_version
@@ -227,7 +226,6 @@ module "os-cluster" {
   datastore_username    = var.datastore_username
   datastore_password    = var.datastore_password
   workload              = var.workload
-  ci_tag                = var.ci_tag
 
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_version                    = data.external.latest_snapshot_version.result.latest_version

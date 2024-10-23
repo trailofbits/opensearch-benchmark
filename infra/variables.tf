@@ -115,13 +115,3 @@ variable "snapshot_version" {
     error_message = "Snapshot version must be one of: latest, new, or a specific version (YYYY-mm-dd_HH-MM-ss)"
   }
 }
-
-variable "ci_tag" {
-  description = "Tag describing whether run was executed with CI"
-  type        = string
-  default     = "not-used"
-  validation {
-    condition     = contains(["scheduled", "manual", "not-used"], var.ci_tag)
-    error_message = "CI tag must be one of: scheduled, manual, or not-used."
-  }
-}
