@@ -183,8 +183,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }} infra/
-          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
@@ -202,7 +202,7 @@ jobs:
         working-directory: infra
         if: ${{ inputs.create_snapshot }}
         run: |
-            ssh -i ./private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem $SSH_OPTIONS \
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
               "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /mnt/ingest.sh;\""
         env:
@@ -212,7 +212,7 @@ jobs:
         working-directory: infra
         if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
         run: |
-            ssh -i ./private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem $SSH_OPTIONS \
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
               "set -x; bash -ixc 'bash -x /mnt/restore_snapshot.sh;'"
       
@@ -249,8 +249,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }} infra/
-          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
@@ -269,7 +269,7 @@ jobs:
         working-directory: infra
         if: ${{ inputs.perform_benchmark }}
         run: |
-            ssh -i ./private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem $SSH_OPTIONS \
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
               "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID bash -x /mnt/benchmark_single.sh $BENCHMARK_TYPE $RUN_ID;\""
         env:
@@ -300,8 +300,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }} infra/
-          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
