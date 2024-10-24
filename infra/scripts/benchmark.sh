@@ -70,6 +70,7 @@ GROUP_USER_TAGS+=",tc-cpu-cache-l1d:$($TC_CMD 'lscpu | grep "L1d" | cut -d':' -f
 GROUP_USER_TAGS+=",tc-cpu-cache-l1i:$($TC_CMD 'lscpu | grep "L1i" | cut -d':' -f2 | xargs')"
 GROUP_USER_TAGS+=",tc-cpu-cache-l2:$($TC_CMD 'lscpu | grep "L2" | cut -d':' -f2 | xargs')"
 GROUP_USER_TAGS+=",tc-cpu-cache-l3:$($TC_CMD 'lscpu | grep "L3" | cut -d':' -f2 | xargs')"
+GROUP_USER_TAGS+=",ci:$(ci_tag_value)"
 
 REPOSITORY_SET=$(curl -sku "$CLUSTER_USER:$CLUSTER_PASSWORD" -X GET "$CLUSTER_HOST/_cluster/state/metadata" | jq --raw-output '.metadata | has("repositories") and .repositories != null')
 if [ "$REPOSITORY_SET" == "true" ]; then

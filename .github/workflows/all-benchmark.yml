@@ -88,6 +88,8 @@ jobs:
       es_version: ${{ inputs.es_version || '8.15.0' }}
       os_version: ${{ inputs.os_version || '2.16.0' }}
       aws_region: ${{ inputs.aws_region || 'ca-central-1' }}
+      # assumes the possible events are schedule or workflow_dispatch
+      ci_tag: ${{ github.event_name == 'schedule' && 'scheduled' || 'manual' }}
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
