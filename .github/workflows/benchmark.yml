@@ -80,8 +80,6 @@ on:
         required: true
 
 env:
-  TF_VAR_ssh_priv_key: ~/.ssh/id_rsa
-  TF_VAR_ssh_pub_key: ~/.ssh/id_rsa.pub
   TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
   TF_VAR_snapshot_user_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
   TF_VAR_datastore_host: ${{ secrets.DATASTORE_HOST }}
@@ -119,8 +117,6 @@ jobs:
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install
-      - name: Set up SSH keys
-        run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -P ""
       - name: Terraform setup
         working-directory: infra
         run: terraform init
@@ -147,12 +143,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ssh-key-${{ steps.workspace.outputs.workspace_name }}
-          path: ~/.ssh/id_rsa
-      - name: Upload SSH pub key artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ssh-key.pub-${{ steps.workspace.outputs.workspace_name }}
-          path: ~/.ssh/id_rsa.pub
+          path: ${{ github.workspace }}/infra/private_key-gh-nightly-${{ steps.workspace.outputs.workspace_name }}.pem
       - name: Upload Terraform state artifact
         uses: actions/upload-artifact@v4
         with:
@@ -192,10 +183,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          mkdir -p ~/.ssh
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
-          chmod 600 ~/.ssh/id_rsa
-          chmod 644 ~/.ssh/id_rsa.pub
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
@@ -213,7 +202,7 @@ jobs:
         working-directory: infra
         if: ${{ inputs.create_snapshot }}
         run: |
-            ssh $SSH_OPTIONS \
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
               "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /mnt/ingest.sh;\""
         env:
@@ -223,7 +212,7 @@ jobs:
         working-directory: infra
         if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
         run: |
-            ssh $SSH_OPTIONS \
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
               "set -x; bash -ixc 'bash -x /mnt/restore_snapshot.sh;'"
       
@@ -260,10 +249,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          mkdir -p ~/.ssh
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
-          chmod 600 ~/.ssh/id_rsa
-          chmod 644 ~/.ssh/id_rsa.pub
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
@@ -282,7 +269,7 @@ jobs:
         working-directory: infra
         if: ${{ inputs.perform_benchmark }}
         run: |
-            ssh $SSH_OPTIONS \
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
               "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID bash -x /mnt/benchmark_single.sh $BENCHMARK_TYPE $RUN_ID;\""
         env:
@@ -313,10 +300,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          mkdir -p ~/.ssh
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
-          chmod 600 ~/.ssh/id_rsa
-          chmod 644 ~/.ssh/id_rsa.pub
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d

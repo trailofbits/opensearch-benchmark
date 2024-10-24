@@ -48,7 +48,7 @@ resource "tls_private_key" "ssh_key" {
 # Save private key to a local file
 resource "local_file" "private_key" {
   content         = tls_private_key.ssh_key.private_key_pem
-  filename        = "${path.module}/private_key-${md5(tls_private_key.ssh_key.public_key_openssh)}.pem"
+  filename        = "${path.module}/private_key-${terraform.workspace}.pem"
   file_permission = "0600"
 }
 
