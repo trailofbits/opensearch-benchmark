@@ -226,15 +226,10 @@ jobs:
     needs: [prepare_workspace, ingest-data]
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
     if: ${{ inputs.perform_benchmark && needs.ingest-data.result == 'success' }}
-    name: run-osb-${{matrix.run_group_id}}-${{matrix.run_id}}
+    name: run-osb-${{ needs.prepare_workspace.outputs.now_run_group_id }}
     continue-on-error: true
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        run_id: [0, 1, 2, 3, 4]
-        include:
-          - run_group_id: ${{ needs.prepare_workspace.outputs.now_run_group_id }}
+    # Almost 17h; the longest benchmark (big5 on OS) should take ~15h
+    timeout-minutes: 1000
 
     steps:
       - uses: actions/checkout@v4
@@ -276,11 +271,10 @@ jobs:
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -x /mnt/benchmark_single.sh $BENCHMARK_TYPE $RUN_ID;\""
+              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -x /mnt/benchmark.sh $BENCHMARK_TYPE;\""
         env:
             BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
-            RUN_ID: ${{ matrix.run_id }}
-            RUN_GROUP_ID: ${{ matrix.run_group_id }}
+            RUN_GROUP_ID: ${{ needs.prepare_workspace.outputs.now_run_group_id }}
             CI_TAG: ${{ inputs.ci_tag }}
 
   destroy_workspace:
