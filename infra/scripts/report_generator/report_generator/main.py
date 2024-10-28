@@ -996,9 +996,9 @@ def create_report(
         return None
 
     # Create a new spreadsheet
-    current_date: str = date.today().strftime("%y-%m-%d")
+    current_date: str = date.today().strftime("%Y-%m-%d")
     spreadsheet_id: Optional[str] = create_spreadsheet(
-        service, f"{current_date} Benchmark Results"
+        service, f"{current_date} | Benchmark Results"
     )
 
     if spreadsheet_id is None:
