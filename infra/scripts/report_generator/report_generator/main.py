@@ -149,7 +149,9 @@ def get_benchmark_data_operation_list(file_path: Path) -> list[str]:
 # Enumerates the .csv files in the given folder, looking for suitable benchmark
 # scenarios.
 def discover_benchmark_scenarios(
-    folder_path: Path, os_version: str, es_version: str
+    folder_path: Path,
+    os_version: str,
+    es_version: str
 ) -> Optional[list[BenchmarkScenario]]:
     benchmark_scenario_list: list[BenchmarkScenario] = []
 
@@ -311,34 +313,24 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
         "majorDimension": "ROWS",
         "values": [
             [
-                "Sheet Name",
-                "Run Group",
-                "Params",
-                "Procedure",
-                "Operation",
+                "Workload",
                 "Category",
-                "STDEV 50",
-                "STDEV 90",
-                "Average 50",
-                "Average 90",
-                "RSD 50",
-                "RSD 90",
-                "",
-                "Sheet Name",
-                "Run Group",
-                "Params",
-                "Procedure",
                 "Operation",
-                "Category",
-                "STDEV 50",
-                "STDEV 90",
-                "Average 50",
-                "Average 90",
-                "RSD 50",
-                "RSD 90",
-                "",
-                "Comparison\n|ES-OS| / AVG(ES,OS)",
                 "Comparison\nES/OS",
+                "",
+                "OS: STDEV 50",
+                "OS: STDEV 90",
+                "OS: Average 50",
+                "OS: Average 90",
+                "OS: RSD 50",
+                "OS: RSD 90",
+                "",
+                "ES: STDEV 50",
+                "ES: STDEV 90",
+                "ES: Average 50",
+                "ES: Average 90",
+                "ES: RSD 50",
+                "ES: RSD 90",
             ],
         ],
     }
@@ -658,21 +650,23 @@ def import_benchmark_scenario(
 
         # When changing this, make sure to update the formulas
         output_column_order: list[str] = [
+            "user-tags\\.run-group",
             "environment",
-            "user-tags\\.run",
+            "user-tags\\.engine-type",
+            "distribution-version",
             "workload",
+            "test-procedure",
+            "user-tags\\.run",
             "operation",
             "name",
             "value\\.50_0",
             "value\\.90_0",
-            "user-tags\\.run-group",
-            "test-procedure",
-            "workload\\.index_merge_policy",
-            "workload\\.max_num_segments",
-            "workload\\.bulk_indexing_clients",
             "workload\\.target_throughput",
             "workload\\.number_of_replicas",
-            "distribution-version",
+            "workload\\.bulk_indexing_clients",
+            "workload\\.max_num_segments",
+            "user-tags\\.shard-count",
+            "user-tags\\.replica-count",
         ]
 
         processed_row_list: list[list[str]] = [output_column_order]
