@@ -385,6 +385,28 @@ def get_category_operation_map() -> dict:
         {
             "workload": "big5",
             "categories": {
+                "General Operations": [
+                    "default",
+                    "scroll",
+                ],
+                "Date Histogram": [
+                    "composite-date_histogram-daily",
+                    "date_histogram_hourly_agg",
+                    "date_histogram_minute_agg",
+                    "range-auto-date-histo",
+                    "range-auto-date-histo-with-metrics",
+                ],
+                "Range Queries": [
+                    "range",
+                    "keyword-in-range",
+                    "range_field_conjunction_big_range_big_term_query",
+                    "range_field_conjunction_small_range_big_term_query",
+                    "range_field_conjunction_small_range_small_term_query",
+                    "range_field_disjunction_big_range_small_term_query",
+                    "range-agg-1",
+                    "range-agg-2",
+                    "range-numeric",
+                ],
                 "Sorting": [
                     "asc_sort_timestamp",
                     "asc_sort_timestamp_can_match_shortcut",
@@ -410,33 +432,11 @@ def get_category_operation_map() -> dict:
                     "keyword-terms-low-cardinality",
                     "multi_terms-keyword",
                 ],
-                "Date Histogram": [
-                    "composite-date_histogram-daily",
-                    "date_histogram_hourly_agg",
-                    "date_histogram_minute_agg",
-                    "range-auto-date-histo",
-                    "range-auto-date-histo-with-metrics",
-                ],
-                "General Operations": [
-                    "scroll",
-                    "default",
-                ],
                 "Text Querying": [
                     "query-string-on-message",
                     "query-string-on-message-filtered",
                     "query-string-on-message-filtered-sorted-num",
                     "term",
-                ],
-                "Range Queries": [
-                    "range",
-                    "keyword-in-range",
-                    "range_field_conjunction_big_range_big_term_query",
-                    "range_field_conjunction_small_range_big_term_query",
-                    "range_field_conjunction_small_range_small_term_query",
-                    "range_field_disjunction_big_range_small_term_query",
-                    "range-agg-1",
-                    "range-agg-2",
-                    "range-numeric",
                 ],
             },
         },
@@ -455,9 +455,17 @@ def get_category_operation_map() -> dict:
                     "date-histo-string-terms-via-default-strategy",
                     "date-histo-string-terms-via-global-ords",
                     "date-histo-string-terms-via-map",
+                ],
+                "Range & Date Histogram": [
                     "range-auto-date-histo",
                     "range-auto-date-histo-with-metrics",
                     "range-auto-date-histo-with-time-zone",
+                    "range-date-histo",
+                    "range-date-histo-with-metrics",
+                ],
+                "Range Queries": [
+                    "range-aggregation",
+                    "range-numeric-significant-terms",
                 ],
                 "Team Aggregations": [
                     "keyword-terms",
@@ -467,25 +475,21 @@ def get_category_operation_map() -> dict:
                     "keyword-terms-numeric-terms",
                     "numeric-terms-numeric-terms",
                 ],
-                "Range Queries": [
-                    "range-aggregation",
-                    "range-date-histo",
-                    "range-date-histo-with-metrics",
-                    "range-numeric-significant-terms",
-                ],
             },
         },
         {
             "workload": "nyc_taxis",
             "categories": {
+                "General Operations": [
+                    "default",
+                ],
                 "Aggregation": [
                     "distance_amount_agg",
                     "date_histogram_agg",
                     "autohisto_agg",
                 ],
-                "Other": [
+                "Range Queries": [
                     "range",
-                    "default",
                 ],
                 "Sorting": [
                     "desc_sort_tip_amount",
@@ -496,19 +500,17 @@ def get_category_operation_map() -> dict:
         {
             "workload": "pmc",
             "categories": {
-                "Other": [
+                "General Operations": [
                     "default",
+                    "scroll",
+                ],
+                "Aggregation": [
+                    "articles_monthly_agg_uncached",
+                    "articles_monthly_agg_cached",
                 ],
                 "Text Querying": [
                     "term",
                     "phrase",
-                ],
-                "Aggregation": [
-                    "articles_monthly_agg_uncached",
-                    "articles_monthly_agg_uncached",
-                ],
-                "Other": [
-                    "scroll",
                 ],
             },
         },
@@ -714,19 +716,14 @@ def import_benchmark_scenario(
 
         category_sheet_row_list: list[list[str]] = result.get("values", [])
         for row_index, category_sheet_row in enumerate(category_sheet_row_list):
+            if category_sheet_row[0] != workload_name:
+                continue
+            
             if category_range_start is None:
-                if category_sheet_row[0] == workload_name:
-                    category_range_start = row_index + 1
-                else:
-                    continue
+                category_range_start = row_index + 1
+                continue
 
-            if category_range_end is None:
-                if category_sheet_row[0] != workload_name:
-                    category_range_end = row_index
-                    break
-
-            if category_range_start is not None and category_range_end is not None:
-                break
+            category_range_end = row_index + 1
 
         if category_range_start is None or category_range_end is None:
             raise ValueError(
