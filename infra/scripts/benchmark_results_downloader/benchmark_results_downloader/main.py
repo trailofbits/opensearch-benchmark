@@ -24,6 +24,7 @@ class BenchmarkResult:
         engine: str,
         engine_version: str,
         environment: str,
+        benchmark_source: str,
         run: str,
         snapshot_bucket: str,
         snapshot_base_path: str,
@@ -41,6 +42,7 @@ class BenchmarkResult:
         self.Engine = engine
         self.EngineVersion = engine_version
         self.Environment = environment
+        self.BenchmarkSource = benchmark_source
         self.Run = run
         self.SnapshotBucket = snapshot_bucket
         self.SnapshotBasePath = snapshot_base_path
@@ -134,6 +136,12 @@ def handle_results_response(
         snapshot_bucket = user_tags["snapshot-s3-bucket"]
         snapshot_base_path = user_tags["snapshot-base-path"]
 
+        benchmark_source = user_tags.get("ci")
+
+        if benchmark_source is None:
+            # Keep empty to not confuse this with the runs that started setting the tag
+            benchmark_source = ""
+
         # Parse into a proper date for sorting purposes
         run_group_date = datetime.strptime(run_group_str, "%Y_%m_%d_%H_%M_%S")
 
@@ -146,6 +154,7 @@ def handle_results_response(
                 engine,
                 engine_version,
                 environment,
+                benchmark_source,
                 run,
                 snapshot_bucket,
                 snapshot_base_path,
@@ -162,6 +171,35 @@ def handle_results_response(
         )
 
     return True
+
+
+def benchmark_source_to_tag(source: str) -> str:
+    source_to_tag: dict[str, str] = {
+        "ci-scheduled": "scheduled",
+        "ci-manual": "manual",
+        "other": "not-used",
+    }
+
+    return source_to_tag[source]
+
+
+def build_source_query(sources: str) -> dict[str, Any]:
+    should_clauses: list[dict[str, Any]] = []
+
+    if "other" in sources:
+        # user-tags.ci not exists OR
+        should_clauses.append(
+            {"bool": {"must_not": {"exists": {"field": "user-tags.ci"}}}},
+        )
+
+    # <user-tags.ci == "scheduled"> OR <user-tags.ci == "manual"> OR <user-tags.ci == "not-used">
+    source_tag_values: list[str] = []
+    for source in sources:
+        source_tag_values.append(benchmark_source_to_tag(source))
+
+    should_clauses.append({"terms": {"user-tags.ci": source_tag_values}}),
+
+    return {"should": should_clauses, "minimum_should_match": 1}
 
 
 def main() -> int:
@@ -217,6 +255,15 @@ def main() -> int:
         help="Which environment prefix to download (default: %(default)s)",
         type=str,
         default="",
+    )
+    args_parser.add_argument(
+        "--source",
+        metavar="SOURCE",
+        help="Space separated list of sources of the benchmark results. "
+        "Can be any combination of ['ci-scheduled', 'ci-manual', 'other'] (default: %(default)s)",
+        nargs="+",
+        choices=["ci-scheduled", "ci-manual", "other"],
+        default=["ci-scheduled"],
     )
     args_parser.add_argument(
         "--debug-request",
@@ -296,7 +343,7 @@ def main() -> int:
                         }
                     },
                     {"prefix": {"environment": {"value": args.environment}}},
-                    {"terms": {"user-tags.run-type": [args.run_type]}},
+                    {"term": {"user-tags.run-type": args.run_type}},
                     {"exists": {"field": "operation"}},
                     {"exists": {"field": "value.50_0"}},
                     {"exists": {"field": "value.90_0"}},
@@ -311,6 +358,8 @@ def main() -> int:
             },
         },
     }
+
+    query["query"]["bool"].update(build_source_query(args.source))
 
     # Use VerboseTransport to print more information on the request being done
     transport_class = VerboseTransport if args.debug_request else Transport
@@ -345,7 +394,7 @@ def main() -> int:
     # Request batches of 10000 documents, which is the maximum
     query.update({"size": 10000})
 
-    # If we have less than 10000 documents
+    # If we have less than 10000 documents use the normal search
     if documents_count < 10000:
         response = client.search(body=query, index="benchmark-results*")
         if not handle_results_response(
@@ -353,6 +402,7 @@ def main() -> int:
         ):
             return 1
     else:
+        # Otherwise use the scroll request
         response = client.search(body=query, scroll="1m", index="benchmark-results*")
         if not handle_results_response(
             response, args.debug_response, results, all_workload_params_names_set
@@ -397,6 +447,7 @@ def main() -> int:
     headers_pre = [
         "user-tags\\.run-group",
         "environment",
+        "user-tags\\.ci",
         "user-tags\\.engine-type",
         "distribution-version",
         "user-tags\\.snapshot-s3-bucket",
@@ -462,6 +513,7 @@ def main() -> int:
         values_pre = [
             result.RunGroup,
             result.Environment,
+            result.BenchmarkSource,
             result.Engine,
             result.EngineVersion,
             result.SnapshotBucket,
