@@ -79,30 +79,8 @@ def get_program_arguments() -> Namespace:
     return parser.parse_args()
 
 
-# Contains a single benchmark scenario, comparing OS to ES
-@dataclass
-class BenchmarkScenario:
-    # The path to the directory containing the csv files
-    base_path: Path
-
-    # The benchmark name. The report generator will then access the files
-    # named `os-<name>.csv` and `es-<name>.csv`
-    name: str
-
-    # The list of operations found in the csv files. If there are
-    # differences between the two files, the benchmark scenario
-    # is skipped
-    operation_list: list[str]
-
-    # OS data path
-    os_file_path: Path
-
-    # ES data path
-    es_file_path: Path
-
-
 # Enumerates the operations listed in the given csv file
-def get_benchmark_data_operation_list(file_path: Path) -> list[str]:
+def get_benchmark_data_operation_list(file_path: Path) -> set[str]:
     # Read the data in the sheet we just created
     row_list: list[list[str]]
     with open(file_path, "r") as csv_file:
@@ -129,7 +107,7 @@ def get_benchmark_data_operation_list(file_path: Path) -> list[str]:
         )
 
     # List all the unique operations we have in the benchmark data
-    operation_list: list[str] = []
+    operation_set: set[str] = set()
 
     for index, row in enumerate(row_list):
         if index == 0:
@@ -139,74 +117,44 @@ def get_benchmark_data_operation_list(file_path: Path) -> list[str]:
         if len(operation) == 0:
             continue
 
-        if not operation in operation_list:
-            operation_list.append(operation)
+        operation_set.add(operation)
 
-    operation_list.sort()
-    return operation_list
+    return operation_set
 
 
 # Enumerates the .csv files in the given folder, looking for suitable benchmark
 # scenarios.
 def discover_benchmark_scenarios(
-    folder_path: Path,
-    os_version: str,
-    es_version: str
-) -> Optional[list[BenchmarkScenario]]:
-    benchmark_scenario_list: list[BenchmarkScenario] = []
+    folder_path: Path
+) -> list[Path] | None:
+    benchmark_scenario_list: list[Path] = []
 
-    csv_file_map: dict = {}
+    spec_list: list[dict] = get_category_operation_map()
+    op_dict: dict[str,set[str]] = {}
+    for d in spec_list:
+        workload = d["workload"]
+        op_dict[workload] = set()
+        for category, operation_list in d["categories"].items():
+            for operation in operation_list:
+                op_dict[workload].add(operation)
+
+    csv_file: list[Path] = []
     for directory_path, folder_name_list, file_name_list in walk(folder_path):
         for file_name in file_name_list:
             if not file_name.endswith(".csv"):
                 continue
 
-            file_id: str = file_name[19:-4]
-            csv_file_map[file_id] = file_name
+            csv_file.append(Path(directory_path).joinpath(file_name))
 
-        break
+    for path in csv_file:
+        op_set: set[str] = get_benchmark_data_operation_list(path)
 
-    for file_id, file_name in csv_file_map.items():
-        if not file_id.startswith(f"OS-{os_version}"):
+        workload = path.name.split('-')[5]
+
+        # Determine if this benchmark contains all operations expected
+        if op_set != op_dict[workload]:
             continue
-
-        os_benchmark_data_file_path: Path = Path(directory_path).joinpath(file_name)
-
-        es_file_id: str = file_id.replace(f"OS-{os_version}", f"ES-{es_version}")
-        es_file_name: Optional[str] = csv_file_map.get(es_file_id)
-        if es_file_name is None:
-            continue
-
-        es_benchmark_data_file_path: Path = Path(directory_path).joinpath(es_file_name)
-
-        if not os.path.isfile(es_benchmark_data_file_path):
-            continue
-
-        os_operation_list: Optional[list[str]] = get_benchmark_data_operation_list(
-            os_benchmark_data_file_path
-        )
-
-        es_operation_list: Optional[list[str]] = get_benchmark_data_operation_list(
-            es_benchmark_data_file_path
-        )
-
-        if set(os_operation_list) != set(es_operation_list):
-            print(
-                f"Skipping '{os_benchmark_data_file_path}/{es_benchmark_data_file_path}' because there's a mismatch in operation list between the ES and OS benchmark data"
-            )
-            continue
-
-        benchmark_name_separator: int = file_id.rfind("-")
-        benchmark_name: str = file_id[benchmark_name_separator + 1 :]
-        benchmark_scenario: BenchmarkScenario = BenchmarkScenario(
-            Path(directory_path),
-            benchmark_name,
-            os_operation_list,
-            os_benchmark_data_file_path,
-            es_benchmark_data_file_path,
-        )
-
-        benchmark_scenario_list.append(benchmark_scenario)
+        benchmark_scenario_list.append(path)
 
     if len(benchmark_scenario_list) == 0:
         return None
@@ -351,10 +299,10 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
 
 
 # Returns all the operation categories for the given workload
-def get_workload_operation_categories(workload: str) -> list[str]:
+def get_workload_operation_categories(workload: str) -> list[str] | None:
     category_list: Optional[list[str]] = None
 
-    spec_list: dict = get_category_operation_map()
+    spec_list: list[dict] = get_category_operation_map()
     for spec in spec_list:
         if spec["workload"] == workload:
             category_list = []
@@ -365,10 +313,10 @@ def get_workload_operation_categories(workload: str) -> list[str]:
 
 
 # Returns all the operations for the given workload
-def get_workload_operations(workload: str) -> list[str]:
+def get_workload_operations(workload: str) -> list[str] | None:
     operation_list: Optional[list[str]] = None
 
-    spec_list: dict = get_category_operation_map()
+    spec_list: list[dict] = get_category_operation_map()
     for spec in spec_list:
         if spec["workload"] == workload:
             operation_list = []
@@ -380,8 +328,8 @@ def get_workload_operations(workload: str) -> list[str]:
 
 
 # Returns the category/operation map
-def get_category_operation_map() -> dict:
-    spec_list: dict = [
+def get_category_operation_map() -> list[dict]:
+    spec_list: list[dict] = [
         {
             "workload": "big5",
             "categories": {
@@ -530,7 +478,7 @@ def add_categories_sheet(service: Resource, spreadsheet_id: str):
     ).execute()
 
     # Generate the rows in the spreadsheet
-    spec_list: dict = get_category_operation_map()
+    spec_list: list[dict] = get_category_operation_map()
     row_list: list[list[str]] = [["Workload", "Operation", "Category"]]
 
     for spec in spec_list:
@@ -595,342 +543,309 @@ def adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: str
 # Imports a benchmark scenario into the given spreadsheet as a new sheet, while also
 # updating the results data
 def import_benchmark_scenario(
-    service: Resource,
-    spreadsheet_id: str,
-    benchmark_scenario: BenchmarkScenario,
-    starting_row_index: int,
-) -> bool:
-    for product_identifier in ["os", "es"]:
-        # Load the rows from the benchmark data
-        csv_path: Path = (
-            benchmark_scenario.os_file_path
-            if product_identifier == "os"
-            else benchmark_scenario.es_file_path
+    csv_path: Path,
+) -> list[list[str]]:
+
+    row_list: list[list[str]]
+    with csv_path.open() as csv_file:
+        csv_reader = csv.reader(csv_file)
+        row_list = list(csv_reader)
+
+    # Get the name of the workload
+    workload_column_index: Optional[int] = None
+
+    for header_column_index, header_column in enumerate(row_list[0]):
+        if header_column == "workload":
+            workload_column_index = header_column_index
+            break
+
+    if workload_column_index is None:
+        raise ValueError(
+            "Failed to extract the workload name from the benchmark data"
         )
 
-        row_list: list[list[str]]
-        with open(csv_path, "r") as csv_file:
-            csv_reader = csv.reader(csv_file)
-            row_list = list(csv_reader)
+    workload_name: str = row_list[1][workload_column_index]
 
-        # Get the name of the workload
-        workload_column_index: Optional[int] = None
+    # Load the benchmark data from file
+    row_list: list[list[str]]
+    with open(csv_path, "r") as csv_file:
+        csv_reader = csv.reader(csv_file)
+        row_list = list(csv_reader)
 
-        for header_column_index, header_column in enumerate(row_list[0]):
-            if header_column == "workload":
-                workload_column_index = header_column_index
-                break
+    input_columns: dict[str, int] = {}
+    for index, header_column in enumerate(row_list[0]):
+        input_columns[header_column] = index
 
-        if workload_column_index is None:
-            raise ValueError(
-                "Failed to extract the workload name from the benchmark data"
+    # When changing this, make sure to update the formulas
+    output_column_order: list[str] = [
+        "user-tags\\.run-group",
+        "environment",
+        "user-tags\\.engine-type",
+        "distribution-version",
+        "workload",
+        "test-procedure",
+        "user-tags\\.run",
+        "operation",
+        "name",
+        "value\\.50_0",
+        "value\\.90_0",
+        "workload\\.target_throughput",
+        "workload\\.number_of_replicas",
+        "workload\\.bulk_indexing_clients",
+        "workload\\.max_num_segments",
+        "user-tags\\.shard-count",
+        "user-tags\\.replica-count",
+    ]
+
+    processed_row_list: list[list[str]] = [output_column_order]
+
+    for row_index, row in enumerate(row_list):
+        if row_index == 0:
+            continue
+
+        processed_row: list[str] = []
+        for column_name in output_column_order:
+            source_column_index: Optional[int] = input_columns.get(column_name)
+            column_value: str = (
+                "(null)"
+                if source_column_index is None
+                else row[source_column_index]
             )
+            processed_row.append(column_value)
 
-        workload_name: str = row_list[1][workload_column_index]
+        processed_row_list.append(processed_row)
 
-        # Create a new sheet for this product+workload
-        sheet_name: str = f"{product_identifier}-{benchmark_scenario.name}"
-        request_properties: dict = {
-            "requests": [{"addSheet": {"properties": {"title": sheet_name}}}]
-        }
+    return processed_row_list
 
-        response: dict = (
-            service.spreadsheets()
-            .batchUpdate(spreadsheetId=spreadsheet_id, body=request_properties)
-            .execute()
-        )
+#       # Determine what's the category range for this specific workload. Note that these indexes
+#       # are 1-based
+#       result: dict = (
+#           service.spreadsheets()
+#           .values()
+#           .get(spreadsheetId=spreadsheet_id, range="Categories!A:A")
+#           .execute()
+#       )
 
-        # Load the benchmark data from file
-        row_list: list[list[str]]
-        with open(csv_path, "r") as csv_file:
-            csv_reader = csv.reader(csv_file)
-            row_list = list(csv_reader)
+#       category_range_start: Optional[int] = None
+#       category_range_end: Optional[int] = None
 
-        input_columns: dict[str, int] = {}
-        for index, header_column in enumerate(row_list[0]):
-            input_columns[header_column] = index
+#       category_sheet_row_list: list[list[str]] = result.get("values", [])
+#       for row_index, category_sheet_row in enumerate(category_sheet_row_list):
+#           if category_sheet_row[0] != workload_name:
+#               continue
+#           
+#           if category_range_start is None:
+#               category_range_start = row_index + 1
+#               continue
 
-        # When changing this, make sure to update the formulas
-        output_column_order: list[str] = [
-            "user-tags\\.run-group",
-            "environment",
-            "user-tags\\.engine-type",
-            "distribution-version",
-            "workload",
-            "test-procedure",
-            "user-tags\\.run",
-            "operation",
-            "name",
-            "value\\.50_0",
-            "value\\.90_0",
-            "workload\\.target_throughput",
-            "workload\\.number_of_replicas",
-            "workload\\.bulk_indexing_clients",
-            "workload\\.max_num_segments",
-            "user-tags\\.shard-count",
-            "user-tags\\.replica-count",
-        ]
+#           category_range_end = row_index + 1
 
-        processed_row_list: list[list[str]] = [output_column_order]
+#       if category_range_start is None or category_range_end is None:
+#           raise ValueError(
+#               f"Failed to determine the category range for the following workload and sheet: {sheet_name}, {workload_name}"
+#           )
 
-        for row_index, row in enumerate(row_list):
-            if row_index == 0:
-                continue
+#       # Add the benchmark data to the Results sheet
+#       sheet_and_operation_rows: list[str] = []
+#       current_row: int = starting_row_index
 
-            processed_row: list[str] = []
-            for column_name in output_column_order:
-                source_column_index: Optional[int] = input_columns.get(column_name)
-                column_value: str = (
-                    "(null)"
-                    if source_column_index is None
-                    else row[source_column_index]
-                )
-                processed_row.append(column_value)
+#       for operation in benchmark_scenario.operation_list:
+#           column1: str
+#           column2: str
+#           operation_column: str
+#           if product_identifier == "os":
+#               column1 = "A"
+#               column2 = "E"
+#               operation_column = "E"
 
-            processed_row_list.append(processed_row)
+#           else:
+#               column1 = "N"
+#               column2 = "R"
+#               operation_column = "R"
 
-        # Import the data in the sheet we just created
-        request_properties: dict = {
-            "majorDimension": "ROWS",
-            "values": processed_row_list,
-        }
+#           row_list: list[str] = [
+#               sheet_name,
+#               f'=INDIRECT({column1}{current_row}&"!H{current_row}")',
+#               f'=CONCATENATE("index_merge_policy=", INDIRECT({column1}{current_row}&"!J{current_row}"), ", max_num_segments=", INDIRECT({column1}{current_row}&"!K{current_row}"), ", bulk_indexing_clients=", INDIRECT({column1}{current_row}&"!L{current_row}"), ", target_throughput=", INDIRECT({column1}{current_row}&"!M{current_row}"), ", number_of_replicas=", INDIRECT({column1}{current_row}&"!N{current_row}"))',
+#               f'=INDIRECT({column1}{current_row}&"!I{current_row}")',
+#               operation,
+#               f"=VLOOKUP({operation_column}{current_row}, Categories!B${category_range_start}:C${category_range_end}, 2, FALSE)",
+#               f'=STDEV.S(FILTER(INDIRECT({column1}{current_row}&"!F2:F"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
+#               f'=STDEV.S(FILTER(INDIRECT({column1}{current_row}&"!G2:G"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
+#               f'=AVERAGE(FILTER(INDIRECT({column1}{current_row}&"!F2:F"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
+#               f'=AVERAGE(FILTER(INDIRECT({column1}{current_row}&"!G2:G"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
+#           ]
 
-        service.spreadsheets().values().update(
-            spreadsheetId=spreadsheet_id,
-            range=f"{sheet_name}!A1",
-            valueInputOption="USER_ENTERED",
-            body=request_properties,
-        ).execute()
+#           if product_identifier == "os":
+#               row_list = row_list + [
+#                   f"=G{current_row}/I{current_row}",
+#                   f"=H{current_row}/J{current_row}",
+#               ]
+#           else:
+#               row_list = row_list + [
+#                   f"=T{current_row}/V{current_row}",
+#                   f"=U{current_row}/W{current_row}",
+#               ]
 
-        # Determine what's the category range for this specific workload. Note that these indexes
-        # are 1-based
-        result: dict = (
-            service.spreadsheets()
-            .values()
-            .get(spreadsheetId=spreadsheet_id, range="Categories!A:A")
-            .execute()
-        )
+#           sheet_and_operation_rows.append(row_list)
+#           current_row += 1
 
-        category_range_start: Optional[int] = None
-        category_range_end: Optional[int] = None
+#       request_properties: dict = {
+#           "majorDimension": "ROWS",
+#           "values": sheet_and_operation_rows,
+#       }
 
-        category_sheet_row_list: list[list[str]] = result.get("values", [])
-        for row_index, category_sheet_row in enumerate(category_sheet_row_list):
-            if category_sheet_row[0] != workload_name:
-                continue
-            
-            if category_range_start is None:
-                category_range_start = row_index + 1
-                continue
+#       insert_range: str
+#       if product_identifier == "os":
+#           insert_range = f"Results!A{starting_row_index}"
+#       else:
+#           insert_range = f"Results!N{starting_row_index}"
 
-            category_range_end = row_index + 1
+#       service.spreadsheets().values().update(
+#           spreadsheetId=spreadsheet_id,
+#           range=insert_range,
+#           valueInputOption="USER_ENTERED",
+#           body=request_properties,
+#       ).execute()
 
-        if category_range_start is None or category_range_end is None:
-            raise ValueError(
-                f"Failed to determine the category range for the following workload and sheet: {sheet_name}, {workload_name}"
-            )
+#   adjust_sheet_columns(service, spreadsheet_id, sheet_name)
 
-        # Add the benchmark data to the Results sheet
-        sheet_and_operation_rows: list[str] = []
-        current_row: int = starting_row_index
+#   # Add the comparison column
+#   comparison_rows: list[str] = []
+#   current_row = starting_row_index
 
-        for operation in benchmark_scenario.operation_list:
-            column1: str
-            column2: str
-            operation_column: str
-            if product_identifier == "os":
-                column1 = "A"
-                column2 = "E"
-                operation_column = "E"
+#   for operation in benchmark_scenario.operation_list:
+#       comparison_rows.append(
+#           [
+#               f"=ABS(J{current_row}-V{current_row})*IF(J{current_row}>V{current_row},-1,1)/((J{current_row}+V{current_row})/2)",
+#               f"=V{current_row}/J{current_row}",
+#           ]
+#       )
 
-            else:
-                column1 = "N"
-                column2 = "R"
-                operation_column = "R"
+#       current_row += 1
 
-            row_list: list[str] = [
-                sheet_name,
-                f'=INDIRECT({column1}{current_row}&"!H{current_row}")',
-                f'=CONCATENATE("index_merge_policy=", INDIRECT({column1}{current_row}&"!J{current_row}"), ", max_num_segments=", INDIRECT({column1}{current_row}&"!K{current_row}"), ", bulk_indexing_clients=", INDIRECT({column1}{current_row}&"!L{current_row}"), ", target_throughput=", INDIRECT({column1}{current_row}&"!M{current_row}"), ", number_of_replicas=", INDIRECT({column1}{current_row}&"!N{current_row}"))',
-                f'=INDIRECT({column1}{current_row}&"!I{current_row}")',
-                operation,
-                f"=VLOOKUP({operation_column}{current_row}, Categories!B${category_range_start}:C${category_range_end}, 2, FALSE)",
-                f'=STDEV.S(FILTER(INDIRECT({column1}{current_row}&"!F2:F"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
-                f'=STDEV.S(FILTER(INDIRECT({column1}{current_row}&"!G2:G"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
-                f'=AVERAGE(FILTER(INDIRECT({column1}{current_row}&"!F2:F"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
-                f'=AVERAGE(FILTER(INDIRECT({column1}{current_row}&"!G2:G"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
-            ]
+#   request_properties: dict = {
+#       "majorDimension": "ROWS",
+#       "values": comparison_rows,
+#   }
 
-            if product_identifier == "os":
-                row_list = row_list + [
-                    f"=G{current_row}/I{current_row}",
-                    f"=H{current_row}/J{current_row}",
-                ]
-            else:
-                row_list = row_list + [
-                    f"=T{current_row}/V{current_row}",
-                    f"=U{current_row}/W{current_row}",
-                ]
+#   service.spreadsheets().values().update(
+#       spreadsheetId=spreadsheet_id,
+#       range=f"Results!AA{starting_row_index}",
+#       valueInputOption="USER_ENTERED",
+#       body=request_properties,
+#   ).execute()
 
-            sheet_and_operation_rows.append(row_list)
-            current_row += 1
+#   # Add the summary
+#   operation_count: int = len(benchmark_scenario.operation_list)
+#   last_operation_row: int = starting_row_index + operation_count - 1
 
-        request_properties: dict = {
-            "majorDimension": "ROWS",
-            "values": sheet_and_operation_rows,
-        }
+#   row_list: list[list[str]] = []
+#   row_list.append(
+#       ["Summary", "", "", "Workload:", workload_name, "", f"=C{starting_row_index}"]
+#   )
+#   row_list.append(["Total Tasks", str(operation_count)])
+#   row_list.append(
+#       [
+#           "Tasks faster than ES",
+#           f'=COUNTIF(AA{starting_row_index}:AA{last_operation_row},">0")',
+#       ]
+#   )
+#   row_list.append(["Categories faster than ES", "Category", "Count", "Total"])
 
-        insert_range: str
-        if product_identifier == "os":
-            insert_range = f"Results!A{starting_row_index}"
-        else:
-            insert_range = f"Results!N{starting_row_index}"
+#   for category_name in get_workload_operation_categories(workload_name):
+#       row_list.append(
+#           [
+#               "",
+#               category_name,
+#               f'=COUNTIFS(F${starting_row_index}:F${last_operation_row}, "{category_name}", AA${starting_row_index}:AA${last_operation_row}, ">0")',
+#               f'=COUNTIF(F${starting_row_index}:F${last_operation_row}, "{category_name}")',
+#           ]
+#       )
 
-        service.spreadsheets().values().update(
-            spreadsheetId=spreadsheet_id,
-            range=insert_range,
-            valueInputOption="USER_ENTERED",
-            body=request_properties,
-        ).execute()
+#   row_list.append([""])
+#   row_list.append(
+#       [
+#           "Tasks much faster than ES",
+#           "Operation",
+#           "Amount",
+#           "",
+#           "Tasks much slower than ES",
+#           "Operation",
+#           "Amount",
+#       ]
+#   )
 
-    adjust_sheet_columns(service, spreadsheet_id, sheet_name)
+#   current_row: int = starting_row_index + len(row_list)
 
-    # Add the comparison column
-    comparison_rows: list[str] = []
-    current_row = starting_row_index
+#   row_list.append(
+#       [
+#           "",
+#           f"=FILTER($E${starting_row_index}:$E${last_operation_row}, AB{starting_row_index}:AB{last_operation_row} > 2)",
+#           f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AE{current_row})",
+#           "",
+#           "",
+#           f"=FILTER($E${starting_row_index}:$E${last_operation_row}, AB{starting_row_index}:AB{last_operation_row} < 0.5)",
+#           f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AI{current_row})",
+#       ]
+#   )
 
-    for operation in benchmark_scenario.operation_list:
-        comparison_rows.append(
-            [
-                f"=ABS(J{current_row}-V{current_row})*IF(J{current_row}>V{current_row},-1,1)/((J{current_row}+V{current_row})/2)",
-                f"=V{current_row}/J{current_row}",
-            ]
-        )
+#   request_properties: dict = {
+#       "majorDimension": "ROWS",
+#       "values": row_list,
+#   }
 
-        current_row += 1
+#   service.spreadsheets().values().update(
+#       spreadsheetId=spreadsheet_id,
+#       range=f"Results!AD{starting_row_index}",
+#       valueInputOption="USER_ENTERED",
+#       body=request_properties,
+#   ).execute()
 
-    request_properties: dict = {
-        "majorDimension": "ROWS",
-        "values": comparison_rows,
-    }
+#   # Manually expand the first "Amount" columns
+#   # TODO: Any way to make this with a formula?
+#   row_list = []
+#   for i in range(0, 10):
+#       row_list.append(
+#           [
+#               f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AE{current_row + i})",
+#           ]
+#       )
 
-    service.spreadsheets().values().update(
-        spreadsheetId=spreadsheet_id,
-        range=f"Results!AA{starting_row_index}",
-        valueInputOption="USER_ENTERED",
-        body=request_properties,
-    ).execute()
+#   request_properties: dict = {
+#       "majorDimension": "ROWS",
+#       "values": row_list,
+#   }
 
-    # Add the summary
-    operation_count: int = len(benchmark_scenario.operation_list)
-    last_operation_row: int = starting_row_index + operation_count - 1
+#   service.spreadsheets().values().update(
+#       spreadsheetId=spreadsheet_id,
+#       range=f"Results!AF{current_row}",
+#       valueInputOption="USER_ENTERED",
+#       body=request_properties,
+#   ).execute()
 
-    row_list: list[list[str]] = []
-    row_list.append(
-        ["Summary", "", "", "Workload:", workload_name, "", f"=C{starting_row_index}"]
-    )
-    row_list.append(["Total Tasks", str(operation_count)])
-    row_list.append(
-        [
-            "Tasks faster than ES",
-            f'=COUNTIF(AA{starting_row_index}:AA{last_operation_row},">0")',
-        ]
-    )
-    row_list.append(["Categories faster than ES", "Category", "Count", "Total"])
+#   row_list = []
+#   for i in range(0, 10):
+#       row_list.append(
+#           [
+#               f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AI{current_row + i})",
+#           ]
+#       )
 
-    for category_name in get_workload_operation_categories(workload_name):
-        row_list.append(
-            [
-                "",
-                category_name,
-                f'=COUNTIFS(F${starting_row_index}:F${last_operation_row}, "{category_name}", AA${starting_row_index}:AA${last_operation_row}, ">0")',
-                f'=COUNTIF(F${starting_row_index}:F${last_operation_row}, "{category_name}")',
-            ]
-        )
+#   request_properties: dict = {
+#       "majorDimension": "ROWS",
+#       "values": row_list,
+#   }
 
-    row_list.append([""])
-    row_list.append(
-        [
-            "Tasks much faster than ES",
-            "Operation",
-            "Amount",
-            "",
-            "Tasks much slower than ES",
-            "Operation",
-            "Amount",
-        ]
-    )
+#   service.spreadsheets().values().update(
+#       spreadsheetId=spreadsheet_id,
+#       range=f"Results!AJ{current_row}",
+#       valueInputOption="USER_ENTERED",
+#       body=request_properties,
+#   ).execute()
 
-    current_row: int = starting_row_index + len(row_list)
-
-    row_list.append(
-        [
-            "",
-            f"=FILTER($E${starting_row_index}:$E${last_operation_row}, AB{starting_row_index}:AB{last_operation_row} > 2)",
-            f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AE{current_row})",
-            "",
-            "",
-            f"=FILTER($E${starting_row_index}:$E${last_operation_row}, AB{starting_row_index}:AB{last_operation_row} < 0.5)",
-            f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AI{current_row})",
-        ]
-    )
-
-    request_properties: dict = {
-        "majorDimension": "ROWS",
-        "values": row_list,
-    }
-
-    service.spreadsheets().values().update(
-        spreadsheetId=spreadsheet_id,
-        range=f"Results!AD{starting_row_index}",
-        valueInputOption="USER_ENTERED",
-        body=request_properties,
-    ).execute()
-
-    # Manually expand the first "Amount" columns
-    # TODO: Any way to make this with a formula?
-    row_list = []
-    for i in range(0, 10):
-        row_list.append(
-            [
-                f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AE{current_row + i})",
-            ]
-        )
-
-    request_properties: dict = {
-        "majorDimension": "ROWS",
-        "values": row_list,
-    }
-
-    service.spreadsheets().values().update(
-        spreadsheetId=spreadsheet_id,
-        range=f"Results!AF{current_row}",
-        valueInputOption="USER_ENTERED",
-        body=request_properties,
-    ).execute()
-
-    row_list = []
-    for i in range(0, 10):
-        row_list.append(
-            [
-                f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AI{current_row + i})",
-            ]
-        )
-
-    request_properties: dict = {
-        "majorDimension": "ROWS",
-        "values": row_list,
-    }
-
-    service.spreadsheets().values().update(
-        spreadsheetId=spreadsheet_id,
-        range=f"Results!AJ{current_row}",
-        valueInputOption="USER_ENTERED",
-        body=request_properties,
-    ).execute()
-
-    adjust_sheet_columns(service, spreadsheet_id, sheet_name)
-    return True
+#   adjust_sheet_columns(service, spreadsheet_id, sheet_name)
+#   return True
 
 
 # Hides the specified columns in the given sheet
@@ -978,7 +893,7 @@ def hide_columns(
 
 # Creates a new report based on the benchmark data located at the given path
 def create_report(
-    creds: Credentials, benchmark_scenario_list: list[BenchmarkScenario]
+    creds: Credentials, benchmark_scenario_list: list[Path]
 ) -> Optional[str]:
     # Initialize the api client
     service: Resource = build("sheets", "v4", credentials=creds)
@@ -991,23 +906,43 @@ def create_report(
     spreadsheet_id: Optional[str] = create_spreadsheet(
         service, f"{current_date} | Benchmark Results"
     )
-
     if spreadsheet_id is None:
         print("Failed to create a new spreadsheet for the report")
         return None
 
-    # Go through each benchmark scenario
-    print("Processing the benchmark scenarios")
-    current_base_row_index: int = 2
+    # Create a new sheet for all benchmarks
+    sheet_name: str = "raw"
+    request_properties: dict = {
+        "requests": [{"addSheet": {"properties": {"title": sheet_name}}}]
+    }
+    response: dict = (
+        service.spreadsheets()
+        .batchUpdate(spreadsheetId=spreadsheet_id, body=request_properties)
+        .execute()
+    )
 
+    # Import all benchmark scenarios
+    print("Processing the benchmark scenarios")
+    raw_data: list[list[str]] = []
     for benchmark_scenario in benchmark_scenario_list:
         print(f" > {benchmark_scenario.name}")
-        if not import_benchmark_scenario(
-            service, spreadsheet_id, benchmark_scenario, current_base_row_index
-        ):
-            print("Failed to process the benchmark scenario")
+        raw_data.extend(import_benchmark_scenario(benchmark_scenario))
+    request_properties: dict = {
+        "majorDimension": "ROWS",
+        "values": raw_data,
+    }
+    service.spreadsheets().values().append(
+        spreadsheetId=spreadsheet_id,
+        range="raw!A1",
+        valueInputOption="USER_ENTERED",
+        body=request_properties,
+    ).execute()
 
-        current_base_row_index += len(benchmark_scenario.operation_list) + 1
+    #TODO
+    # Create Results page
+
+    #TODO
+    # Create Summary page
 
     adjust_sheet_columns(service, spreadsheet_id, "Results")
     hide_columns(service, spreadsheet_id, "Results", ["C", "P"])
@@ -1019,15 +954,15 @@ def main() -> int:
     args: Namespace = get_program_arguments()
 
     # Make sure we have data to process first
-    benchmark_scenario_list: Optional[list[BenchmarkScenario]] = (
+    benchmark_scenario_list: Optional[list[Path]] = (
         discover_benchmark_scenarios(
-            args.benchmark_data, args.os_version, args.es_version
+            args.benchmark_data
         )
     )
 
     if benchmark_scenario_list is None:
         print("No benchmark scenario found! Make sure that the file names are correct")
-        return None
+        return 1
 
     # Get the credentials
     if args.credentials is not None:
