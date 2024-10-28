@@ -4,11 +4,12 @@ from argparse import ArgumentParser, Namespace
 from os import walk
 import os.path
 
-import csv
 from datetime import date
 from pathlib import Path
-from typing import Optional
-from dataclasses import dataclass
+from typing import Optional, Tuple, Any
+
+from report_generator.import_data import ImportData
+from report_generator.common import get_category_operation_map
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -58,18 +59,6 @@ def get_program_arguments() -> Namespace:
         help="Path to the benchmark data folder, which should contain the raw .csv files",
         required=True,
         type=directory_path_parser,
-    )
-
-    parser.add_argument(
-        "--os-version",
-        help="The OS version",
-        required=True,
-    )
-
-    parser.add_argument(
-        "--es-version",
-        help="The ES version",
-        required=True,
     )
 
     parser.add_argument(
@@ -255,7 +244,18 @@ def create_blank_spreadsheet(
 # Creates a new spreadsheet, made of only the results sheet and its basic columns
 def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
     # Create a new spreadsheet and add the initial columns
-    spreadsheet_id: str = create_blank_spreadsheet(service, title, "Results", 50, 100)
+    spreadsheet_id: str = create_blank_spreadsheet(service, title, "Summary", 50, 100)
+
+    # Create a new sheet for aggregated results
+    sheet_name: str = "Results"
+    request_properties: dict = {
+        "requests": [{"addSheet": {"properties": {"title": sheet_name}}}]
+    }
+    response: dict = (
+        service.spreadsheets()
+        .batchUpdate(spreadsheetId=spreadsheet_id, body=request_properties)
+        .execute()
+    )
 
     request_properties: dict = {
         "majorDimension": "ROWS",
@@ -295,6 +295,17 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
     add_categories_sheet(service, spreadsheet_id)
     adjust_sheet_columns(service, spreadsheet_id, "Categories")
 
+    # Create a new sheet for all benchmark data
+    sheet_name: str = "raw"
+    request_properties: dict = {
+        "requests": [{"addSheet": {"properties": {"title": sheet_name}}}]
+    }
+    response: dict = (
+        service.spreadsheets()
+        .batchUpdate(spreadsheetId=spreadsheet_id, body=request_properties)
+        .execute()
+    )
+
     return spreadsheet_id
 
 
@@ -325,146 +336,6 @@ def get_workload_operations(workload: str) -> list[str] | None:
                     operation_list.append(operation_name)
 
     return operation_list
-
-
-# Returns the category/operation map
-def get_category_operation_map() -> list[dict]:
-    spec_list: list[dict] = [
-        {
-            "workload": "big5",
-            "categories": {
-                "General Operations": [
-                    "default",
-                    "scroll",
-                ],
-                "Date Histogram": [
-                    "composite-date_histogram-daily",
-                    "date_histogram_hourly_agg",
-                    "date_histogram_minute_agg",
-                    "range-auto-date-histo",
-                    "range-auto-date-histo-with-metrics",
-                ],
-                "Range Queries": [
-                    "range",
-                    "keyword-in-range",
-                    "range_field_conjunction_big_range_big_term_query",
-                    "range_field_conjunction_small_range_big_term_query",
-                    "range_field_conjunction_small_range_small_term_query",
-                    "range_field_disjunction_big_range_small_term_query",
-                    "range-agg-1",
-                    "range-agg-2",
-                    "range-numeric",
-                ],
-                "Sorting": [
-                    "asc_sort_timestamp",
-                    "asc_sort_timestamp_can_match_shortcut",
-                    "asc_sort_timestamp_no_can_match_shortcut",
-                    "asc_sort_with_after_timestamp",
-                    "desc_sort_timestamp",
-                    "desc_sort_timestamp_can_match_shortcut",
-                    "desc_sort_timestamp_no_can_match_shortcut",
-                    "sort_keyword_can_match_shortcut",
-                    "desc_sort_with_after_timestamp",
-                    "sort_keyword_no_can_match_shortcut",
-                    "sort_numeric_asc",
-                    "sort_numeric_asc_with_match",
-                    "sort_numeric_desc",
-                    "sort_numeric_desc_with_match",
-                ],
-                "Team Aggregations": [
-                    "cardinality-agg-high",
-                    "cardinality-agg-low",
-                    "composite_terms-keyword",
-                    "composite-terms",
-                    "keyword-terms",
-                    "keyword-terms-low-cardinality",
-                    "multi_terms-keyword",
-                ],
-                "Text Querying": [
-                    "query-string-on-message",
-                    "query-string-on-message-filtered",
-                    "query-string-on-message-filtered-sorted-num",
-                    "term",
-                ],
-            },
-        },
-        {
-            "workload": "noaa",
-            "categories": {
-                "Date Histogram": [
-                    "date-histo-entire-range",
-                    "date-histo-geohash-grid",
-                    "date-histo-geotile-grid",
-                    "date-histo-histo",
-                    "date-histo-numeric-terms",
-                    "date-histo-string-significant-terms-via-default-strategy",
-                    "date-histo-string-significant-terms-via-global-ords",
-                    "date-histo-string-significant-terms-via-map",
-                    "date-histo-string-terms-via-default-strategy",
-                    "date-histo-string-terms-via-global-ords",
-                    "date-histo-string-terms-via-map",
-                ],
-                "Range & Date Histogram": [
-                    "range-auto-date-histo",
-                    "range-auto-date-histo-with-metrics",
-                    "range-auto-date-histo-with-time-zone",
-                    "range-date-histo",
-                    "range-date-histo-with-metrics",
-                ],
-                "Range Queries": [
-                    "range-aggregation",
-                    "range-numeric-significant-terms",
-                ],
-                "Team Aggregations": [
-                    "keyword-terms",
-                    "keyword-terms-low-cardinality",
-                    "keyword-terms-low-cardinality-min",
-                    "keyword-terms-min",
-                    "keyword-terms-numeric-terms",
-                    "numeric-terms-numeric-terms",
-                ],
-            },
-        },
-        {
-            "workload": "nyc_taxis",
-            "categories": {
-                "General Operations": [
-                    "default",
-                ],
-                "Aggregation": [
-                    "distance_amount_agg",
-                    "date_histogram_agg",
-                    "autohisto_agg",
-                ],
-                "Range Queries": [
-                    "range",
-                ],
-                "Sorting": [
-                    "desc_sort_tip_amount",
-                    "asc_sort_tip_amount",
-                ],
-            },
-        },
-        {
-            "workload": "pmc",
-            "categories": {
-                "General Operations": [
-                    "default",
-                    "scroll",
-                ],
-                "Aggregation": [
-                    "articles_monthly_agg_uncached",
-                    "articles_monthly_agg_cached",
-                ],
-                "Text Querying": [
-                    "term",
-                    "phrase",
-                ],
-            },
-        },
-    ]
-
-    return spec_list
 
 
 # Adds a 'categories' sheet
@@ -540,82 +411,6 @@ def adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: str
     )
 
 
-# Imports a benchmark scenario into the given spreadsheet as a new sheet, while also
-# updating the results data
-def import_benchmark_scenario(
-    csv_path: Path,
-) -> list[list[str]]:
-
-    row_list: list[list[str]]
-    with csv_path.open() as csv_file:
-        csv_reader = csv.reader(csv_file)
-        row_list = list(csv_reader)
-
-    # Get the name of the workload
-    workload_column_index: Optional[int] = None
-
-    for header_column_index, header_column in enumerate(row_list[0]):
-        if header_column == "workload":
-            workload_column_index = header_column_index
-            break
-
-    if workload_column_index is None:
-        raise ValueError(
-            "Failed to extract the workload name from the benchmark data"
-        )
-
-    workload_name: str = row_list[1][workload_column_index]
-
-    # Load the benchmark data from file
-    row_list: list[list[str]]
-    with open(csv_path, "r") as csv_file:
-        csv_reader = csv.reader(csv_file)
-        row_list = list(csv_reader)
-
-    input_columns: dict[str, int] = {}
-    for index, header_column in enumerate(row_list[0]):
-        input_columns[header_column] = index
-
-    # When changing this, make sure to update the formulas
-    output_column_order: list[str] = [
-        "user-tags\\.run-group",
-        "environment",
-        "user-tags\\.engine-type",
-        "distribution-version",
-        "workload",
-        "test-procedure",
-        "user-tags\\.run",
-        "operation",
-        "name",
-        "value\\.50_0",
-        "value\\.90_0",
-        "workload\\.target_throughput",
-        "workload\\.number_of_replicas",
-        "workload\\.bulk_indexing_clients",
-        "workload\\.max_num_segments",
-        "user-tags\\.shard-count",
-        "user-tags\\.replica-count",
-    ]
-
-    processed_row_list: list[list[str]] = [output_column_order]
-
-    for row_index, row in enumerate(row_list):
-        if row_index == 0:
-            continue
-
-        processed_row: list[str] = []
-        for column_name in output_column_order:
-            source_column_index: Optional[int] = input_columns.get(column_name)
-            column_value: str = (
-                "(null)"
-                if source_column_index is None
-                else row[source_column_index]
-            )
-            processed_row.append(column_value)
-
-        processed_row_list.append(processed_row)
-
-    return processed_row_list
 
 #       # Determine what's the category range for this specific workload. Note that these indexes
 #       # are 1-based
@@ -891,90 +686,57 @@ def hide_columns(
     ).execute()
 
 
-# Creates a new report based on the benchmark data located at the given path
-def create_report(
-    creds: Credentials, benchmark_scenario_list: list[Path]
-) -> Optional[str]:
+# Creates a blank spreadsheet
+# Returns the spreadsheet id
+def init_spreadsheet(
+    creds: Credentials
+) -> Tuple[Any|None,str|None]:
     # Initialize the api client
     service: Resource = build("sheets", "v4", credentials=creds)
     if service is None:
         print("Failed to initialize the API client")
-        return None
+        return None,None
 
     # Create a new spreadsheet
     current_date: str = date.today().strftime("%Y-%m-%d")
     spreadsheet_id: Optional[str] = create_spreadsheet(
         service, f"{current_date} | Benchmark Results"
     )
-    if spreadsheet_id is None:
-        print("Failed to create a new spreadsheet for the report")
-        return None
-
-    # Create a new sheet for all benchmarks
-    sheet_name: str = "raw"
-    request_properties: dict = {
-        "requests": [{"addSheet": {"properties": {"title": sheet_name}}}]
-    }
-    response: dict = (
-        service.spreadsheets()
-        .batchUpdate(spreadsheetId=spreadsheet_id, body=request_properties)
-        .execute()
-    )
-
-    # Import all benchmark scenarios
-    print("Processing the benchmark scenarios")
-    raw_data: list[list[str]] = []
-    for benchmark_scenario in benchmark_scenario_list:
-        print(f" > {benchmark_scenario.name}")
-        raw_data.extend(import_benchmark_scenario(benchmark_scenario))
-    request_properties: dict = {
-        "majorDimension": "ROWS",
-        "values": raw_data,
-    }
-    service.spreadsheets().values().append(
-        spreadsheetId=spreadsheet_id,
-        range="raw!A1",
-        valueInputOption="USER_ENTERED",
-        body=request_properties,
-    ).execute()
-
-    #TODO
-    # Create Results page
-
-    #TODO
-    # Create Summary page
-
-    adjust_sheet_columns(service, spreadsheet_id, "Results")
-    hide_columns(service, spreadsheet_id, "Results", ["C", "P"])
-
-    return f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
+    if spreadsheet_id is not None:
+        return service, spreadsheet_id
+    return None,None
 
 
-def main() -> int:
+def main() -> bool:
+    # Get arguments
     args: Namespace = get_program_arguments()
 
-    # Make sure we have data to process first
-    benchmark_scenario_list: Optional[list[Path]] = (
-        discover_benchmark_scenarios(
-            args.benchmark_data
-        )
-    )
-
-    if benchmark_scenario_list is None:
-        print("No benchmark scenario found! Make sure that the file names are correct")
-        return 1
-
-    # Get the credentials
+    # Authenticate credentials
     if args.credentials is not None:
         authenticate_from_credentials(args.credentials, args.token)
-
     creds: Credentials = authenticate_from_token(args.token)
     if creds is None:
-        return 1
+        return False
 
-    report_url: Optional[str] = create_report(creds, benchmark_scenario_list)
-    if report_url is None:
-        return 1
+    # Initialize spreadsheet
+    service, spreadsheet_id = init_spreadsheet(creds)
+    if service is None or spreadsheet_id is None:
+        print("Error, spreadsheet not created.")
+        return False
 
+    # Import data to spreadsheet
+    data = ImportData(
+        service=service,
+        spreadsheet_id=spreadsheet_id,
+        folder=args.benchmark_data
+    )
+    if not data.get():
+        print("Error importing data")
+        return False
+    print("Imported data successfully")
+
+    # Output spreadsheet URL for ease
+    report_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
     print(f"Report URL: {report_url}")
-    return 0
+
+    return True
