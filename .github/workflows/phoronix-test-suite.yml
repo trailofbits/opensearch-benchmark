@@ -2,7 +2,7 @@
 name: Phoronix Test Suite
 
 on:
-  workflow_call:
+  workflow_dispatch:
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
