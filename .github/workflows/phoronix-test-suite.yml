@@ -27,9 +27,6 @@ jobs:
       now: ${{ steps.now.outputs.now }}
       now_run_group_id: ${{ steps.now.outputs.now_run_group_id }}
     steps:
-      - name: test
-        run: |
-          exit 1
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -187,19 +184,12 @@ jobs:
             TF_VAR_benchmark_environment: gh-nightly-${{ needs.prepare_workspace.outputs.now }}
 
   clean_up_on_error:
-    needs: [prepare_workspace, phoronix-test-suite]
+    needs: [prepare_workspace, destroy_workspace, phoronix-test-suite]
     runs-on: ubuntu-latest
 
     if: ${{ always() && contains(needs.*.result, 'failure') }}
     
     steps:
-      - name: Install AWS CLI
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-
-          unzip awscliv2.zip
-          sudo ./aws/install
-
       - name: Deleting the SSH key pair
         run: |
           aws \
