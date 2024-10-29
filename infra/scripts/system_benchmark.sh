@@ -110,7 +110,8 @@ collectBaseSystemInfo() {
 
   local file_path_list=("/proc/cpuinfo")
   for file_path in "${file_path_list[@]}" ; do
-    local file_name="$(echo ${file_path} | tr '/' '_')"
+    local file_name
+    file_name="$(echo ${file_path} | tr '/' '_')"
     trace "  '${file_path}' => '${file_name}'"
 
     if ! cat "${file_path}" > "${REPORT_PATH}/${file_name}" ; then
@@ -120,7 +121,8 @@ collectBaseSystemInfo() {
 
   local command_list=("hostname" "lshw" "free -h" "iostat" "phoronix-test-suite system-info" "phoronix-test-suite system-properties" "ip addr" "hostname")
   for command in "${command_list[@]}" ; do
-    local file_name="$(echo ${command} | tr ' ' '_')"
+    local file_name
+    file_name="$(echo ${command} | tr ' ' '_')"
     trace "  '${command}' => '${file_name}'"
 
     if ! ${command} > "${REPORT_PATH}/${file_name}" ; then
