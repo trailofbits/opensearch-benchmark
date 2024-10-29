@@ -87,3 +87,10 @@ You will get the JSON files of the various test executions in the `/tmp/results`
 ```shell
 terraform destroy
 ```
+
+## Segment timestamps
+To extract lucene index segment timestamps, ssh into the load-generation host and run
+```shell
+bash /mnt/segment_timestamps.sh
+```
+This will produce a file named `segment-timestamps.txt` in the current directory.
