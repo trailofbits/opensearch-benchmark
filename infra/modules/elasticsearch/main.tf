@@ -134,17 +134,6 @@ resource "aws_instance" "load-generation" {
   }
 
   provisioner "file" {
-    content = templatefile("${path.module}/../../scripts/benchmark_single.sh",
-      {
-        workload        = var.workload
-        workload_params = var.workload_params,
-        test_procedure  = var.test_procedure,
-      }
-    )
-    destination = "/mnt/benchmark_single.sh"
-  }
-
-  provisioner "file" {
     source      = "${path.module}/../../scripts/utils.sh"
     destination = "/mnt/utils.sh"
   }
