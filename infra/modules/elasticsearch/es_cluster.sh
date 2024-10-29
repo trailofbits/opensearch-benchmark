@@ -17,20 +17,20 @@ cd elasticsearch-$CLUSTER_VERSION/ || exit 1
 cat <<EOF > config/elasticsearch.yml
 discovery.type: single-node
 network.host: 0.0.0.0
-path.repo: ["/mnt/es-backup"]
-path.data: /mnt/es-data
-path.logs: /mnt/es-logs
+path.repo: ["/mnt/backup"]
+path.data: /mnt/data
+path.logs: /mnt/logs
 EOF
 
-sudo mkdir /mnt/es-backup && sudo chmod ugo+rwx /mnt/es-backup
-sudo mkdir /mnt/es-data && sudo chmod ugo+rwx /mnt/es-data
-sudo mkdir /mnt/es-logs && sudo chmod ugo+rwx /mnt/es-logs
+sudo mkdir /mnt/backup && sudo chmod ugo+rwx /mnt/backup
+sudo mkdir /mnt/data && sudo chmod ugo+rwx /mnt/data
+sudo mkdir /mnt/logs && sudo chmod ugo+rwx /mnt/logs
 
 echo "$ES_SNAPSHOT_AWS_ACCESS_KEY_ID" | ./bin/elasticsearch-keystore add -s -f -x s3.client.default.access_key
 echo "$ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY" | bin/elasticsearch-keystore add -s -f -x s3.client.default.secret_key
 
 # Start Elasticsearch
-./bin/elasticsearch -d -p /mnt/es_pid
+./bin/elasticsearch -d -p /mnt/pid
 
 # Wait for Elasticsearch to start
 while ! curl --max-time 5 -ks https://localhost:9200 > /dev/null 2>&1 ; do

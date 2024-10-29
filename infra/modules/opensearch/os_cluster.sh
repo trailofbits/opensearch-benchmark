@@ -20,11 +20,22 @@ wget $DOWNLOAD_URL
 tar -xvf $INSTALL_FILENAME -C $INSTALL_ROOT
 rm $INSTALL_FILENAME
 
-# Update the configuration to allow incoming connections
-sed -i "s/#network.host: .*/network.host: 0.0.0.0/" $CONFIG_FILE 
-echo "discovery.type: single-node" >> $CONFIG_FILE
-# Needed to make the s3 client successfully locate the snapshot bucket
-echo "s3.client.default.region: us-east-1" >> $CONFIG_FILE
+
+# Specify directories for storage and update the configuration to allow incoming connections.
+# Also a config that is needed to make the s3 client successfully locate the snapshot bucket
+cat <<EOF > $CONFIG_FILE
+discovery.type: single-node
+network.host: 0.0.0.0
+path.repo: ["/mnt/backup"]
+path.data: /mnt/data
+path.logs: /mnt/logs
+s3.client.default.region: us-east-1
+EOF
+
+sudo mkdir /mnt/backup && sudo chmod ugo+rwx /mnt/backup
+sudo mkdir /mnt/data && sudo chmod ugo+rwx /mnt/data
+sudo mkdir /mnt/logs && sudo chmod ugo+rwx /mnt/logs
+
 
 # JDK location
 export OPENSEARCH_JAVA_HOME=$INSTALL_PATH/jdk
@@ -44,7 +55,8 @@ echo "$OS_SNAPSHOT_AWS_SECRET_ACCESS_KEY" | $INSTALL_PATH/bin/opensearch-keystor
 OPENSEARCH_INITIAL_ADMIN_PASSWORD=$CLUSTER_PASSWORD $INSTALL_PATH/opensearch-tar-install.sh &> opensearch.log &
 SERVER_PID=$!
 
-echo "Waiting for server to boot"
+# Record the pid
+echo $SERVER_PID > /mnt/pid
 
 echo "Waiting for server to boot"
 # Wait for OpenSearch to start
