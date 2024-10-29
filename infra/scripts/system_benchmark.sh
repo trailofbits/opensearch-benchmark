@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 
+SCRIPT_VERSION="@SOURCE_REPOSITORY_COMMIT_ID@"
 PHORONIX_TEST_SUITE_VERSION="10.8.4"
 PHORONIX_TEST_SUITE_URL="https://github.com/phoronix-test-suite/phoronix-test-suite/releases/download/v${PHORONIX_TEST_SUITE_VERSION}/phoronix-test-suite_${PHORONIX_TEST_SUITE_VERSION}_all.deb"
-PHORONIX_BENCHMARK_LIST=("pts/hpcg" "pts/npb" "system/openssl" "pts/memcached" "pts/leveldb" "pts/unpack-linux" "pts/speedtest-cli")
+#PHORONIX_BENCHMARK_LIST=("pts/hpcg" "pts/npb" "system/openssl" "pts/memcached" "pts/leveldb" "pts/unpack-linux" "pts/speedtest-cli")
+PHORONIX_BENCHMARK_LIST=("pts/speedtest-cli")
 PHORONIX_BENCHMARK_DEPENDENCY_LIST=("libevent-dev" "cmake" "openmpi-bin" "gfortran" "libgmock-dev" "libopenmpi-dev")
 
 main() {
   printf "Log file: ${LOG_FILE}\n"
   printf "Report path: ${REPORT_PATH}\n"
+  printf "Script version: ${SCRIPT_VERSION}\n"
 
   installPrerequisites
   installTestSuite
@@ -21,12 +24,15 @@ installPrerequisites() {
   local package_name_list=("curl" "sysstat" "zip" "coreutils" "lshw" "procps")
 
   for package_name in "${package_name_list[@]}" ; do
-    if ! dpkg -l "${package_name}" > /dev/null 2>&1 ; then
+    local package_version
+    if ! package_version="$(dpkg-query --show --showformat='${Version}\n' ${package_name})" ; then
       trace "Installing '${package_name}'..."
 
       if ! apt install -y "${package_name}" ; then
         terminate "Failed to install the package"
       fi
+    else
+      trace "Using package ${package_name} at version ${package_version}"
     fi
   done
 }
@@ -57,7 +63,8 @@ terminate() {
 installTestSuite() {
   trace "Installing the phoronix test suite..."
 
-  if ! dpkg -l "phoronix-test-suite" > /dev/null 2>&1 ; then
+  local package_version
+  if ! package_version="$(dpkg-query --show --showformat='${Version}\n' phoronix-test-suite)" ; then
     trace "Installing the Phoronix test suite..."
 
     local download_folder
@@ -80,7 +87,7 @@ installTestSuite() {
     fi
 
   else
-    trace "The phoronix test suite is already installed"
+    trace "The phoronix test suite is already installed at version ${package_version}"
   fi
 
   trace "Installing the tests..."
@@ -96,6 +103,10 @@ installTestSuite() {
 
 collectBaseSystemInfo() {
   trace "Collecting system information"
+
+  if ! echo "${SCRIPT_VERSION}" > "${REPORT_PATH}/script_version" ; then
+    terminate "Failed to save the script version"
+  fi
 
   local file_path_list=("/proc/cpuinfo")
   for file_path in "${file_path_list[@]}" ; do
@@ -135,7 +146,7 @@ executeBenchmarks() {
   fi
 
   local report_path="/var/lib/phoronix-test-suite/test-results/${report_folder_name}"
-  if ! ( cd / && zip -r9 "pts-report-$(hostname).zip" "${report_path}" ) ; then
+  if ! ( cd / && zip -r9 "pts-report.zip" "${report_path}" ) ; then
     terminate "Failed to create the report archive"
   fi
 }
