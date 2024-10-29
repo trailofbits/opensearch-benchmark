@@ -1,0 +1,204 @@
+---
+name: Phoronix Test Suite
+
+on:
+  workflow_call:
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+
+env:
+  TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
+  TF_VAR_snapshot_user_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
+  TF_VAR_aws_region: ${{ inputs.aws_region }}
+  TF_VAR_aws_subnet_zone: ${{ inputs.aws_region }}a
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  SSH_OPTIONS: -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10
+
+jobs:
+  prepare_workspace:
+    runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    outputs:
+      workspace_name: ${{ steps.workspace.outputs.workspace_name }}
+      now: ${{ steps.now.outputs.now }}
+      now_run_group_id: ${{ steps.now.outputs.now_run_group_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: hashicorp/setup-terraform@v3
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+      - name: Terraform setup
+        working-directory: infra
+        run: terraform init
+      - name: Compute Terraform workspace name
+        id: workspace
+        run: |
+            echo "workspace_name=$(echo ${{ github.run_id }} | md5sum | head -c 8)" >> $GITHUB_OUTPUT
+      - name: Switch Terraform workspace
+        working-directory: infra
+        run: terraform workspace new pts-${{ steps.workspace.outputs.workspace_name }}
+      - name: Get current time
+        id: now
+        run: |
+          echo "now=$(date +%s)" >> $GITHUB_OUTPUT
+          echo "now_run_group_id=$(date '+%Y_%m_%d_%H_%M_%S')" >> $GITHUB_OUTPUT
+      - name: Create benchmark environment
+        working-directory: infra
+        run: terraform apply -auto-approve
+        env:
+            TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
+      - name: Upload SSH key artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssh-key-${{ steps.workspace.outputs.workspace_name }}
+          path: ${{ github.workspace }}/infra/private_key-gh-nightly-${{ steps.workspace.outputs.workspace_name }}.pem
+      - name: Upload Terraform state artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state-${{ steps.workspace.outputs.workspace_name }}
+          path: ${{ github.workspace }}/infra/terraform.tfstate.d/
+      - name: Upload terraform dir
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-dir-${{ steps.workspace.outputs.workspace_name }}
+          path: ${{ github.workspace }}/infra/.terraform/
+          include-hidden-files: true
+      - name: Upload terraform lock file
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-lock-${{ steps.workspace.outputs.workspace_name }}
+          path: ${{ github.workspace }}/infra/.terraform.lock.hcl
+          include-hidden-files: true
+
+  phoronix-test-suite:
+    needs: prepare_workspace
+    runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: hashicorp/setup-terraform@v3
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+      - name: Terraform setup
+        working-directory: infra
+        run: terraform init
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+      - name: Set up SSH keys
+        run: |
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
+      - name: Set up Terraform state
+        run: |
+          mkdir -p infra/terraform.tfstate.d
+          cp -rv terraform-state-${{ needs.prepare_workspace.outputs.workspace_name }}/* infra/terraform.tfstate.d/
+      - name: Set up Terraform files
+        run: |
+          mkdir -p infra/.terraform
+          cp -rv terraform-dir-${{ needs.prepare_workspace.outputs.workspace_name }}/* infra/.terraform/
+          cp terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}/.terraform.lock.hcl infra/.terraform.lock.hcl
+      - name: Switch Terraform workspace
+        working-directory: infra
+        run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
+      - name: Run the phoronix test suite
+        working-directory: infra
+        if: ${{ inputs.create_snapshot }}
+        run: |
+            script_version="${{ github.head_ref }}.${{ github.sha }}""
+            sed -i 's/@SOURCE_REPOSITORY_COMMIT_ID@/${script_version}/g' infra/scripts/system_benchmark.sh
+
+            scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              infra/scripts/system_benchmark.sh \
+              ubuntu@$(terraform output -raw target-cluster-ip):/system_benchmark.sh
+
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              -t ubuntu@$(terraform output -raw target-cluster-ip) -- \
+              "set -x; bash -ixc \"bash -x /system_benchmark.sh;\""
+
+            scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              ubuntu@$(terraform output -raw target-cluster-ip):/pts-report.zip \
+              pts-report.zip
+      - name: Upload the Phoronix Testing Suite report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pts-report-${{ steps.workspace.outputs.workspace_name }}
+          path: pts-report.zip
+
+  destroy_workspace:
+    needs: [prepare_workspace, phoronix-test-suite]
+    runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    if: ${{ always() }}
+    continue-on-error: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: hashicorp/setup-terraform@v3
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+      - name: Terraform setup
+        working-directory: infra
+        run: terraform init
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+      - name: Set up SSH keys
+        run: |
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
+      - name: Set up Terraform state
+        run: |
+          mkdir -p infra/terraform.tfstate.d
+          cp -rv terraform-state-${{ needs.prepare_workspace.outputs.workspace_name }}/* infra/terraform.tfstate.d/
+      - name: Set up Terraform files
+        run: |
+          mkdir -p infra/.terraform
+          cp -rv terraform-dir-${{ needs.prepare_workspace.outputs.workspace_name }}/* infra/.terraform/
+          cp terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}/.terraform.lock.hcl infra/.terraform.lock.hcl
+      - name: Switch Terraform workspace
+        working-directory: infra
+        run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
+
+      - name: Destroy benchmark environment
+        working-directory: infra
+        run: terraform destroy -auto-approve
+        env:
+            TF_VAR_benchmark_environment: gh-nightly-${{ needs.prepare_workspace.outputs.now }}
+
+  clean_up_on_error:
+    needs: [prepare_workspace, phoronix-test-suite]
+    runs-on: ubuntu-latest
+
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    
+    steps:
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+          unzip awscliv2.zip
+          sudo ./aws/install
+
+      - name: Deleting the SSH key pair
+        run: |
+          aws \
+            ec2 delete-key-pair \
+            --region ${TF_VAR_aws_region} \
+            --key-name gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
