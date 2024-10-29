@@ -8,7 +8,6 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
-  pull_request:
 
 env:
   TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
@@ -56,12 +55,12 @@ jobs:
         working-directory: infra
         run: terraform apply -auto-approve
         env:
-            TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
+            TF_VAR_benchmark_environment: pts-${{ steps.now.outputs.now }}
       - name: Upload SSH key artifact
         uses: actions/upload-artifact@v4
         with:
           name: ssh-key-${{ steps.workspace.outputs.workspace_name }}
-          path: ${{ github.workspace }}/infra/private_key-gh-nightly-${{ steps.workspace.outputs.workspace_name }}.pem
+          path: ${{ github.workspace }}/infra/private_key-pts-${{ steps.workspace.outputs.workspace_name }}.pem
       - name: Upload Terraform state artifact
         uses: actions/upload-artifact@v4
         with:
@@ -101,8 +100,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
-          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-pts-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-pts-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
@@ -114,7 +113,7 @@ jobs:
           cp terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}/.terraform.lock.hcl infra/.terraform.lock.hcl
       - name: Switch Terraform workspace
         working-directory: infra
-        run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
+        run: terraform workspace select pts-${{ needs.prepare_workspace.outputs.workspace_name }}
       - name: Run the phoronix test suite
         working-directory: infra
         if: ${{ inputs.create_snapshot }}
@@ -162,8 +161,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
-          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-pts-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-pts-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
@@ -175,13 +174,13 @@ jobs:
           cp terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}/.terraform.lock.hcl infra/.terraform.lock.hcl
       - name: Switch Terraform workspace
         working-directory: infra
-        run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
+        run: terraform workspace select pts-${{ needs.prepare_workspace.outputs.workspace_name }}
 
       - name: Destroy benchmark environment
         working-directory: infra
         run: terraform destroy -auto-approve
         env:
-            TF_VAR_benchmark_environment: gh-nightly-${{ needs.prepare_workspace.outputs.now }}
+            TF_VAR_benchmark_environment: pts-${{ needs.prepare_workspace.outputs.now }}
 
   clean_up_on_error:
     needs: [prepare_workspace, destroy_workspace, phoronix-test-suite]
@@ -195,4 +194,4 @@ jobs:
           aws \
             ec2 delete-key-pair \
             --region ${TF_VAR_aws_region} \
-            --key-name gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
+            --key-name pts-${{ needs.prepare_workspace.outputs.workspace_name }}
