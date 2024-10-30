@@ -147,10 +147,13 @@ executeBenchmarks() {
     terminate "Failed to locate the report folder"
   fi
 
-  local report_path="/var/lib/phoronix-test-suite/test-results/${report_folder_name}"
-  if ! ( zip -r9 "pts-report.zip" "${report_path}" ) ; then
+  local test_results_path="/var/lib/phoronix-test-suite/test-results"
+  local archive_path="$(pwd)/pts-report.zip"
+  if ! ( cd "${test_results_path}" && zip -r9 "${archive_path}" "${report_folder_name}" ) ; then
     terminate "Failed to create the report archive"
   fi
+
+  trace "Report created: ${archive_path}"
 }
 
 STARTUP_COMMAND_LIST=("mktemp" "sudo")
