@@ -152,6 +152,15 @@ benchmark_single() {
     test_procedure=$7
     distribution_version=$8
     user_tags=$9
+    query=${10}
+
+    # If query is non-empty, run only that query, otherwise run all the search
+    # queries
+    if [ -n "$query" ]; then
+        include_tasks="$query"
+    else
+        include_tasks="type:search"
+    fi
 
     opensearch-benchmark execute-test \
         --pipeline=benchmark-only \
@@ -160,7 +169,7 @@ benchmark_single() {
         --workload-params="$workload_params" \
         --client-options="$client_options" \
         --kill-running-processes \
-        --include-tasks="type:search" \
+        "$include_tasks" \
         --results-file="$results_file" \
         --test-execution-id="$test_execution_id" \
         --test-procedure="$test_procedure" \

@@ -49,3 +49,8 @@ curl -k -X POST "https://localhost:9200/_security/user/elastic/_password" -u ela
 }"
 
 curl -ku elastic:$CLUSTER_PASSWORD https://localhost:9200
+
+cd /mnt || exit 1
+wget https://github.com/async-profiler/async-profiler/releases/download/v3.0/async-profiler-3.0-linux-x64.tar.gz
+tar -xvf async-profiler-3.0-linux-x64.tar.gz
+cd async-profiler-3.0-linux-x64 || exit 1

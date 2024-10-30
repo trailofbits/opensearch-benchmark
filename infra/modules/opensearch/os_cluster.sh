@@ -69,3 +69,8 @@ echo "OpenSearch responds on port 9200, now verify credentials"
 curl -X GET https://localhost:9200 -u "admin:$CLUSTER_PASSWORD" --insecure || (echo "Failed to query server" && false)
 echo
 echo "Server up and running (pid $SERVER_PID)"
+
+cd /mnt || exit 1
+wget https://github.com/async-profiler/async-profiler/releases/download/v3.0/async-profiler-3.0-linux-x64.tar.gz
+tar -xvf async-profiler-3.0-linux-x64.tar.gz
+cd async-profiler-3.0-linux-x64 || exit 1

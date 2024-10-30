@@ -2,13 +2,14 @@
 
 source /mnt/utils.sh
 
-if [ $# -ne 1 ]; then
-    echo "Usage: bash benchmark.sh <run-type>"
+if [ $# -ne 1 ] && [ $# -ne 2 ]; then
+    echo "Usage: bash benchmark.sh <run-type> [<query-name>]"
     echo "  where <run-type> is 'official' or 'dev'"
     exit 1
 fi
 
 RUN_TYPE=$1
+QUERY=$2
 
 if [ "$RUN_TYPE" != "official" ] && [ "$RUN_TYPE" != "dev" ]; then
     echo "Error: <run-type> must be 'official' or 'dev'"
@@ -106,7 +107,8 @@ do
             "$TEST_EXECUTION_ID" \
             "$TEST_PROCEDURE" \
             "$DISTRIBUTION_VERSION" \
-            "$USER_TAGS"
+            "$USER_TAGS" \
+            "$QUERY"
 done
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
