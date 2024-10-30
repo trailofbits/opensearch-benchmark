@@ -97,6 +97,7 @@ jobs:
   phoronix-test-suite:
     needs: prepare_workspace
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    timeout-minutes: 1000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
