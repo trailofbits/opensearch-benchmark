@@ -322,10 +322,10 @@ jobs:
             TF_VAR_benchmark_environment: gh-nightly-${{ needs.prepare_workspace.outputs.now }}
 
   clean_up_on_error:
-    needs: [prepare_workspace, ingest-data]
+    needs: [prepare_workspace]
     runs-on: ubuntu-latest
 
-    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    if: ${{ failure() || cancelled() }}
     
     steps:
       - name: Install AWS CLI
