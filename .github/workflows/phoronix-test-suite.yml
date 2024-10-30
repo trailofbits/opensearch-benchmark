@@ -145,6 +145,10 @@ jobs:
 
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw target-cluster-ip) -- \
+              "set -x; sudo bash -ixc \"apt update && apt upgrade -y;\""
+
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              -t ubuntu@$(terraform output -raw target-cluster-ip) -- \
               "set -x; bash -ixc \"bash -x /home/ubuntu/system_benchmark.sh;\""
 
             scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
