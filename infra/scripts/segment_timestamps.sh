@@ -21,9 +21,12 @@ ES_VERSION=$(ssh ubuntu@$CLUSTER_HOST_SSH ls /mnt/ | sed -r  -n "s/elasticsearch
 
 # Get the workload index path and lucene version
 INDEX_NAME=$(workload_index_name $WORKLOAD)
+# shellcheck disable=SC2034
 INDEX_UUID=$(index_uuid $INDEX_NAME)
 echo "Workload $${WORKLOAD}: Index name $${INDEX_NAME}, UUID: $${INDEX_UUID}"
+# shellcheck disable=SC2034
 INDEX_PATH="\\/mnt\\/data\\/nodes\\/0"
+# shellcheck disable=SC2034
 LUCENE_VERSION=$(ssh ubuntu@$CLUSTER_HOST_SSH ls /mnt/opensearch/opensearch-*/lib/ | sed -r  -n "s/lucene-core-([0-9]+\.[0-9]+\.[0-9]+).jar$/\1/p")
 if [ $ES_VERSION ]; then
     INDEX_PATH="\\/mnt\\/data"
