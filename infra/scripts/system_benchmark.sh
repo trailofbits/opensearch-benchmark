@@ -142,13 +142,18 @@ executeBenchmarks() {
     terminate "Failed to execute the benchmarks"
   fi
 
+  local test_results_path="/var/lib/phoronix-test-suite/test-results"
+
   local report_folder_name
-  if ! report_folder_name=$(ls -Art "/var/lib/phoronix-test-suite/test-results" | tail -n 1) ; then
+  if ! report_folder_name=$(ls -Art "${test_results_path}" | tail -n 1) ; then
     terminate "Failed to locate the report folder"
   fi
 
-  local test_results_path="/var/lib/phoronix-test-suite/test-results"
-  local archive_path="$(pwd)/pts-report.zip"
+  local archive_path
+  if ! archive_path="$(pwd)/pts-report.zip" ; then
+    terminate "Failed to determine the report destination path"
+  fi
+
   if ! ( cd "${test_results_path}" && zip -r9 "${archive_path}" "${report_folder_name}" ) ; then
     terminate "Failed to create the report archive"
   fi
