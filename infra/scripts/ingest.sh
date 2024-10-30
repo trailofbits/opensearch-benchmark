@@ -99,4 +99,4 @@ echo "$response" | jq -e '.error' > /dev/null && {
 }
 echo "Snapshot done"
 
-/mnt/restore_snapshot.sh
+bash /mnt/restore_snapshot.sh
