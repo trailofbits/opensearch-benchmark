@@ -13,8 +13,10 @@ class ImportData:
     spreadsheet_id: str
     folder: Path
 
-    # Imports a benchmark scenario into the given spreadsheet as a new sheet
+
     def read_rows(self, csv_path: Path) -> list[list[str]]:
+        """Reads CSV data"""
+
         row_list: list[list[str]]
         with csv_path.open() as csv_file:
             csv_reader = csv.reader(csv_file)
@@ -65,7 +67,10 @@ class ImportData:
 
         return processed_row_list
 
+
     def get(self) -> bool:
+        """Imports benchmark data into spreadsheet"""
+
         # Get CSV files
         csv_files = self.folder.glob("*.csv")
 
@@ -87,7 +92,7 @@ class ImportData:
             "majorDimension": "ROWS",
             "values": raw_data,
         }
-        self.service.spreadsheets().values().append(
+        self.service.spreadsheets().values().update(
             spreadsheetId=self.spreadsheet_id,
             range="raw!A1",
             valueInputOption="USER_ENTERED",

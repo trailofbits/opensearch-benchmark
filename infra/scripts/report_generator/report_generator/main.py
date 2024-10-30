@@ -8,8 +8,9 @@ from datetime import date
 from pathlib import Path
 from typing import Optional, Tuple, Any
 
-from report_generator.import_data import ImportData
 from report_generator.common import get_category_operation_map
+from report_generator.import_data import ImportData
+from report_generator.result import Result
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -23,8 +24,9 @@ from . import __version__
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
-# Argument parser
 def get_program_arguments() -> Namespace:
+    """Parses the program arguments"""
+
     parser: ArgumentParser = ArgumentParser(
         description="opensearch benchmark report generator"
     )
@@ -68,92 +70,9 @@ def get_program_arguments() -> Namespace:
     return parser.parse_args()
 
 
-# Enumerates the operations listed in the given csv file
-def get_benchmark_data_operation_list(file_path: Path) -> set[str]:
-    # Read the data in the sheet we just created
-    row_list: list[list[str]]
-    with open(file_path, "r") as csv_file:
-        csv_reader = csv.reader(csv_file)
-        row_list = list(csv_reader)
-
-    # Find the 'operation' column
-    if len(row_list) < 1:
-        raise ValueError(
-            f"The following .csv file does not have a header row: {file_path}"
-        )
-
-    header_row: list[str] = row_list[0]
-    operation_column: Optional[int] = None
-
-    for index, column in enumerate(header_row):
-        if column == "operation":
-            operation_column = index
-            break
-
-    if operation_column is None:
-        raise ValueError(
-            f"The following .csv file does not have an operation column: {file_path}"
-        )
-
-    # List all the unique operations we have in the benchmark data
-    operation_set: set[str] = set()
-
-    for index, row in enumerate(row_list):
-        if index == 0:
-            continue
-
-        operation: str = row[operation_column]
-        if len(operation) == 0:
-            continue
-
-        operation_set.add(operation)
-
-    return operation_set
-
-
-# Enumerates the .csv files in the given folder, looking for suitable benchmark
-# scenarios.
-def discover_benchmark_scenarios(
-    folder_path: Path
-) -> list[Path] | None:
-    benchmark_scenario_list: list[Path] = []
-
-    spec_list: list[dict] = get_category_operation_map()
-    op_dict: dict[str,set[str]] = {}
-    for d in spec_list:
-        workload = d["workload"]
-        op_dict[workload] = set()
-        for category, operation_list in d["categories"].items():
-            for operation in operation_list:
-                op_dict[workload].add(operation)
-
-    csv_file: list[Path] = []
-    for directory_path, folder_name_list, file_name_list in walk(folder_path):
-        for file_name in file_name_list:
-            if not file_name.endswith(".csv"):
-                continue
-
-            csv_file.append(Path(directory_path).joinpath(file_name))
-
-    for path in csv_file:
-        op_set: set[str] = get_benchmark_data_operation_list(path)
-
-        workload = path.name.split('-')[5]
-
-        # Determine if this benchmark contains all operations expected
-        if op_set != op_dict[workload]:
-            continue
-        benchmark_scenario_list.append(path)
-
-    if len(benchmark_scenario_list) == 0:
-        return None
-
-    return benchmark_scenario_list
-
-
-# Authenticates a new session, using a credentials file. Creates a new token
-# file at the given path
 def authenticate_from_credentials(credentials_file_path: Path, token_file_path: Path):
+    """Authenticates a new session, using a credentials file. Creates a new token file at the given path"""
+
     flow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(
         credentials_file_path, SCOPES
     )
@@ -163,8 +82,9 @@ def authenticate_from_credentials(credentials_file_path: Path, token_file_path: 
         token.write(creds.to_json())
 
 
-# Restores a previously authenticated session, using a token file
 def authenticate_from_token(token_file_path) -> Optional[Credentials]:
+    """Restores a previously authenticated session, using a token file"""
+
     creds: Credentials = None
 
     if not os.path.exists(token_file_path):
@@ -179,10 +99,11 @@ def authenticate_from_token(token_file_path) -> Optional[Credentials]:
     return creds
 
 
-# Resizes the given spreadsheet
 def resize_sheet(
     service: Resource, spreadsheet_id: str, sheet_name: str, width: int, height: int
 ):
+    """Resizes the given sheet"""
+
     spreadsheet_properties: dict = (
         service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     )
@@ -216,10 +137,11 @@ def resize_sheet(
     ).execute()
 
 
-# Creates a blank new spreadsheet
 def create_blank_spreadsheet(
     service: Resource, title: str, sheet_name: str, width: int, height: int
 ) -> Optional[str]:
+    """Creates a new spreadsheet with a single sheet"""
+
     request_properties: dict = {
         "properties": {
             "title": title,
@@ -241,8 +163,9 @@ def create_blank_spreadsheet(
     return spreadsheet_id
 
 
-# Creates a new spreadsheet, made of only the results sheet and its basic columns
 def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
+    """Creates a new spreadsheet with the initial columns"""
+
     # Create a new spreadsheet and add the initial columns
     spreadsheet_id: str = create_blank_spreadsheet(service, title, "Summary", 50, 100)
 
@@ -266,6 +189,7 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
                 "Operation",
                 "Comparison\nES/OS",
                 "",
+                "OS version",
                 "OS: STDEV 50",
                 "OS: STDEV 90",
                 "OS: Average 50",
@@ -273,6 +197,7 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
                 "OS: RSD 50",
                 "OS: RSD 90",
                 "",
+                "ES version",
                 "ES: STDEV 50",
                 "ES: STDEV 90",
                 "ES: Average 50",
@@ -309,37 +234,9 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
     return spreadsheet_id
 
 
-# Returns all the operation categories for the given workload
-def get_workload_operation_categories(workload: str) -> list[str] | None:
-    category_list: Optional[list[str]] = None
-
-    spec_list: list[dict] = get_category_operation_map()
-    for spec in spec_list:
-        if spec["workload"] == workload:
-            category_list = []
-            for category_name in spec["categories"].keys():
-                category_list.append(category_name)
-
-    return category_list
-
-
-# Returns all the operations for the given workload
-def get_workload_operations(workload: str) -> list[str] | None:
-    operation_list: Optional[list[str]] = None
-
-    spec_list: list[dict] = get_category_operation_map()
-    for spec in spec_list:
-        if spec["workload"] == workload:
-            operation_list = []
-            for category_name in spec["categories"].keys():
-                for operation_name in spec["categories"][category_name]:
-                    operation_list.append(operation_name)
-
-    return operation_list
-
-
-# Adds a 'categories' sheet
 def add_categories_sheet(service: Resource, spreadsheet_id: str):
+    """Adds a 'categories' sheet to the spreadsheet"""
+
     request_properties: dict = {
         "requests": [{"addSheet": {"properties": {"title": "Categories"}}}]
     }
@@ -372,8 +269,9 @@ def add_categories_sheet(service: Resource, spreadsheet_id: str):
     ).execute()
 
 
-# Adjusts the columns in the given sheet according to their contents
 def adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: str):
+    """Adjusts the columns in the given sheet according to their contents"""
+
     spreadsheet_properties: dict = (
         service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     )
@@ -411,242 +309,11 @@ def adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: str
     )
 
 
-
-#       # Determine what's the category range for this specific workload. Note that these indexes
-#       # are 1-based
-#       result: dict = (
-#           service.spreadsheets()
-#           .values()
-#           .get(spreadsheetId=spreadsheet_id, range="Categories!A:A")
-#           .execute()
-#       )
-
-#       category_range_start: Optional[int] = None
-#       category_range_end: Optional[int] = None
-
-#       category_sheet_row_list: list[list[str]] = result.get("values", [])
-#       for row_index, category_sheet_row in enumerate(category_sheet_row_list):
-#           if category_sheet_row[0] != workload_name:
-#               continue
-#           
-#           if category_range_start is None:
-#               category_range_start = row_index + 1
-#               continue
-
-#           category_range_end = row_index + 1
-
-#       if category_range_start is None or category_range_end is None:
-#           raise ValueError(
-#               f"Failed to determine the category range for the following workload and sheet: {sheet_name}, {workload_name}"
-#           )
-
-#       # Add the benchmark data to the Results sheet
-#       sheet_and_operation_rows: list[str] = []
-#       current_row: int = starting_row_index
-
-#       for operation in benchmark_scenario.operation_list:
-#           column1: str
-#           column2: str
-#           operation_column: str
-#           if product_identifier == "os":
-#               column1 = "A"
-#               column2 = "E"
-#               operation_column = "E"
-
-#           else:
-#               column1 = "N"
-#               column2 = "R"
-#               operation_column = "R"
-
-#           row_list: list[str] = [
-#               sheet_name,
-#               f'=INDIRECT({column1}{current_row}&"!H{current_row}")',
-#               f'=CONCATENATE("index_merge_policy=", INDIRECT({column1}{current_row}&"!J{current_row}"), ", max_num_segments=", INDIRECT({column1}{current_row}&"!K{current_row}"), ", bulk_indexing_clients=", INDIRECT({column1}{current_row}&"!L{current_row}"), ", target_throughput=", INDIRECT({column1}{current_row}&"!M{current_row}"), ", number_of_replicas=", INDIRECT({column1}{current_row}&"!N{current_row}"))',
-#               f'=INDIRECT({column1}{current_row}&"!I{current_row}")',
-#               operation,
-#               f"=VLOOKUP({operation_column}{current_row}, Categories!B${category_range_start}:C${category_range_end}, 2, FALSE)",
-#               f'=STDEV.S(FILTER(INDIRECT({column1}{current_row}&"!F2:F"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
-#               f'=STDEV.S(FILTER(INDIRECT({column1}{current_row}&"!G2:G"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
-#               f'=AVERAGE(FILTER(INDIRECT({column1}{current_row}&"!F2:F"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
-#               f'=AVERAGE(FILTER(INDIRECT({column1}{current_row}&"!G2:G"),INDIRECT({column1}{current_row}&"!B2:B")<>0,INDIRECT({column1}{current_row}&"!D2:D")={column2}{current_row},INDIRECT({column1}{current_row}&"!E2:E")="service_time"))',
-#           ]
-
-#           if product_identifier == "os":
-#               row_list = row_list + [
-#                   f"=G{current_row}/I{current_row}",
-#                   f"=H{current_row}/J{current_row}",
-#               ]
-#           else:
-#               row_list = row_list + [
-#                   f"=T{current_row}/V{current_row}",
-#                   f"=U{current_row}/W{current_row}",
-#               ]
-
-#           sheet_and_operation_rows.append(row_list)
-#           current_row += 1
-
-#       request_properties: dict = {
-#           "majorDimension": "ROWS",
-#           "values": sheet_and_operation_rows,
-#       }
-
-#       insert_range: str
-#       if product_identifier == "os":
-#           insert_range = f"Results!A{starting_row_index}"
-#       else:
-#           insert_range = f"Results!N{starting_row_index}"
-
-#       service.spreadsheets().values().update(
-#           spreadsheetId=spreadsheet_id,
-#           range=insert_range,
-#           valueInputOption="USER_ENTERED",
-#           body=request_properties,
-#       ).execute()
-
-#   adjust_sheet_columns(service, spreadsheet_id, sheet_name)
-
-#   # Add the comparison column
-#   comparison_rows: list[str] = []
-#   current_row = starting_row_index
-
-#   for operation in benchmark_scenario.operation_list:
-#       comparison_rows.append(
-#           [
-#               f"=ABS(J{current_row}-V{current_row})*IF(J{current_row}>V{current_row},-1,1)/((J{current_row}+V{current_row})/2)",
-#               f"=V{current_row}/J{current_row}",
-#           ]
-#       )
-
-#       current_row += 1
-
-#   request_properties: dict = {
-#       "majorDimension": "ROWS",
-#       "values": comparison_rows,
-#   }
-
-#   service.spreadsheets().values().update(
-#       spreadsheetId=spreadsheet_id,
-#       range=f"Results!AA{starting_row_index}",
-#       valueInputOption="USER_ENTERED",
-#       body=request_properties,
-#   ).execute()
-
-#   # Add the summary
-#   operation_count: int = len(benchmark_scenario.operation_list)
-#   last_operation_row: int = starting_row_index + operation_count - 1
-
-#   row_list: list[list[str]] = []
-#   row_list.append(
-#       ["Summary", "", "", "Workload:", workload_name, "", f"=C{starting_row_index}"]
-#   )
-#   row_list.append(["Total Tasks", str(operation_count)])
-#   row_list.append(
-#       [
-#           "Tasks faster than ES",
-#           f'=COUNTIF(AA{starting_row_index}:AA{last_operation_row},">0")',
-#       ]
-#   )
-#   row_list.append(["Categories faster than ES", "Category", "Count", "Total"])
-
-#   for category_name in get_workload_operation_categories(workload_name):
-#       row_list.append(
-#           [
-#               "",
-#               category_name,
-#               f'=COUNTIFS(F${starting_row_index}:F${last_operation_row}, "{category_name}", AA${starting_row_index}:AA${last_operation_row}, ">0")',
-#               f'=COUNTIF(F${starting_row_index}:F${last_operation_row}, "{category_name}")',
-#           ]
-#       )
-
-#   row_list.append([""])
-#   row_list.append(
-#       [
-#           "Tasks much faster than ES",
-#           "Operation",
-#           "Amount",
-#           "",
-#           "Tasks much slower than ES",
-#           "Operation",
-#           "Amount",
-#       ]
-#   )
-
-#   current_row: int = starting_row_index + len(row_list)
-
-#   row_list.append(
-#       [
-#           "",
-#           f"=FILTER($E${starting_row_index}:$E${last_operation_row}, AB{starting_row_index}:AB{last_operation_row} > 2)",
-#           f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AE{current_row})",
-#           "",
-#           "",
-#           f"=FILTER($E${starting_row_index}:$E${last_operation_row}, AB{starting_row_index}:AB{last_operation_row} < 0.5)",
-#           f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AI{current_row})",
-#       ]
-#   )
-
-#   request_properties: dict = {
-#       "majorDimension": "ROWS",
-#       "values": row_list,
-#   }
-
-#   service.spreadsheets().values().update(
-#       spreadsheetId=spreadsheet_id,
-#       range=f"Results!AD{starting_row_index}",
-#       valueInputOption="USER_ENTERED",
-#       body=request_properties,
-#   ).execute()
-
-#   # Manually expand the first "Amount" columns
-#   # TODO: Any way to make this with a formula?
-#   row_list = []
-#   for i in range(0, 10):
-#       row_list.append(
-#           [
-#               f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AE{current_row + i})",
-#           ]
-#       )
-
-#   request_properties: dict = {
-#       "majorDimension": "ROWS",
-#       "values": row_list,
-#   }
-
-#   service.spreadsheets().values().update(
-#       spreadsheetId=spreadsheet_id,
-#       range=f"Results!AF{current_row}",
-#       valueInputOption="USER_ENTERED",
-#       body=request_properties,
-#   ).execute()
-
-#   row_list = []
-#   for i in range(0, 10):
-#       row_list.append(
-#           [
-#               f"=FILTER(AB${starting_row_index}:AB${last_operation_row}, E${starting_row_index}:E${last_operation_row} = AI{current_row + i})",
-#           ]
-#       )
-
-#   request_properties: dict = {
-#       "majorDimension": "ROWS",
-#       "values": row_list,
-#   }
-
-#   service.spreadsheets().values().update(
-#       spreadsheetId=spreadsheet_id,
-#       range=f"Results!AJ{current_row}",
-#       valueInputOption="USER_ENTERED",
-#       body=request_properties,
-#   ).execute()
-
-#   adjust_sheet_columns(service, spreadsheet_id, sheet_name)
-#   return True
-
-
-# Hides the specified columns in the given sheet
 def hide_columns(
     service: Resource, spreadsheet_id: str, sheet_name: str, column_list: list[str]
 ):
+    """Hides the specified columns in the given sheet"""
+
     spreadsheet_properties: dict = (
         service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
     )
@@ -686,11 +353,11 @@ def hide_columns(
     ).execute()
 
 
-# Creates a blank spreadsheet
-# Returns the spreadsheet id
 def init_spreadsheet(
     creds: Credentials
 ) -> Tuple[Any|None,str|None]:
+    """Creates a new spreadsheet and returns the service and spreadsheet id"""
+
     # Initialize the api client
     service: Resource = build("sheets", "v4", credentials=creds)
     if service is None:
@@ -708,6 +375,8 @@ def init_spreadsheet(
 
 
 def main() -> bool:
+    """Main entry point"""
+
     # Get arguments
     args: Namespace = get_program_arguments()
 
@@ -734,6 +403,16 @@ def main() -> bool:
         print("Error importing data")
         return False
     print("Imported data successfully")
+
+    # Create Results sheet
+    result = Result(
+        service=service,
+        spreadsheet_id=spreadsheet_id
+    )
+    if not result.get():
+        print("Error creating results sheet")
+        return False
+    print("Results processed successfully")
 
     # Output spreadsheet URL for ease
     report_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"

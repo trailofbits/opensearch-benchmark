@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from googleapiclient.discovery import Resource
 
-# Returns the category/operation map
+
 def get_category_operation_map() -> list[dict]:
+    """Returns the category/operation map"""
+
     spec_list: list[dict] = [
         {
             "workload": "big5",
@@ -137,3 +140,40 @@ def get_category_operation_map() -> list[dict]:
         },
     ]
     return spec_list
+
+
+def get_workload_operations(workload: str) -> list[str] | None:
+    """Returns all the operations for the given workload"""
+
+    operation_list: list[str] = []
+
+    spec_list: list[dict] = get_category_operation_map()
+    for spec in spec_list:
+        if spec["workload"] == workload:
+            operation_list = []
+            for category_name in spec["categories"].keys():
+                for operation_name in spec["categories"][category_name]:
+                    operation_list.append(operation_name)
+
+    if not operation_list:
+        return None
+
+    return sorted(operation_list)
+
+
+def get_workload_operation_categories(workload: str) -> list[str] | None:
+    """Returns all the operation categories for the given workload"""
+
+    category_list: list[str] = []
+
+    spec_list: list[dict] = get_category_operation_map()
+    for spec in spec_list:
+        if spec["workload"] == workload:
+            category_list = []
+            for category_name in spec["categories"].keys():
+                category_list.append(category_name)
+
+    if not operation_list:
+        return None
+
+    return sorted(category_list)
