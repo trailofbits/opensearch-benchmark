@@ -29,7 +29,9 @@ INDEX_PATH="\\/mnt\\/data\\/nodes\\/0"
 # shellcheck disable=SC2034
 LUCENE_VERSION=$(ssh ubuntu@$CLUSTER_HOST_SSH ls /mnt/opensearch/opensearch-*/lib/ | sed -r  -n "s/lucene-core-([0-9]+\.[0-9]+\.[0-9]+).jar$/\1/p")
 if [ $ES_VERSION ]; then
+    # shellcheck disable=SC2034
     INDEX_PATH="\\/mnt\\/data"
+    # shellcheck disable=SC2034
     LUCENE_VERSION=$(ssh ubuntu@$CLUSTER_HOST_SSH ls /mnt/elasticsearch-*/lib/ | sed -r  -n "s/lucene-core-([0-9]+\.[0-9]+\.[0-9]+).jar$/\1/p")
 fi
 
