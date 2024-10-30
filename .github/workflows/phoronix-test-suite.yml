@@ -137,14 +137,14 @@ jobs:
 
             scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               scripts/system_benchmark.sh \
-              ubuntu@$(terraform output -raw target-cluster-ip):/system_benchmark.sh
+              ubuntu@$(terraform output -raw target-cluster-ip):/home/ubuntu/system_benchmark.sh
 
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw target-cluster-ip) -- \
-              "set -x; bash -ixc \"bash -x /system_benchmark.sh;\""
+              "set -x; bash -ixc \"bash -x /home/ubuntu/system_benchmark.sh;\""
 
             scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
-              ubuntu@$(terraform output -raw target-cluster-ip):/pts-report.zip \
+              ubuntu@$(terraform output -raw target-cluster-ip):/home/ubuntu/pts-report.zip \
               pts-report.zip
       - name: Upload the Phoronix Testing Suite report
         uses: actions/upload-artifact@v4
