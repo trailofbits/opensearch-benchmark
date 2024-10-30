@@ -148,7 +148,7 @@ executeBenchmarks() {
   fi
 
   local report_path="/var/lib/phoronix-test-suite/test-results/${report_folder_name}"
-  if ! ( cd / && zip -r9 "pts-report.zip" "${report_path}" ) ; then
+  if ! ( zip -r9 "pts-report.zip" "${report_path}" ) ; then
     terminate "Failed to create the report archive"
   fi
 }
