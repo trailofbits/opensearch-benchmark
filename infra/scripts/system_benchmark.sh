@@ -78,7 +78,7 @@ installTestSuite() {
     fi
 
     trace "Installing the phoronix test suite.."
-    if ! apt install -y "${download_folder}/phoronix-test-suite.deb" ; then
+    if ! apt install -fy "${download_folder}/phoronix-test-suite.deb" ; then
       terminate "Failed to install the deb package"
     fi
 
