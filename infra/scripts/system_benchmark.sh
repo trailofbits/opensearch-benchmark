@@ -167,8 +167,6 @@ if [[ "$EUID" != 0 ]] ; then
   printf "Rerunning the script as root...\n"
 
   sudo \
-    -H \
-    -i \
     "$(realpath ${BASH_SOURCE[0]})" "$@"
 
   exit $?
