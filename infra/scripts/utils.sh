@@ -157,9 +157,9 @@ benchmark_single() {
     # If query is non-empty, run only that query, otherwise run all the search
     # queries
     if [ -n "$query" ]; then
-        include_tasks="$query"
+        include_tasks="--include-tasks=$query"
     else
-        include_tasks="type:search"
+        include_tasks="--include-tasks=type:search"
     fi
 
     opensearch-benchmark execute-test \
