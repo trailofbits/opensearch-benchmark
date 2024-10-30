@@ -3,8 +3,7 @@
 SCRIPT_VERSION="@SOURCE_REPOSITORY_COMMIT_ID@"
 PHORONIX_TEST_SUITE_VERSION="10.8.4"
 PHORONIX_TEST_SUITE_URL="https://github.com/phoronix-test-suite/phoronix-test-suite/releases/download/v${PHORONIX_TEST_SUITE_VERSION}/phoronix-test-suite_${PHORONIX_TEST_SUITE_VERSION}_all.deb"
-#PHORONIX_BENCHMARK_LIST=("pts/hpcg" "pts/npb" "system/openssl" "pts/memcached" "pts/leveldb" "pts/unpack-linux" "pts/speedtest-cli")
-PHORONIX_BENCHMARK_LIST=("pts/speedtest-cli")
+PHORONIX_BENCHMARK_LIST=("pts/hpcg" "pts/memcached" "pts/unpack-linux" "pts/speedtest-cli")
 PHORONIX_BENCHMARK_DEPENDENCY_LIST=("libevent-dev" "cmake" "openmpi-bin" "gfortran" "libgmock-dev" "libopenmpi-dev")
 
 main() {
@@ -147,6 +146,10 @@ executeBenchmarks() {
   local report_folder_name
   if ! report_folder_name=$(ls -Art "${test_results_path}" | tail -n 1) ; then
     terminate "Failed to locate the report folder"
+  fi
+
+  if ! cp ${REPORT_PATH}/* "${test_results_path}/${report_folder_name}" ; then
+    trace "Failed to attach the additional data to the final report"
   fi
 
   local pdf_report_path
