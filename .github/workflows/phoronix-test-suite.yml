@@ -131,9 +131,8 @@ jobs:
         run: terraform workspace select pts-${{ needs.prepare_workspace.outputs.workspace_name }}
       - name: Run the phoronix test suite
         working-directory: infra
-        if: ${{ inputs.create_snapshot }}
         run: |
-            script_version="${{ github.head_ref }}.${{ github.sha }}""
+            script_version="${{ github.head_ref }}.${{ github.sha }}"
             sed -i 's/@SOURCE_REPOSITORY_COMMIT_ID@/${script_version}/g' infra/scripts/system_benchmark.sh
 
             scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
