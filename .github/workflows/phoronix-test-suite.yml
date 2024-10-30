@@ -133,10 +133,10 @@ jobs:
         working-directory: infra
         run: |
             script_version="${{ github.head_ref }}.${{ github.sha }}"
-            sed -i 's/@SOURCE_REPOSITORY_COMMIT_ID@/${script_version}/g' infra/scripts/system_benchmark.sh
+            sed -i 's/@SOURCE_REPOSITORY_COMMIT_ID@/${script_version}/g' scripts/system_benchmark.sh
 
             scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
-              infra/scripts/system_benchmark.sh \
+              scripts/system_benchmark.sh \
               ubuntu@$(terraform output -raw target-cluster-ip):/system_benchmark.sh
 
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
