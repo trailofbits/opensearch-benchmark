@@ -149,6 +149,14 @@ executeBenchmarks() {
     terminate "Failed to locate the report folder"
   fi
 
+  local pdf_report_path
+  if ! pdf_report_path=$(phoronix-test-suite result-file-to-pdf "${report_folder_name}" | grep "Saved Output To:" | awk -F": " '{print $NF}') ; then
+    trace "Failed to create the PDF report"
+
+  elif ! cp "${pdf_report_path}" "${test_results_path}/${report_folder_name}" ; then
+    trace "Failed to copy the PDF report"
+  fi
+
   local archive_path
   if ! archive_path="$(pwd)/pts-report.zip" ; then
     terminate "Failed to determine the report destination path"
