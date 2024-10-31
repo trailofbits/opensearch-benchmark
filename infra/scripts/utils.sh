@@ -163,3 +163,11 @@ benchmark_single() {
         --user-tag="$user_tags" \
         --telemetry="node-stats"
 }
+
+ci_tag_value() {
+    if [ -z "$CI_TAG" ]; then
+        echo "not-used"
+    else
+        echo "$CI_TAG"
+    fi
+}

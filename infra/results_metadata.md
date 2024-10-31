@@ -14,18 +14,27 @@ User tags are custom fields added to enrich the metadata. They are recorded in d
 | instance-type | AWS instance type of cluster and load generation machines |
 | aws-account-id | AWS account ID which deployed the infrastructure |
 | aws-loadgen-instance-id | AWS instance ID for the load generation machine |
+| aws-cluster-instance-id | AWS instance ID for the cluster machine |
+| aws-user-id | AWS IAM user that ran the benchmark |
 | cluster-version | Version of the cluster |
 | workload-distribution-version | Distribution version passed to OpenSearch-Benchmark and used to select the workload  |
 | shard-count | Number of primary shards in the cluster index |
 | replica-count | Number of replica shards for each primary shard  |
 | run | Zero-indexed number for a run in a run group |
-| run-type | Type of run. Options are `official`, `dev`, `ingest`, and `warmup` |
+| run-type | Type of run. Options are `official`, `dev`, and `ingest` |
+| snapshot-s3-bucket | S3 bucket storing the snapshot |
+| snapshot-base-path | Snapshot base path in S3 bucket. Format: "cluster_type/cluster_version/workload/snapshot_version" |
+| ci | Describes if executed with Github CI and CI type. Options are `scheduled`, `manual`, and `not-used` |
+
 
 - Explanation of `run-type` options:
-    - `official`: Runs that should be included in reports
+    - `official`: Runs that should be included in reports (includes warmup runs)
     - `dev`: Runs executed during development. Can be ignored
     - `ingest`: Data ingestion runs. Can be ignored
-    - `warmup`: Warm up runs. Can be ignored
+- Explanation of `ci` options:
+    - `scheduled`: Scheduled CI run executed automatically
+    - `manual`: Manually executed CI run
+    - `not-used`: Run was not executed via CI
 
 ## Built-in Fields
 Built-in fields are created by OpenSearch Benchmark, but may have user-controlled input. This section describes key built-in fields for metadata.

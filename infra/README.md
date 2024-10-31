@@ -3,6 +3,7 @@
 ## Create your own environment for benchmarking
 
 - Install `terraform`.
+- Install AWS CLI
 - In the AWS Console, go to "Security Credentials" and create a new "Access Key"
 - Set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 - Copy `terraform.tfvars.template` to `terraform.tfvars`.
@@ -10,7 +11,6 @@
 - `terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
 - `terraform init`
 - Modify the `terraform.tfvars` file according to your needs
-  - Create an SSH key without a password (will be used as `ssh_priv_key` and `ssh_pub_key` variables)
 - Note: The data store credentials and cluster password will be saved to the load generation machine.
 - By default, the load generation IP is added to the [shared prefix list](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#PrefixListDetails:prefixListId=pl-06f77c0b59dbf70fe) (id: `pl-06f77c0b59dbf70fe`). This gives access to the shared data store.
   - The workspace name is used a description for the prefix list entry
@@ -40,7 +40,7 @@ If you want to disable uploading to the shared data store, edit `/mnt/.benchmark
 Connect to the load-generation host with:
 
 ```shell
-ssh ubuntu@$(terraform output -raw load-generation-ip)
+ssh -i $(terraform output -raw ssh_private_key_file) ubuntu@$(terraform output -raw load-generation-ip)
 ```
 
 The default multiplexer is `byobu`. Here is a [cheatsheet](https://gist.github.com/devhero/7b9a7281db0ac4ba683f).
@@ -48,13 +48,13 @@ The default multiplexer is `byobu`. Here is a [cheatsheet](https://gist.github.c
 To ingest the data in the Target Cluster:
 
 ```shell
-bash /ingest.sh
+bash /mnt/ingest.sh
 ```
 
 Alternatively, if you already have a snapshot and you want to restore it, do:
 
 ```shell
-bash /restore_snapshot.sh
+bash /mnt/restore_snapshot.sh
 ```
 
 ## Benchmark the queries
@@ -62,13 +62,13 @@ bash /restore_snapshot.sh
 - Pass `official` or `dev` to tag the run results
 
 ```shell
-bash /benchmark.sh [official|dev]
+bash /mnt/benchmark.sh [official|dev]
 ```
 
 ## Additional client options
 To specify additional client options use the `EXTRA_CLIENT_OPTIONS` environment variable:
 ```shell
-EXTRA_CLIENT_OPTIONS=timeout:240 bash /ingest.sh
+EXTRA_CLIENT_OPTIONS=timeout:240 bash /mnt/ingest.sh
 ```
 
 ## Get the results

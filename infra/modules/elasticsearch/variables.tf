@@ -13,10 +13,6 @@ variable "es_version" {
   description = "Version of ElasticSearch to deploy"
   type        = string
   default     = "8.15.0"
-  validation {
-    condition     = contains(["8.8.1", "8.15.0", "8.15.1"], var.es_version)
-    error_message = "Supported ElasticSearch versions are: 8.8.1, 8.15.0, 8.15.1"
-  }
 }
 
 variable "distribution_version" {
@@ -30,7 +26,12 @@ variable "ssh_key_name" {
 }
 
 variable "ssh_priv_key" {
-  description = "Path to the SSH Private Key"
+  description = "SSH Private Key"
+  type        = string
+}
+
+variable "ssh_pub_key" {
+  description = "SSH Pub Key"
   type        = string
 }
 
@@ -118,6 +119,10 @@ variable "workload" {
 }
 
 variable "snapshot_version" {
-  description = "Version of the snapshot to restore"
+  description = "Specific version of the snapshot to restore"
   type        = string
+  validation {
+    condition     = can(regex("^\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}$", var.snapshot_version))
+    error_message = "Snapshot version must be: YYYY-mm-dd_HH-MM-ss"
+  }
 }

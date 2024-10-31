@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /utils.sh
+source /mnt/utils.sh
 
 if [ $# -ne 2 ]; then
     echo "Usage: bash benchmark.sh <run-type> <run-id>"
@@ -25,7 +25,7 @@ fi
 # shellcheck disable=SC2154
 WORKLOAD="$${WORKLOAD:-${workload}}"
 
-# Based on the workload, we can figure out the index name. It is mostly the same, but somtimes not.
+# Based on the workload, we can figure out the index name. It is mostly the same, but sometimes not.
 INDEX_NAME=$(workload_index_name $WORKLOAD)
 
 # This comes from the user `terraform.tfvars` configuration file
@@ -40,11 +40,38 @@ TEST_PROCEDURE="$${TEST_PROCEDURE:-${test_procedure}}"
 CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
 RUN_GROUP_ID="$${RUN_GROUP_ID:-$(date '+%Y_%m_%d_%H_%M_%S')}"
 AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 -s http://169.254.169.254/latest/meta-data/instance-id)"
-SHARD_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$WORKLOAD/_settings" | jq --raw-output ".$WORKLOAD.settings.index.number_of_shards")"
-REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$WORKLOAD/_settings" | jq --raw-output ".$WORKLOAD.settings.index.number_of_replicas")"
+
+SHARD_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$INDEX_NAME/_settings" | jq --raw-output ".\"$INDEX_NAME\".settings.index.number_of_shards")"
+REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$INDEX_NAME/_settings" | jq --raw-output ".\"$INDEX_NAME\".settings.index.number_of_replicas")"
+
+if [ -z "$SHARD_COUNT" ] || [ "$SHARD_COUNT" == "null" ]; then
+    echo "Failed to retrieve the shard count"
+    exit 1
+fi
+
+if [ -z "$REPLICA_COUNT" ] || [ "$REPLICA_COUNT" == "null" ]; then
+    echo "Failed to retrieve the replica count"
+    exit 1
+fi
+
 # assumes same machine for cluster
 GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,aws-user-id:$AWS_USERID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
 GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION,shard-count:$SHARD_COUNT,replica-count:$REPLICA_COUNT"
+GROUP_USER_TAGS+=",run-type:$RUN_TYPE,aws-cluster-instance-id:$CLUSTER_INSTANCE_ID"
+
+GROUP_USER_TAGS+=",lg-cpu-model-name:$(lscpu | grep "Model name" | cut -d':' -f2 | xargs)"
+GROUP_USER_TAGS+=",lg-cpu-cache-l1d:$(lscpu | grep "L1d" | cut -d':' -f2 | xargs)"
+GROUP_USER_TAGS+=",lg-cpu-cache-l1i:$(lscpu | grep "L1i" | cut -d':' -f2 | xargs)"
+GROUP_USER_TAGS+=",lg-cpu-cache-l2:$(lscpu | grep "L2" | cut -d':' -f2 | xargs)"
+GROUP_USER_TAGS+=",lg-cpu-cache-l3:$(lscpu | grep "L3" | cut -d':' -f2 | xargs)"
+
+TC_CMD="ssh -o StrictHostKeyChecking=no ubuntu@$${CLUSTER_HOST_SSH} -- "
+GROUP_USER_TAGS+=",tc-cpu-model-name:$($TC_CMD 'lscpu | grep "Model name" | cut -d':' -f2 | xargs')"
+GROUP_USER_TAGS+=",tc-cpu-cache-l1d:$($TC_CMD 'lscpu | grep "L1d" | cut -d':' -f2 | xargs')"
+GROUP_USER_TAGS+=",tc-cpu-cache-l1i:$($TC_CMD 'lscpu | grep "L1i" | cut -d':' -f2 | xargs')"
+GROUP_USER_TAGS+=",tc-cpu-cache-l2:$($TC_CMD 'lscpu | grep "L2" | cut -d':' -f2 | xargs')"
+GROUP_USER_TAGS+=",tc-cpu-cache-l3:$($TC_CMD 'lscpu | grep "L3" | cut -d':' -f2 | xargs')"
+GROUP_USER_TAGS+=",ci:$(ci_tag_value)"
 
 set -x
 
@@ -57,12 +84,6 @@ check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$I
 TEST_EXECUTION_ID="cluster-$RUN_GROUP_ID-$RUN_ID"
 RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
 USER_TAGS="$GROUP_USER_TAGS,run:$RUN_ID"
-# tag first run as a warmup
-if [[ $RUN_ID -eq 0 ]]; then
-    USER_TAGS+=",run-type:warmup"
-else
-    USER_TAGS+=",run-type:$RUN_TYPE"
-fi
 benchmark_single \
     "$WORKLOAD" \
     "$CLUSTER_HOST" \

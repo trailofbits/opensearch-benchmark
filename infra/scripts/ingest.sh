@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source /utils.sh
+source /mnt/utils.sh
 
 if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$DISTRIBUTION_VERSION" ]; then
     echo "Please set the CLUSTER_HOST, CLUSTER_USER, CLUSTER_PASSWORD and DISTRIBUTION_VERSION environment variables"
@@ -30,7 +30,7 @@ CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$C
 SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD" "$WORKLOAD_PARAMS")
 
 INGESTION_RESULTS=/mnt/ingestion_results
-USER_TAGS="run-type:ingest,aws-user-id:$AWS_USERID"
+USER_TAGS="run-type:ingest,aws-user-id:$AWS_USERID,ci:$(ci_tag_value)"
 
 # If the snapshot already exists, skip ingestion (check response.total > 0),
 # unless FORCE_INGESTION is set
@@ -47,7 +47,7 @@ register_snapshot_repo \
 
 response=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME")
 if [[ $(echo "$response" | jq -r '.snapshots | length') -gt 0 ]] && [ -z "$FORCE_INGESTION" ]; then
-    echo "There's a snapshot already. Use /restore_snapshot.sh to restore it."
+    echo "There's a snapshot already. Use /mnt/restore_snapshot.sh to restore it."
     echo "If you want to recreate the snapshot, set FORCE_INGESTION=true."
     exit 1
 fi
@@ -99,13 +99,4 @@ echo "$response" | jq -e '.error' > /dev/null && {
 }
 echo "Snapshot done"
 
-# Restore the snapshot
-echo "Restoring snapshot..."
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$INDEX_NAME?pretty"
-curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
-{
-  \"indices\": \"$INDEX_NAME\"
-}"
-echo "Snapshot restored"
-
-check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
+/mnt/restore_snapshot.sh

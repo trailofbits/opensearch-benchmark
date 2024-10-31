@@ -1,15 +1,3 @@
-variable "ssh_priv_key" {
-  description = "Path to the SSH Private Key"
-  type        = string
-  default     = "~/.ssh/id_rsa"
-}
-
-variable "ssh_pub_key" {
-  description = "Path to the SSH Public Key"
-  type        = string
-  default     = "~/.ssh/id_rsa.pub"
-}
-
 variable "aws_region" {
   description = "AWS region used for the deployment"
   type        = string
@@ -62,6 +50,7 @@ variable "distribution_version" {
 variable "s3_bucket_name" {
   description = "S3 bucket name for the snapshot"
   type        = string
+  default     = "snapshots-osb"
 }
 
 variable "snapshot_user_aws_access_key_id" {
@@ -121,4 +110,8 @@ variable "snapshot_version" {
   description = "Version of the snapshot to deploy (latest, new, or a specific version)"
   type        = string
   default     = "latest"
+  validation {
+    condition     = can(regex("^(latest|new)$", var.snapshot_version)) || can(regex("^\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}$", var.snapshot_version))
+    error_message = "Snapshot version must be one of: latest, new, or a specific version (YYYY-mm-dd_HH-MM-ss)"
+  }
 }

@@ -28,6 +28,7 @@ resource "aws_instance" "target-cluster" {
 
       es_snapshot_access_key = var.snapshot_user_aws_access_key_id,
       es_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
+      authorized_ssh_key     = var.ssh_pub_key
     }
   )
   user_data_replace_on_change = true
@@ -71,53 +72,13 @@ resource "aws_instance" "load-generation" {
       datastore_username    = var.datastore_username
       datastore_password    = var.datastore_password
       instance_type         = var.instance_type
-
-      ingest_script = yamlencode(
-        base64gzip(templatefile("${path.module}/../../scripts/ingest.sh",
-          {
-            workload         = var.workload
-            s3_bucket_name   = var.s3_bucket_name,
-            workload_params  = var.workload_params,
-            snapshot_version = var.snapshot_version,
-          }
-        ))
-      ),
-      restore_snapshot_script = yamlencode(
-        base64gzip(templatefile("${path.module}/../../scripts/restore_snapshot.sh",
-          {
-            workload         = var.workload
-            s3_bucket_name   = var.s3_bucket_name,
-            workload_params  = var.workload_params,
-            snapshot_version = var.snapshot_version,
-          }
-        ))
-      ),
-      benchmark_script = yamlencode(
-        base64gzip(templatefile("${path.module}/../../scripts/benchmark.sh",
-          {
-            workload        = var.workload
-            workload_params = var.workload_params,
-            test_procedure  = var.test_procedure,
-          }
-        ))
-      ),
-      benchmark_single_script = yamlencode(
-        base64gzip(templatefile("${path.module}/../../scripts/benchmark_single.sh",
-          {
-            workload        = var.workload
-            workload_params = var.workload_params,
-            test_procedure  = var.test_procedure,
-          }
-        ))
-      ),
+      cluster_instance_id   = aws_instance.target-cluster.id
       fix_index_script = yamlencode(base64gzip(templatefile("${path.module}/fix_index.sh",
         {
           workload = var.workload,
         }
       ))),
-      utils_script = yamlencode(
-        base64gzip(file("${path.module}/../../scripts/utils.sh"))
-      ),
+      ssh_private_key = base64gzip(var.ssh_priv_key)
     }
   )
   user_data_replace_on_change = true
@@ -133,8 +94,59 @@ resource "aws_instance" "load-generation" {
   connection {
     type        = "ssh"
     user        = "ubuntu"
-    private_key = file(var.ssh_priv_key)
+    private_key = var.ssh_priv_key
     host        = self.public_ip
+  }
+
+  provisioner "file" {
+    content = templatefile("${path.module}/../../scripts/ingest.sh",
+      {
+        workload         = var.workload,
+        workload_params  = var.workload_params,
+        s3_bucket_name   = var.s3_bucket_name,
+        snapshot_version = var.snapshot_version,
+      }
+    )
+    destination = "/mnt/ingest.sh"
+  }
+
+  provisioner "file" {
+    content = templatefile("${path.module}/../../scripts/restore_snapshot.sh",
+      {
+        workload         = var.workload
+        s3_bucket_name   = var.s3_bucket_name,
+        workload_params  = var.workload_params,
+        snapshot_version = var.snapshot_version,
+      }
+    )
+    destination = "/mnt/restore_snapshot.sh"
+  }
+
+  provisioner "file" {
+    content = templatefile("${path.module}/../../scripts/benchmark.sh",
+      {
+        workload        = var.workload
+        workload_params = var.workload_params,
+        test_procedure  = var.test_procedure,
+      }
+    )
+    destination = "/mnt/benchmark.sh"
+  }
+
+  provisioner "file" {
+    content = templatefile("${path.module}/../../scripts/benchmark_single.sh",
+      {
+        workload        = var.workload
+        workload_params = var.workload_params,
+        test_procedure  = var.test_procedure,
+      }
+    )
+    destination = "/mnt/benchmark_single.sh"
+  }
+
+  provisioner "file" {
+    source      = "${path.module}/../../scripts/utils.sh"
+    destination = "/mnt/utils.sh"
   }
 
   private_dns_name_options {

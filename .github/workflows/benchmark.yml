@@ -59,6 +59,14 @@ on:
         required: false
         type: string
         default: 2.16.0
+      aws_region:
+        description: 'AWS region'
+        required: true
+        type: string
+      ci_tag:
+        description: 'Tag describing CI run'
+        required: true
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -76,15 +84,13 @@ on:
         required: true
 
 env:
-  TF_VAR_ssh_priv_key: ~/.ssh/id_rsa
-  TF_VAR_ssh_pub_key: ~/.ssh/id_rsa.pub
   TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
   TF_VAR_snapshot_user_aws_secret_access_key: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
   TF_VAR_datastore_host: ${{ secrets.DATASTORE_HOST }}
   TF_VAR_datastore_username: ${{ secrets.DATASTORE_USERNAME }}
   TF_VAR_datastore_password: ${{ secrets.DATASTORE_PASSWORD }}
-  TF_VAR_aws_region: ca-central-1
-  TF_VAR_aws_subnet_zone: ca-central-1a
+  TF_VAR_aws_region: ${{ inputs.aws_region }}
+  TF_VAR_aws_subnet_zone: ${{ inputs.aws_region }}a
   TF_VAR_target_cluster_type: ${{ inputs.cluster_type}}
   TF_VAR_s3_bucket_name: ${{ inputs.s3_bucket_name }}
   TF_VAR_prefix_list_id: pl-06f77c0b59dbf70fe
@@ -115,8 +121,6 @@ jobs:
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip awscliv2.zip
           sudo ./aws/install
-      - name: Set up SSH keys
-        run: ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -P ""
       - name: Terraform setup
         working-directory: infra
         run: terraform init
@@ -143,12 +147,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ssh-key-${{ steps.workspace.outputs.workspace_name }}
-          path: ~/.ssh/id_rsa
-      - name: Upload SSH pub key artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ssh-key.pub-${{ steps.workspace.outputs.workspace_name }}
-          path: ~/.ssh/id_rsa.pub
+          path: ${{ github.workspace }}/infra/private_key-gh-nightly-${{ steps.workspace.outputs.workspace_name }}.pem
       - name: Upload Terraform state artifact
         uses: actions/upload-artifact@v4
         with:
@@ -188,10 +187,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          mkdir -p ~/.ssh
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
-          chmod 600 ~/.ssh/id_rsa
-          chmod 644 ~/.ssh/id_rsa.pub
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
@@ -209,19 +206,20 @@ jobs:
         working-directory: infra
         if: ${{ inputs.create_snapshot }}
         run: |
-            ssh $SSH_OPTIONS \
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240 bash -x /ingest.sh;\""
+              "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240  CI_TAG=$CI_TAG bash -x /mnt/ingest.sh;\""
         env:
             FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
+            CI_TAG: ${{ inputs.ci_tag }}
 
       - name: Restore snapshot
         working-directory: infra
         if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
         run: |
-            ssh $SSH_OPTIONS \
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc 'bash -x /restore_snapshot.sh;'"
+              "set -x; bash -ixc 'bash -x /mnt/restore_snapshot.sh;'"
       
 
   run-osb:
@@ -256,10 +254,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          mkdir -p ~/.ssh
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
-          chmod 600 ~/.ssh/id_rsa
-          chmod 644 ~/.ssh/id_rsa.pub
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
@@ -278,13 +274,14 @@ jobs:
         working-directory: infra
         if: ${{ inputs.perform_benchmark }}
         run: |
-            ssh $SSH_OPTIONS \
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID bash -x /benchmark_single.sh $BENCHMARK_TYPE $RUN_ID;\""
+              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -x /mnt/benchmark_single.sh $BENCHMARK_TYPE $RUN_ID;\""
         env:
             BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
             RUN_ID: ${{ matrix.run_id }}
             RUN_GROUP_ID: ${{ matrix.run_group_id }}
+            CI_TAG: ${{ inputs.ci_tag }}
 
   destroy_workspace:
     needs: [prepare_workspace, run-osb, ingest-data]
@@ -309,10 +306,8 @@ jobs:
         uses: actions/download-artifact@v4
       - name: Set up SSH keys
         run: |
-          mkdir -p ~/.ssh
-          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa ssh-key.pub-${{ needs.prepare_workspace.outputs.workspace_name }}/id_rsa.pub ~/.ssh
-          chmod 600 ~/.ssh/id_rsa
-          chmod 644 ~/.ssh/id_rsa.pub
+          cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
+          chmod 600 ./infra/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem
       - name: Set up Terraform state
         run: |
           mkdir -p infra/terraform.tfstate.d
@@ -331,3 +326,24 @@ jobs:
         run: terraform destroy -auto-approve
         env:
             TF_VAR_benchmark_environment: gh-nightly-${{ needs.prepare_workspace.outputs.now }}
+
+  clean_up_on_error:
+    needs: [prepare_workspace, ingest-data]
+    runs-on: ubuntu-latest
+
+    if: ${{ always() && contains(needs.*.result, 'failure') }}
+    
+    steps:
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+
+          unzip awscliv2.zip
+          sudo ./aws/install
+
+      - name: Deleting the SSH key pair
+        run: |
+          aws \
+            ec2 delete-key-pair \
+            --region ${TF_VAR_aws_region} \
+            --key-name gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}

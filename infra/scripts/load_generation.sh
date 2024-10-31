@@ -1,15 +1,17 @@
 #!/bin/bash
 
-source /utils.sh
+source /mnt/utils.sh
 
 # Get script directory
-CLUSTER_HOST=$1
+CLUSTER_HOST_SSH=$1
+CLUSTER_HOST=https://$CLUSTER_HOST_SSH:9200
 CLUSTER_USER=$2
 CLUSTER_PASSWORD=$3
 DISTRIBUTION_VERSION=$4
 CLUSTER_VERSION=$5
 ENGINE_TYPE=$6
 INSTANCE_TYPE=$7
+CLUSTER_INSTANCE_ID=$8
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
@@ -28,6 +30,7 @@ export BENCHMARK_HOME=/mnt
 echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
 echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/' >> ~/.bashrc
 echo 'export BENCHMARK_HOME=/mnt' >> ~/.bashrc
+echo "export CLUSTER_HOST_SSH=$CLUSTER_HOST_SSH" >> ~/.bashrc
 echo "export CLUSTER_HOST=$CLUSTER_HOST" >> ~/.bashrc
 echo "export CLUSTER_USER=$CLUSTER_USER" >> ~/.bashrc
 echo "export DISTRIBUTION_VERSION=$DISTRIBUTION_VERSION" >> ~/.bashrc
@@ -36,6 +39,7 @@ echo "export INSTANCE_TYPE=$INSTANCE_TYPE" >> ~/.bashrc
 echo "export CLUSTER_VERSION=$CLUSTER_VERSION" >> ~/.bashrc
 echo "export CLUSTER_PASSWORD=$CLUSTER_PASSWORD" >> ~/.bashrc
 echo "export AWS_USERID=$AWS_USERID" >> ~/.bashrc
+echo "export CLUSTER_INSTANCE_ID=$CLUSTER_INSTANCE_ID" >> ~/.bashrc
 
 pip install opensearch-benchmark
 

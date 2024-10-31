@@ -40,9 +40,21 @@ provider "aws" {
   }
 }
 
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Save private key to a local file
+resource "local_file" "private_key" {
+  content         = tls_private_key.ssh_key.private_key_pem
+  filename        = "${path.module}/private_key-${terraform.workspace}.pem"
+  file_permission = "0600"
+}
+
 resource "aws_key_pair" "ssh_key" {
   key_name   = "${terraform.workspace}-ssh-key"
-  public_key = file(var.ssh_pub_key)
+  public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
 resource "aws_vpc" "vpc" {
@@ -165,7 +177,8 @@ module "es-cluster" {
   es_version            = var.es_version
   distribution_version  = var.distribution_version
   ssh_key_name          = aws_key_pair.ssh_key.key_name
-  ssh_priv_key          = var.ssh_priv_key
+  ssh_priv_key          = tls_private_key.ssh_key.private_key_openssh
+  ssh_pub_key           = tls_private_key.ssh_key.public_key_openssh
   security_groups       = [aws_security_group.allow_osb.id]
   subnet_id             = aws_subnet.subnet.id
   password              = random_password.cluster-password.result
@@ -202,7 +215,8 @@ module "os-cluster" {
   os_version            = var.os_version
   distribution_version  = var.distribution_version
   ssh_key_name          = aws_key_pair.ssh_key.key_name
-  ssh_priv_key          = var.ssh_priv_key
+  ssh_priv_key          = tls_private_key.ssh_key.private_key_openssh
+  ssh_pub_key           = tls_private_key.ssh_key.public_key_openssh
   security_groups       = [aws_security_group.allow_osb.id]
   subnet_id             = aws_subnet.subnet.id
   password              = random_password.cluster-password.result

@@ -19,3 +19,19 @@ Use `poetry run benchmark_results_downloader --help` for a complete list of opti
 ## Download benchmark data in a date range
 
 `poetry run benchmark_results_downloader --host <host> --benchmark_data <output_folder> --from 2024-10-01 --to 2024-10-05`
+
+## Download benchmark data from different sources
+
+Use the `--source` option and use any combination of the available choices. Default is all scheduled runs.
+
+NOTE: The user tag is `user-tags.ci` and currently `ci-scheduled = scheduled`, `ci-manual = manual` and `other = not-used or ""`
+
+### Only CI scheduled runs:
+
+`poetry run benchmark_results_downloader [...] --source ci-scheduled`
+
+### All CI runs:
+`poetry run benchmark_results_downloader [...] --source ci-scheduled ci-manual`
+
+### All non-CI runs:
+`poetry run benchmark_results_downloader [...] --source other`
