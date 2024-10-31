@@ -150,10 +150,9 @@ def get_workload_operations(workload: str) -> list[str] | None:
     spec_list: list[dict] = get_category_operation_map()
     for spec in spec_list:
         if spec["workload"] == workload:
-            operation_list = []
-            for category_name in spec["categories"].keys():
-                for operation_name in spec["categories"][category_name]:
-                    operation_list.append(operation_name)
+            # Combine the operation lists for each category
+            operation_list = sum(spec["categories"].values(), [])
+            break
 
     if not operation_list:
         return None
@@ -169,11 +168,10 @@ def get_workload_operation_categories(workload: str) -> list[str] | None:
     spec_list: list[dict] = get_category_operation_map()
     for spec in spec_list:
         if spec["workload"] == workload:
-            category_list = []
-            for category_name in spec["categories"].keys():
-                category_list.append(category_name)
+            category_list = list(spec["categories"].keys())
+            break
 
-    if not operation_list:
+    if not category_list:
         return None
 
     return sorted(category_list)
