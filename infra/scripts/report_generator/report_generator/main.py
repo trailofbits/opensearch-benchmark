@@ -21,7 +21,9 @@ from googleapiclient.errors import HttpError
 from . import __version__
 
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+# Limit access to files created by this app
+# See: https://developers.google.com/identity/protocols/oauth2/scopes#sheets
+SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
 
 def get_program_arguments() -> Namespace:
