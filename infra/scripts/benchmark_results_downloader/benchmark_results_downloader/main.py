@@ -343,7 +343,7 @@ def main() -> int:
                         }
                     },
                     {"prefix": {"environment": {"value": args.environment}}},
-                    {"term": {"user-tags.run-type": args.run_type}},
+                    {"terms": {"user-tags.run-type": [args.run_type]}},
                     {"exists": {"field": "operation"}},
                     {"exists": {"field": "value.50_0"}},
                     {"exists": {"field": "value.90_0"}},

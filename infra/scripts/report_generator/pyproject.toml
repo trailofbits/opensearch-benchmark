@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "report-generator"
+version = "0.1.0"
+description = ""
+authors = ["Trail of Bits <opensource@trailofbits.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+google-api-python-client = "^2.147.0"
+google-auth-httplib2 = "^0.2.0"
+google-auth-oauthlib = "^1.2.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+report_generator = 'report_generator.main:main'
