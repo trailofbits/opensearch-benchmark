@@ -16,18 +16,72 @@ class Summary:
     spreadsheet_id: str
 
 
+    def create_all_categories_table(self, workloads: dict[str,dict[str,set[str]]]) -> None:
+        """Creates a table summarizing all categories"""
+        rows: list[list[str]] = []
+
+        # Find versions to compare
+        for workload,engines in workloads.items():
+            os_version = sorted(engines["OS"])[0]
+            es_version = sorted(engines["ES"])[0]
+            break
+
+        # Find category counts and totals for each workload
+        all_categories = set()
+        for workload,engines in workloads.items():
+            categories = get_workload_operation_categories(workload)
+            all_categories.update(categories)
+
+        count_str = f"Results!$F$2:$F,\"{os_version}\",Results!$N$2:$N,\"{es_version}\""
+
+        rows.append([])
+        rows.append(["",f"All Categories: OS v{os_version} is Faster than ES v{es_version}","",""])
+        rows.append(["Category","Count","Total","Percentage (%)"])
+        for category in sorted(list(all_categories)):
+            row: list[str] = []
+            row.append(category)
+            row.append(f"=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-1)), Results!$D$2:$D,\">1\")")
+            row.append(f"=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-2)))")
+            row.append("=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))")
+            rows.append(row)
+        rows.append([])
+
+        size = len(all_categories)+1
+        rows.append(["Total",
+                     f"=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&\":\"&ADDRESS(ROW()-2,COLUMN()) ))",
+                     f"=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&\":\"&ADDRESS(ROW()-2,COLUMN()) ))",
+                     "=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))"
+                   ])
+        rows.append([])
+
+        # Update table to Summary sheet
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        self.service.spreadsheets().values().append(
+            spreadsheetId=self.spreadsheet_id,
+            range=f"Summary!A1",
+            valueInputOption="USER_ENTERED",
+            body=request_properties,
+        ).execute()
+
+
     def create_summary_table(self, workload: str, os_version: str, es_version: str) -> list[list[str]]:
         """Creates a summary table for a workload and OS vs. ES engine version"""
         rows: list[list[str]] = []
 
         number_of_operations=len(get_workload_operations(workload))
 
+        filter_str = f"Results!$A$2:$A=\"{workload}\",Results!$F$2:$F=\"{os_version}\",Results!$N$2:$N=\"{es_version}\""
+        count_str = f"Results!$A$2:$A,\"{workload}\",Results!$F$2:$F,\"{os_version}\",Results!$N$2:$N,\"{es_version}\""
+
         # Add overview of results
         rows.append([f"{workload}",f"ES v{es_version}",""])
-        rows.append(["Total Tasks",f"=ROWS(UNIQUE(FILTER(Results!$C$2:$C,Results!$A$2:$A=\"{workload}\")))"])
-        rows.append(["Tasks faster than ES",f"=COUNTIFS(Results!$A$2:$A,\"{workload}\", Results!$D$2:$D,\">1\")"])
-        rows.append(["Fast Outliers (> 2)",f"=COUNTIFS(Results!$A$2:$A,\"{workload}\", Results!$D$2:$D,\">2\")"])
-        rows.append(["Slow Outliers (< 0.5)",f"=COUNTIFS(Results!$A$2:$A,\"{workload}\", Results!$D$2:$D,\"<0.5\")"])
+        rows.append(["Total Tasks",f"=ROWS(UNIQUE(FILTER(Results!$C$2:$C,{filter_str})))"])
+        rows.append(["Tasks faster than ES",f"=COUNTIFS({count_str}, Results!$D$2:$D,\">1\")"])
+        rows.append(["Fast Outliers (> 2)",f"=COUNTIFS({count_str}, Results!$D$2:$D,\">2\")"])
+        rows.append(["Slow Outliers (< 0.5)",f"=COUNTIFS({count_str}, Results!$D$2:$D,\"<0.5\")"])
         rows.append([])
 
         # Add categories OS is faster
@@ -41,10 +95,10 @@ class Summary:
         row = [f"=SORT(UNIQUE(FILTER(Results!$B$2:$B,Results!$A$2:$A=\"{workload}\")))"]
         for _ in categories:
             row.append(
-                f"=COUNTIFS(Results!$A$2:$A,\"{workload}\", Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-1)), Results!$D$2:$D,\">1\")"
+                f"=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-1)), Results!$D$2:$D,\">1\")"
             )
             row.append(
-                f"=COUNTIFS(Results!$A$2:$A,\"{workload}\", Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-2)))"
+                f"=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-2)))"
             )
             rows.append(row)
             row = [""]
@@ -59,7 +113,7 @@ class Summary:
         # Add operations OS is faster
         rows.append(["",f"Operations: OS v{os_version} is Faster",""])
         rows.append(["Category","Operation","ES/OS"])
-        rows.append([f"=SORT(SORT(FILTER(Results!$B$2:$D, Results!$A$2:$A=\"{workload}\", Results!$D$2:$D > 1), 3, FALSE), 1, TRUE)","",""])
+        rows.append([f"=SORT(SORT(FILTER(Results!$B$2:$D, {filter_str}, Results!$D$2:$D > 1), 3, FALSE), 1, TRUE)","",""])
         for _ in range(number_of_operations):
             rows.append([])
         rows.append([])
@@ -67,7 +121,7 @@ class Summary:
         # Add operations OS is slower
         rows.append(["",f"Operations: OS v{os_version} is Slower",""])
         rows.append(["Category","Operation","ES/OS"])
-        rows.append([f"=SORT(SORT(FILTER(Results!$B$2:$D, Results!$A$2:$A=\"{workload}\", Results!$D$2:$D < 1), 3, FALSE), 1, TRUE)","",""])
+        rows.append([f"=SORT(SORT(FILTER(Results!$B$2:$D, {filter_str}, Results!$D$2:$D < 1), 3, FALSE), 1, TRUE)","",""])
         for _ in range(number_of_operations):
             rows.append([])
         rows.append([])
@@ -131,7 +185,7 @@ class Summary:
         return rows,index
 
 
-    def create_overview_table(self, workloads: dict[str,dict[str,set[str]]]) -> None:
+    def create_overview_table(self, workloads: dict[str,dict[str,set[str]]]) -> int:
         """Creates Overview table in Summary sheet"""
         rows: list[list[str]] = []
 
@@ -154,6 +208,8 @@ class Summary:
             valueInputOption="USER_ENTERED",
             body=request_properties,
         ).execute()
+
+        return len(rows)
 
 
     def get_workloads(self) -> dict[str,dict[str,set[str]]]:
@@ -196,11 +252,12 @@ class Summary:
         # For each workload, summarize results
         index = 1
         for workload,engines in workloads.items():
-            print(f"Processing {workload}")
+            print(f"Summarizing {workload}")
             index = self.create_summary_tables(workload,engines,index)
 
         #TODO
         # Create all categories table
+        self.create_all_categories_table(workloads)
 
         #TODO
         # Create overall results table
