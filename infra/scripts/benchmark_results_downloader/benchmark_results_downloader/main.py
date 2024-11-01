@@ -133,8 +133,8 @@ def handle_results_response(
         run_group_str = user_tags["run-group"]
         shard_count = user_tags["shard-count"]
         replica_count = user_tags["replica-count"]
-        snapshot_bucket = user_tags["snapshot-s3-bucket"]
-        snapshot_base_path = user_tags["snapshot-base-path"]
+        snapshot_bucket = user_tags.get("snapshot-s3-bucket")  # optional
+        snapshot_base_path = user_tags.get("snapshot-base-path")  # optional
 
         benchmark_source = user_tags.get("ci")
 
@@ -352,8 +352,6 @@ def main() -> int:
                     {"exists": {"field": "user-tags.engine-type"}},
                     {"exists": {"field": "user-tags.shard-count"}},
                     {"exists": {"field": "user-tags.replica-count"}},
-                    {"exists": {"field": "user-tags.snapshot-base-path"}},
-                    {"exists": {"field": "user-tags.snapshot-s3-bucket"}},
                 ],
             },
         },
