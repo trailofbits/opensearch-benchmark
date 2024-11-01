@@ -1,0 +1,92 @@
+[project]
+name = "report-gen"
+dynamic = ["version"]
+description = ""
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Trail of Bits", email = "opensource@trailofbits.com" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: Other/Proprietary License",
+]
+dependencies = ["opensearch-py ~= 2.7.1"]
+requires-python = ">=3.13"
+
+[tool.setuptools.dynamic]
+version = { attr = "report_gen.__version__" }
+
+
+[project.optional-dependencies]
+doc = ["pdoc"]
+test = ["pytest", "pytest-cov", "pretend", "coverage[toml]"]
+lint = [
+    # NOTE: ruff is under active development, so we pin conservatively here
+    # and let Dependabot periodically perform this update.
+    "ruff ~= 0.6.2",
+    "mypy >= 1.0",
+    "types-html5lib",
+    "types-requests",
+    "types-toml",
+]
+dev = ["report-gen[doc,test,lint]", "twine", "build"]
+
+[project.scripts]
+"report-gen" = "report_gen._cli:main"
+
+# [project.urls]
+# Homepage = "https://pypi.org/project/report-gen"
+# Documentation = "https://trailofbits.github.io/report-gen/"
+# Issues = "https://github.com/trailofbits/report-gen/issues"
+# Source = "https://github.com/trailofbits/report-gen"
+
+[tool.coverage.run]
+# don't attempt code coverage for the CLI entrypoints
+omit = ["src/report_gen/_cli.py"]
+
+[tool.mypy]
+mypy_path = "src"
+packages = "report_gen"
+allow_redefinition = true
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+no_implicit_optional = true
+show_error_codes = true
+sqlite_cache = true
+strict_equality = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[tool.ruff]
+line-length = 100
+include = ["src/**/*.py", "test/**/*.py"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D203",
+    "D213",
+    "COM812",
+    "ISC001",
+    "ANN401", # Allow Any typing
+    "D107",   # Allow __init__ without docstring
+    "G004",   # allow f-string in logging
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/report_gen/_cli.py" = [
+    "T201", # allow `print` in cli module
+]
+"test/**/*.py" = [
+    "D",    # no docstrings in tests
+    "S101", # asserts are expected in tests
+
+]
+# D203 and D213 are incompatible with D211 and D212 respectively.
+# COM812 and ISC001 can cause conflicts when using ruff as a formatter.
+# See https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules.
