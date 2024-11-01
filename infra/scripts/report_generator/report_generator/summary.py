@@ -16,6 +16,58 @@ class Summary:
     spreadsheet_id: str
 
 
+    def create_stats_table(self, workloads: dict[str,dict[str,set[str]]]) -> None:
+        """Creates a table summarizing all statistics"""
+        rows: list[list[str]] = []
+
+        # Find versions to compare
+        offset = 1
+        for workload,engines in workloads.items():
+            os_version = sorted(engines["OS"])[0]
+            es_version = sorted(engines["ES"])[0]
+            offset += len(engines["OS"])
+            offset += len(engines["ES"])
+            break
+        offset *= len(workloads.keys())
+
+        rows.append([])
+        rows.append(["",f"Statistics comparing: OS v{os_version} and ES v{es_version}","",""])
+        rows.append(["ES/OS","Average","Median","Max","Min","Stdev","Variance"])
+
+        filter_faster = f"Results!$F$2:$F=\"{os_version}\",Results!$N$2:$N=\"{es_version}\",Results!$D$2:$D>1"
+        filter_slower = f"Results!$F$2:$F=\"{os_version}\",Results!$N$2:$N=\"{es_version}\",Results!$D$2:$D<1"
+
+        row: list[str] = ["When OS is faster\n(OS service_time is smaller)"]
+        row.append(f"=AVERAGE(FILTER(Results!$D$2:$D,{filter_faster}))")
+        row.append(f"=MEDIAN(FILTER(Results!$D$2:$D,{filter_faster}))")
+        row.append(f"=MAX(FILTER(Results!$D$2:$D,{filter_faster}))")
+        row.append(f"=MIN(FILTER(Results!$D$2:$D,{filter_faster}))")
+        row.append(f"=STDEV.S(FILTER(Results!$D$2:$D,{filter_faster}))")
+        row.append(f"=VAR.S(FILTER(Results!$D$2:$D,{filter_faster}))")
+        rows.append(row)
+
+        row: list[str] = ["When OS is slower\n(OS service_time is larger)"]
+        row.append(f"=AVERAGE(FILTER(Results!$D$2:$D,{filter_slower}))")
+        row.append(f"=MEDIAN(FILTER(Results!$D$2:$D,{filter_slower}))")
+        row.append(f"=MAX(FILTER(Results!$D$2:$D,{filter_slower}))")
+        row.append(f"=MIN(FILTER(Results!$D$2:$D,{filter_slower}))")
+        row.append(f"=STDEV.S(FILTER(Results!$D$2:$D,{filter_slower}))")
+        row.append(f"=VAR.S(FILTER(Results!$D$2:$D,{filter_slower}))")
+        rows.append(row)
+
+        # Update table to Summary sheet
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        self.service.spreadsheets().values().append(
+            spreadsheetId=self.spreadsheet_id,
+            range=f"Summary!A{offset}",
+            valueInputOption="USER_ENTERED",
+            body=request_properties,
+        ).execute()
+
+
     def create_all_categories_table(self, workloads: dict[str,dict[str,set[str]]]) -> None:
         """Creates a table summarizing all categories"""
         rows: list[list[str]] = []
@@ -61,7 +113,7 @@ class Summary:
         }
         self.service.spreadsheets().values().append(
             spreadsheetId=self.spreadsheet_id,
-            range=f"Summary!A1",
+            range=f"Summary!$A1",
             valueInputOption="USER_ENTERED",
             body=request_properties,
         ).execute()
@@ -155,7 +207,7 @@ class Summary:
         }
         self.service.spreadsheets().values().update(
             spreadsheetId=self.spreadsheet_id,
-            range=f"Summary!F{index}",
+            range=f"Summary!$I{index}",
             valueInputOption="USER_ENTERED",
             body=request_properties,
         ).execute()
@@ -255,11 +307,10 @@ class Summary:
             print(f"Summarizing {workload}")
             index = self.create_summary_tables(workload,engines,index)
 
-        #TODO
         # Create all categories table
         self.create_all_categories_table(workloads)
 
-        #TODO
-        # Create overall results table
+        # Create stats table
+        self.create_stats_table(workloads)
 
         return True
