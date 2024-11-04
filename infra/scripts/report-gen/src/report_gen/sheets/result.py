@@ -194,7 +194,7 @@ class Result:
         requests.append(self.format_freeze_row())
         requests.append(self.format_freeze_col())
         requests.append(self.format_rsd())
-        requests.append(self.format_comparison())
+        requests.extend(self.format_comparison())
 
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
