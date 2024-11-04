@@ -127,6 +127,8 @@ def download(  # noqa: PLR0913
     password: str,
     environment: str = "",
     run_type: str = "official",
+    engine_type: str | None,
+    distribution_version: str | None,
     sources: list[Source],
 ) -> list[BenchmarkResult]:
     """Download the specified benchmark results."""
@@ -161,6 +163,12 @@ def download(  # noqa: PLR0913
             },
         },
     }
+
+    if engine_type is not None:
+        query["query"]["bool"]["must"].append({"term": {"user-tags.engine-type": {"value": engine_type}}})
+
+    if distribution_version is not None:
+        query["query"]["bool"]["must"].append({"term": {"distribution-version": {"value": distribution_version}}})
 
     query["query"]["bool"].update(_build_source_query(sources))
 

@@ -60,6 +60,18 @@ def build_download_args(download_parser: argparse.ArgumentParser) -> None:
         default="",
     )
     download_parser.add_argument(
+        "--engine-type",
+        help="Which engine type to download (default: %(default)s)",
+        type=str,
+        default=None,
+    )
+    download_parser.add_argument(
+        "--distribution-version",
+        help="Which distribution version to download (default: %(default)s)",
+        type=str,
+        default=None,
+    )
+    download_parser.add_argument(
         "--source",
         metavar="SOURCE",
         help="Space separated list of sources of the benchmark results. "
@@ -123,6 +135,8 @@ def download_command(args: argparse.Namespace) -> None:
         password=password,
         environment=args.environment,
         run_type=args.run_type,
+        engine_type=args.engine_type,
+        distribution_version=args.distribution_version,
         sources=sources,
     )
 
