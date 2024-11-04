@@ -9,6 +9,7 @@ from report_generator.common import get_light_red, get_dark_red, get_light_green
 
 from googleapiclient.discovery import Resource
 
+
 @dataclass
 class Result:
     """Class for creating Result sheet"""

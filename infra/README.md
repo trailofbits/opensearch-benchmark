@@ -66,7 +66,9 @@ bash /mnt/benchmark.sh [official|dev]
 ```
 
 ## Additional client options
+
 To specify additional client options use the `EXTRA_CLIENT_OPTIONS` environment variable:
+
 ```shell
 EXTRA_CLIENT_OPTIONS=timeout:240 bash /mnt/ingest.sh
 ```
@@ -89,8 +91,29 @@ terraform destroy
 ```
 
 ## Segment timestamps
+
 To extract lucene index segment timestamps, ssh into the load-generation host and run
+
 ```shell
 bash /mnt/segment_timestamps.sh
 ```
+
 This will produce a file named `segment-timestamps.txt` in the current directory.
+
+## Upload Results to Google Sheets
+
+```shell
+python3 -m venv env
+source env/bin/activate
+
+(env) pip install poetry
+
+(env) cd ./scripts/benchmark_results_downloader/
+(env) poetry install
+(env) ./download_nightly.sh
+(env) ./download_versioned.sh
+
+(env) cd ./scripts/report_generator/
+(env) poetry install
+(env) ./report_nightly.sh
+(env) ./report_versioned.sh
