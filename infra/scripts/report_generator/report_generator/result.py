@@ -179,6 +179,22 @@ class Result:
             }
 
 
+    def format_freeze_row(self) -> dict:
+        """Freezes rows"""
+
+        return {
+            "updateSheetProperties": {
+                "properties": {
+                    "sheetId": self.sheet_id,
+                    "gridProperties": {
+                        "frozenRowCount": 1
+                    }
+                },
+                "fields": "gridProperties.frozenRowCount"
+            }
+        }
+
+
     def format_freeze_col(self) -> dict:
         """Freezes columns"""
 
@@ -221,6 +237,7 @@ class Result:
 
         requests = []
         requests.append(self.format_first_row())
+        requests.append(self.format_freeze_row())
         requests.append(self.format_freeze_col())
         requests.append(self.format_rsd())
         requests.append(self.format_comparison())
