@@ -107,7 +107,9 @@ class VerboseTransport(Transport):
         self.Logger.info(f"Hosts: {self.hosts}")
 
         # Perform the actual request
-        return super().perform_request(method, url, params, body, timeout, ignore, headers)
+        return super().perform_request(
+            method, url, params, body, timeout, ignore, headers
+        )
 
 
 class Source(Enum):
@@ -164,7 +166,9 @@ def download(  # noqa: PLR0913
 
     query["query"]["bool"].update(_build_source_query(sources))
 
-    transport_class = VerboseTransport if logger.isEnabledFor(logging.DEBUG) else Transport
+    transport_class = (
+        VerboseTransport if logger.isEnabledFor(logging.DEBUG) else Transport
+    )
 
     client = OpenSearch(
         hosts=[{"host": host, "port": port}],
@@ -223,7 +227,9 @@ def _build_source_query(sources: list[Source]) -> dict[str, Any]:
             {"bool": {"must_not": {"exists": {"field": "user-tags.ci"}}}},
         )
 
-    should_clauses.append({"terms": {"user-tags.ci": [source.value for source in sources]}})
+    should_clauses.append(
+        {"terms": {"user-tags.ci": [source.value for source in sources]}}
+    )
 
     return {"should": should_clauses, "minimum_should_match": 1}
 
@@ -269,8 +275,8 @@ def _handle_results_response(
         run_group_str = user_tags["run-group"]
         shard_count = user_tags["shard-count"]
         replica_count = user_tags["replica-count"]
-        snapshot_bucket = user_tags.get("snapshot-s3-bucket")
-        snapshot_base_path = user_tags.get("snapshot-base-path")
+        snapshot_bucket = user_tags.get("snapshot-s3-bucket")  # optional
+        snapshot_base_path = user_tags.get("snapshot-base-path")  # optional
 
         benchmark_source = user_tags.get("ci")
 
@@ -279,7 +285,9 @@ def _handle_results_response(
             benchmark_source = ""
 
         # Parse into a proper date for sorting purposes
-        run_group_date = datetime.strptime(run_group_str, "%Y_%m_%d_%H_%M_%S")  # noqa: DTZ007
+        run_group_date = datetime.strptime(
+            run_group_str, "%Y_%m_%d_%H_%M_%S"
+        )  # noqa: DTZ007
 
         results.append(
             BenchmarkResult(
@@ -381,12 +389,15 @@ def dump_csv_files(results: list[BenchmarkResult], folder: Path) -> None:
             if csv_file is not None:
                 csv_file.close()
             csv_file_path = (
-                folder / f"{current_run_group.strftime("%Y-%m-%dT%H%M%SZ")}-{current_engine}"
+                folder
+                / f"{current_run_group.strftime("%Y-%m-%dT%H%M%SZ")}-{current_engine}"
                 f"-{current_engine_version}-{current_workload}-{current_test_procedure}.csv"
             )
             csv_file = csv_file_path.open("w", newline="")
             csv_writer = csv.writer(csv_file, delimiter=",", quotechar='"')
-            headers = itertools.chain(headers_pre, all_workload_params_names, headers_post)
+            headers = itertools.chain(
+                headers_pre, all_workload_params_names, headers_post
+            )
             csv_writer.writerow(headers)
 
         values_pre = [
@@ -415,7 +426,9 @@ def dump_csv_files(results: list[BenchmarkResult], folder: Path) -> None:
 
         # Then match the workload param name to the correct column position
         for key, value in result.WorkloadParams.items():
-            workload_params_values[workload_params_name_to_pos[f"workload\\.{key}"]] = value
+            workload_params_values[workload_params_name_to_pos[f"workload\\.{key}"]] = (
+                value
+            )
 
         values = itertools.chain(values_pre, workload_params_values, values_post)
 

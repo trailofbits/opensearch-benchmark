@@ -89,6 +89,11 @@ logger.disabled = False
 EOF
 }
 
+# Get the associated uuid for a named index
+index_uuid() {
+    index=$1
+    curl -sku "$CLUSTER_USER:$CLUSTER_PASSWORD" -X GET "$CLUSTER_HOST/_cat/indices?v" | grep $index | awk '{print $4}'
+}
 
 # Helper function to join parameters by single charater delimiter
 join_by() {
@@ -170,4 +175,9 @@ ci_tag_value() {
     else
         echo "$CI_TAG"
     fi
+}
+
+error_exit() {
+    echo $1
+    exit 1
 }

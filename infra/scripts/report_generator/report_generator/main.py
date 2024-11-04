@@ -11,6 +11,7 @@ from typing import Optional, Tuple, Any
 from report_generator.common import get_category_operation_map
 from report_generator.import_data import ImportData
 from report_generator.result import Result
+from report_generator.summary import Summary
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -415,6 +416,16 @@ def main() -> bool:
         print("Error creating results sheet")
         return False
     print("Results processed successfully")
+
+    # Create Summary sheet
+    summary = Summary(
+        service=service,
+        spreadsheet_id=spreadsheet_id
+    )
+    if not summary.get():
+        print("Error creating summary sheet")
+        return False
+    print("Summary processed successfully")
 
     # Output spreadsheet URL for ease
     report_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
