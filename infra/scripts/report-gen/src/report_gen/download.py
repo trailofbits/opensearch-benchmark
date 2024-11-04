@@ -233,7 +233,7 @@ def _handle_results_response(
 ) -> list[BenchmarkResult]:
     if response is None:
         msg = "Failed to get results"
-        raise ValueError
+        raise ValueError(msg)
 
     hits = response.get("hits")
 

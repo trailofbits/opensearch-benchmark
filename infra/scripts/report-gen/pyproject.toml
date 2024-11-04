@@ -9,7 +9,12 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: Other/Proprietary License",
 ]
-dependencies = ["opensearch-py ~= 2.7.1"]
+dependencies = [
+    "opensearch-py ~= 2.7.1",
+    "google-api-python-client ~= 2.147.0",
+    "google-auth-httplib2 ~= 0.2.0",
+    "google-auth-oauthlib ~= 1.2.1",
+]
 requires-python = ">=3.13"
 
 [tool.setuptools.dynamic]
@@ -73,9 +78,10 @@ ignore = [
     "D213",
     "COM812",
     "ISC001",
-    "ANN401", # Allow Any typing
-    "D107",   # Allow __init__ without docstring
-    "G004",   # allow f-string in logging
+    "ANN401",  # Allow Any typing
+    "D107",    # Allow __init__ without docstring
+    "G004",    # allow f-string in logging
+    "PLR0911", # Allow many reutrn statements
 ]
 
 [tool.ruff.lint.per-file-ignores]
