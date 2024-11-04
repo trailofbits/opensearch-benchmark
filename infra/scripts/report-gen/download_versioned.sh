@@ -13,12 +13,12 @@ fi
 start="$1"
 end="$2"
 
-folder="download_nightly_${start}_${end}"
+folder="download_versioned"
 mkdir -p $folder
 make run ARGS=" download \
     --host opense-clust-AEqAZh9qc4u7-dcbe5cce2775e15e.elb.us-east-1.amazonaws.com \
     --benchmark-data $folder \
-    --source ci-scheduled \
+    --source ci-manual \
     --from $start \
     --to $end
 "

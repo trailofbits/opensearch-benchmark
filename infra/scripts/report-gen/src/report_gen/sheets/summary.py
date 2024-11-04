@@ -4,6 +4,7 @@ import logging
 from dataclasses import dataclass
 
 from googleapiclient.discovery import Resource
+from packaging.version import Version
 
 from .common import (
     adjust_sheet_columns,
@@ -41,22 +42,17 @@ class Summary:
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
 
-    def create_stats_table(self, workloads: dict[str, dict[str, set[str]]]) -> None:
+    def create_stats_table(self, workloads: dict[str, dict[str, list[str]]], offset: int) -> int:
         """Create a table summarizing all statistics."""
         rows: list[list[str]] = []
 
         # Find versions to compare
-        offset = 1
         for engines in workloads.values():
-            os_version = sorted(engines["OS"])[0]
-            es_version = sorted(engines["ES"])[0]
-            offset += len(engines["OS"])
-            offset += len(engines["ES"])
-            break
-        offset *= len(workloads.keys())
+            os_version = engines["OS"][-1]
+            es_version = engines["ES"][-1]
 
         rows.append([])
-        rows.append(["", f"Statistics comparing: OS v{os_version} and ES v{es_version}", "", ""])
+        rows.append([f"Statistics comparing: OS v{os_version} and ES v{es_version}", "", "", ""])
         rows.append(["ES/OS", "Average", "Median", "Max", "Min", "Stdev", "Variance"])
 
         filter_faster = f'Results!$F$2:$F="{os_version}",Results!$N$2:$N="{es_version}",Results!$D$2:$D>1'
@@ -92,14 +88,16 @@ class Summary:
             body=request_properties,
         ).execute()
 
-    def create_all_categories_table(self, workloads: dict[str, dict[str, set[str]]]) -> None:
+        return len(rows)
+
+    def create_all_categories_table(self, workloads: dict[str, dict[str, list[str]]], offset: int) -> int:
         """Create a table summarizing all categories."""
         rows: list[list[str]] = []
 
         # Find versions to compare
         for engines in workloads.values():
-            os_version = sorted(engines["OS"])[0]
-            es_version = sorted(engines["ES"])[0]
+            os_version = engines["OS"][-1]
+            es_version = engines["ES"][-1]
             break
 
         # Find category counts and totals for each workload
@@ -111,14 +109,7 @@ class Summary:
         count_str = f'Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
 
         rows.append([])
-        rows.append(
-            [
-                "",
-                f"All Categories: OS v{os_version} is Faster than ES v{es_version}",
-                "",
-                "",
-            ]
-        )
+        rows.append([f"All Categories: OS v{os_version} is Faster than ES v{es_version}", "", "", ""])
         rows.append(["Category", "Count", "Total", "Percentage (%)"])
         for category in sorted(all_categories):
             row: list[str] = []
@@ -147,10 +138,12 @@ class Summary:
         }
         self.service.spreadsheets().values().append(
             spreadsheetId=self.spreadsheet_id,
-            range="Summary!$A1",
+            range=f"Summary!$A{offset}",
             valueInputOption="USER_ENTERED",
             body=request_properties,
         ).execute()
+
+        return len(rows)
 
     def create_summary_table(self, workload: str, os_version: str, es_version: str) -> list[list[str]]:
         """Create a summary table for a workload and OS vs. ES engine version."""
@@ -163,10 +156,10 @@ class Summary:
 
         # Add overview of results
         rows.append([f"{workload}", f"ES v{es_version}", ""])
-        rows.append(["Total Tasks", f"=ROWS(UNIQUE(FILTER(Results!$C$2:$C,{filter_str})))"])
-        rows.append(["Tasks faster than ES", f'=COUNTIFS({count_str}, Results!$D$2:$D,">1")'])
-        rows.append(["Fast Outliers (> 2)", f'=COUNTIFS({count_str}, Results!$D$2:$D,">2")'])
-        rows.append(["Slow Outliers (< 0.5)", f'=COUNTIFS({count_str}, Results!$D$2:$D,"<0.5")'])
+        rows.append(["Total Tasks", f"=ROWS(UNIQUE(FILTER(Results!$C$2:$C,{filter_str})))", ""])
+        rows.append(["Tasks faster than ES", f'=COUNTIFS({count_str}, Results!$D$2:$D,">1")', ""])
+        rows.append(["Fast Outliers (> 2)", f'=COUNTIFS({count_str}, Results!$D$2:$D,">2")', ""])
+        rows.append(["Slow Outliers (< 0.5)", f'=COUNTIFS({count_str}, Results!$D$2:$D,"<0.5")', ""])
         rows.append([])
 
         # Add categories OS is faster
@@ -224,7 +217,7 @@ class Summary:
 
         return rows
 
-    def create_summary_tables(self, workload: str, engines: dict[str, set[str]], index: int) -> int:
+    def create_summary_tables(self, workload: str, engines: dict[str, list[str]], index: int) -> int:
         """Create summary tables for each engine for this workload."""
         if "OS" not in engines:
             logging.error("Error, no OS engines found")
@@ -236,12 +229,17 @@ class Summary:
         rows: list[list[str]] = []
 
         # Get most recent version of os_version
-        os_version = sorted(engines["OS"])[0]
+        os_version = engines["OS"][-1]
 
-        for es_version in sorted(engines["ES"], reverse=True):
+        for es_version in engines["ES"]:
             # Retrieve operation comparison
             col = self.create_summary_table(workload, os_version, es_version)
-            rows.extend(col)
+
+            # Append column
+            if not rows:
+                rows.extend(col)
+            else:
+                rows = [old + [""] + col[e] for e, old in enumerate(rows)]
 
         # Append table to Result sheet
         request_properties: dict = {
@@ -258,7 +256,7 @@ class Summary:
         return index + len(rows)
 
     def get_workload_engines(
-        self, workload: str, engines: dict[str, set[str]], index: int
+        self, workload: str, engines: dict[str, list[str]], index: int
     ) -> tuple[list[list[str]], int]:
         """Retrieve list of engines and versions for a workload."""
         rows: list[list[str]] = []
@@ -280,7 +278,7 @@ class Summary:
 
         return rows, index
 
-    def create_overview_table(self, workloads: dict[str, dict[str, set[str]]]) -> int:
+    def create_overview_table(self, workloads: dict[str, dict[str, list[str]]]) -> int:
         """Create Overview table in Summary sheet."""
         rows: list[list[str]] = []
 
@@ -306,9 +304,9 @@ class Summary:
 
         return len(rows)
 
-    def get_workloads(self) -> dict[str, dict[str, set[str]]]:
+    def get_workloads(self) -> dict[str, dict[str, list[str]]]:
         """Retrieve tuples of (engine,version,workload) for benchmarks in the spreadsheet."""
-        rv: dict[str, dict[str, set[str]]] = {}
+        rv: dict[str, dict[str, list[str]]] = {}
 
         result: dict = (
             self.service.spreadsheets().values().get(spreadsheetId=self.spreadsheet_id, range="Results!A2:N").execute()
@@ -320,12 +318,16 @@ class Summary:
                 rv[workload] = {}
 
             if "OS" not in rv[workload]:
-                rv[workload]["OS"] = set()
-            rv[workload]["OS"].add(os_version)
+                rv[workload]["OS"] = []
+                if os_version not in rv[workload]["OS"]:
+                    rv[workload]["OS"].append(os_version)
+                rv[workload]["OS"].sort(key=Version)
 
             if "ES" not in rv[workload]:
-                rv[workload]["ES"] = set()
-            rv[workload]["ES"].add(es_version)
+                rv[workload]["ES"] = []
+                if es_version not in rv[workload]["ES"]:
+                    rv[workload]["ES"].append(es_version)
+                rv[workload]["ES"].sort(key=Version)
 
         return rv
 
@@ -335,10 +337,12 @@ class Summary:
         self.sheet_id = get_sheet_id(self.service, self.spreadsheet_id, "Summary")
 
         # Retrieve workload to process and compare
-        workloads: dict[str, dict[str, set[str]]] = self.get_workloads()
+        workloads: dict[str, dict[str, list[str]]] = self.get_workloads()
+
+        offset = 0
 
         # Create overview table
-        self.create_overview_table(workloads)
+        offset += self.create_overview_table(workloads)
 
         # For each workload, summarize results
         index = 1
@@ -347,10 +351,10 @@ class Summary:
             index = self.create_summary_tables(workload, engines, index)
 
         # Create all categories table
-        self.create_all_categories_table(workloads)
+        offset += self.create_all_categories_table(workloads, offset)
 
         # Create stats table
-        self.create_stats_table(workloads)
+        self.create_stats_table(workloads, offset)
 
         # Format Summary sheet
         self.format()
