@@ -138,6 +138,15 @@ resource "aws_instance" "load-generation" {
     destination = "/mnt/utils.sh"
   }
 
+  provisioner "file" {
+    content = templatefile("${path.module}/../../scripts/segment_timestamps.sh",
+      {
+        workload         = var.workload
+      }
+    )
+    destination = "/mnt/segment_timestamps.sh"
+  }
+
   private_dns_name_options {
     hostname_type = "resource-name"
   }
