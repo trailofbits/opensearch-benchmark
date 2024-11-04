@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 from googleapiclient.discovery import Resource
 
 
@@ -175,3 +176,144 @@ def get_workload_operation_categories(workload: str) -> list[str] | None:
         return None
 
     return sorted(category_list)
+
+
+def get_sheet_id(service: Resource, spreadsheet_id: str, name: str) -> int | None:
+    """Returns the sheet ID for the given sheet name"""
+
+    # Get the spreadsheet metadata to find the sheetId
+    spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+
+    # Find the sheetId by sheet name
+    sheet_id = None
+    for sheet in spreadsheet['sheets']:
+        if sheet['properties']['title'] == name:
+            sheet_id = sheet['properties']['sheetId']
+            break
+
+    return sheet_id
+
+
+def get_light_red() -> dict:
+    """Returns the light red color"""
+
+    return {
+            "red":   244 / 255,
+            "green": 199 / 255,
+            "blue":  195 / 255
+    }
+
+
+def get_dark_red() -> dict:
+    """Returns the dark red color"""
+
+    return {
+            "red":   244 / 255,
+            "green": 102 / 255,
+            "blue":  102 / 255
+    }
+
+
+def get_light_green() -> dict:
+    """Returns the light green color"""
+
+    return {
+            "red":   183 / 255,
+            "green": 225 / 255,
+            "blue":  205 / 255
+    }
+
+
+def get_dark_green() -> dict:
+    """Returns the dark green color"""
+
+    return {
+            "red":   87 / 255,
+            "green": 187 / 255,
+            "blue":  138 / 255
+    }
+
+
+def get_light_blue() -> dict:
+    """Returns the light blue color"""
+
+    return {
+            "red":   207 / 255,
+            "green": 226 / 255,
+            "blue":  243 / 255
+    }
+
+
+def adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: str) -> None:
+    """Adjusts the columns in the given sheet according to their contents"""
+
+    spreadsheet_properties: dict = (
+        service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    )
+
+    sheet_id: Optional[int] = None
+    for sheet in spreadsheet_properties.get("sheets", ""):
+        if sheet["properties"]["title"] == sheet_name:
+            sheet_id = sheet["properties"]["sheetId"]
+            break
+
+    if sheet_id is None:
+        print(f"Failed to locate the sheet named '{sheet_name}'. Formatting has failed")
+        return
+
+    sheet_properties: dict = sheet["properties"]
+    column_count: int = sheet_properties.get("gridProperties", {}).get("columnCount", 0)
+
+    requests: list[dict] = [
+        {
+            "autoResizeDimensions": {
+                "dimensions": {
+                    "sheetId": sheet_id,
+                    "dimension": "COLUMNS",
+                    "startIndex": 0,
+                    "endIndex": column_count,
+                }
+            }
+        }
+    ]
+
+    response: dict = (
+        service.spreadsheets()
+        .batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests})
+        .execute()
+    )
+
+
+def hide_columns(
+    service: Resource, spreadsheet_id: str, sheet_name: str, column_list: list[str]
+) -> None:
+    """Hides the specified columns in the given sheet"""
+
+    sheet_id = get_sheet_id(service, spreadsheet_id, sheet_name)
+    if sheet_id is None:
+        print(
+            f"Failed to locate the sheet named '{sheet_name}'. Failed to hide the columns"
+        )
+        return
+
+    request_list: list[dict] = []
+    for column in column_list:
+        request_list.append(
+            {
+                "updateDimensionProperties": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "dimension": "COLUMNS",
+                        "startIndex": ord(column) - ord("A"),
+                        "endIndex": ord(column) - ord("A") + 1,
+                    },
+                    "properties": {"hiddenByUser": True},
+                    "fields": "hiddenByUser",
+                }
+            }
+        )
+
+    body: dict = {"requests": request_list}
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id, body=body
+    ).execute()

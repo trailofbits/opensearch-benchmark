@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 from itertools import product
 
-from report_generator.common import get_workload_operations,get_workload_operation_categories
+from report_generator.common import get_workload_operations,get_workload_operation_categories,adjust_sheet_columns,get_sheet_id
+from report_generator.common import get_light_blue
 
 from googleapiclient.discovery import Resource
 
@@ -14,6 +15,43 @@ class Summary:
 
     service: Resource
     spreadsheet_id: str
+    sheet_id: int | None = None
+
+
+    def format_header_rows(self) -> dict:
+        """Formats header rows"""
+        return {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": self.sheet_id,
+                        "startRowIndex": 0,
+                        "endRowIndex": 1
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "textFormat": {
+                                "bold": True
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat.textFormat.bold"
+                }
+            }
+
+
+    def format(self):
+        """Format Summary sheet"""
+
+        requests = []
+        requests.append(self.format_header_rows())
+
+        body = {
+            "requests": requests
+        }
+        self.service.spreadsheets().batchUpdate(
+            spreadsheetId=self.spreadsheet_id,
+            body=body
+        ).execute()
 
 
     def create_stats_table(self, workloads: dict[str,dict[str,set[str]]]) -> None:
@@ -96,7 +134,6 @@ class Summary:
             row.append(f"=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-2)))")
             row.append("=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))")
             rows.append(row)
-        rows.append([])
 
         size = len(all_categories)+1
         rows.append(["Total",
@@ -104,7 +141,6 @@ class Summary:
                      f"=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&\":\"&ADDRESS(ROW()-2,COLUMN()) ))",
                      "=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))"
                    ])
-        rows.append([])
 
         # Update table to Summary sheet
         request_properties: dict = {
@@ -295,6 +331,9 @@ class Summary:
     def get(self) -> bool:
         """Processes data in Results sheet to fill in Summary sheet"""
 
+        # Get sheet ID for Results sheet
+        self.sheet_id = get_sheet_id(self.service, self.spreadsheet_id, "Summary")
+
         # Retrieve workload to process and compare
         workloads: dict[str,dict[str,set[str]]] = self.get_workloads()
 
@@ -312,5 +351,11 @@ class Summary:
 
         # Create stats table
         self.create_stats_table(workloads)
+
+        # Format Summary sheet
+        self.format()
+
+        # Adjust columns
+        adjust_sheet_columns(self.service, self.spreadsheet_id, "Summary")
 
         return True
