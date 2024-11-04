@@ -5,6 +5,7 @@ import csv
 
 from googleapiclient.discovery import Resource
 
+
 @dataclass
 class ImportData:
     """Class for importing benchmark data"""

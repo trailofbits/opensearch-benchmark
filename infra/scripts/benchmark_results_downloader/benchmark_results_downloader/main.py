@@ -257,6 +257,18 @@ def main() -> int:
         default="",
     )
     args_parser.add_argument(
+        "--engine-type",
+        help="Which engine type to download (default: %(default)s)",
+        type=str,
+        default=None,
+    )
+    args_parser.add_argument(
+        "--distribution-version",
+        help="Which distribution version to download (default: %(default)s)",
+        type=str,
+        default=None,
+    )
+    args_parser.add_argument(
         "--source",
         metavar="SOURCE",
         help="Space separated list of sources of the benchmark results. "
@@ -356,6 +368,15 @@ def main() -> int:
             },
         },
     }
+
+    if args.engine_type is not None:
+        query["query"]["bool"]["must"].append(
+            {"term": {"user-tags.engine-type": {"value": args.engine_type}}}
+        )
+    if args.distribution_version is not None:
+        query["query"]["bool"]["must"].append(
+            {"term": {"distribution-version": {"value": args.distribution_version}}}
+        )
 
     query["query"]["bool"].update(build_source_query(args.source))
 
