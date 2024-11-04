@@ -25,9 +25,7 @@ class ImportData:
             csv_reader = csv.reader(csv_file)
             row_list = list(csv_reader)
 
-        input_columns: dict[str, int] = {
-            header_column: index for index, header_column in enumerate(row_list[0])
-        }
+        input_columns: dict[str, int] = {header_column: index for index, header_column in enumerate(row_list[0])}
 
         # When changing this, make sure to update the formulas
         output_column_order: list[str] = [
@@ -59,9 +57,7 @@ class ImportData:
             processed_row: list[str] = []
             for column_name in output_column_order:
                 source_column_index: int | None = input_columns.get(column_name)
-                column_value: str = (
-                    "(null)" if source_column_index is None else row[source_column_index]
-                )
+                column_value: str = "(null)" if source_column_index is None else row[source_column_index]
                 processed_row.append(column_value)
 
             processed_row_list.append(processed_row)

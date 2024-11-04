@@ -15,9 +15,7 @@ SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
 def authenticate_from_credentials(credentials_file_path: Path, token_file_path: Path) -> None:
     """Authenticate a new session using a credentials file and create a token at the given path."""
-    flow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(
-        credentials_file_path, SCOPES
-    )
+    flow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(credentials_file_path, SCOPES)
     creds: Credentials = flow.run_local_server(port=0)
 
     with token_file_path.open("w") as token:

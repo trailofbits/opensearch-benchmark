@@ -62,13 +62,9 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
     return True
 
 
-def _resize_sheet(
-    service: Resource, spreadsheet_id: str, sheet_name: str, width: int, height: int
-) -> None:
+def _resize_sheet(service: Resource, spreadsheet_id: str, sheet_name: str, width: int, height: int) -> None:
     """Resize the given sheet."""
-    spreadsheet_properties: dict = (
-        service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-    )
+    spreadsheet_properties: dict = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
 
     sheet_id: int | None = None
     for sheet in spreadsheet_properties.get("sheets", ""):
@@ -97,9 +93,7 @@ def _resize_sheet(
     service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
 
 
-def _create_blank_spreadsheet(
-    service: Resource, title: str, sheet_name: str, width: int, height: int
-) -> str | None:
+def _create_blank_spreadsheet(service: Resource, title: str, sheet_name: str, width: int, height: int) -> str | None:
     """Create a new spreadsheet with a single sheet."""
     request_properties: dict = {
         "properties": {
@@ -110,9 +104,7 @@ def _create_blank_spreadsheet(
         ],
     }
 
-    spreadsheet: dict = (
-        service.spreadsheets().create(body=request_properties, fields="spreadsheetId").execute()
-    )
+    spreadsheet: dict = service.spreadsheets().create(body=request_properties, fields="spreadsheetId").execute()
 
     spreadsheet_id: str = cast(str, spreadsheet.get("spreadsheetId"))
     _resize_sheet(service, spreadsheet_id, sheet_name, width, height)
@@ -123,9 +115,7 @@ def _create_blank_spreadsheet(
 def _add_sheet(service: Resource, spreadsheet_id: str, sheet_name: str) -> None:
     request_properties: dict = {"requests": [{"addSheet": {"properties": {"title": sheet_name}}}]}
 
-    service.spreadsheets().batchUpdate(
-        spreadsheetId=spreadsheet_id, body=request_properties
-    ).execute()
+    service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=request_properties).execute()
 
 
 def _create_spreadsheet(service: Resource, title: str) -> str | None:
@@ -214,9 +204,7 @@ def _add_categories_sheet(service: Resource, spreadsheet_id: str) -> None:
 
 def _adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: str) -> None:
     """Adjust the columns in the given sheet according to their contents."""
-    spreadsheet_properties: dict = (
-        service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-    )
+    spreadsheet_properties: dict = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
 
     sheet_id: int | None = None
     for sheet in spreadsheet_properties.get("sheets", ""):
@@ -245,19 +233,13 @@ def _adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: st
     ]
 
     response: dict = (  # noqa: F841
-        service.spreadsheets()
-        .batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests})
-        .execute()
+        service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests}).execute()
     )
 
 
-def _hide_columns(
-    service: Resource, spreadsheet_id: str, sheet_name: str, column_list: list[str]
-) -> None:
+def _hide_columns(service: Resource, spreadsheet_id: str, sheet_name: str, column_list: list[str]) -> None:
     """Hide the specified columns in the given sheet."""
-    spreadsheet_properties: dict = (
-        service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-    )
+    spreadsheet_properties: dict = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
 
     sheet_id: int | None = None
     for sheet in spreadsheet_properties.get("sheets", ""):

@@ -56,7 +56,7 @@ class Result:
             cell_es_p50_rsd = f"S{index}"  # noqa: F841
             cell_es_p90_rsd = f"T{index}"  # noqa: F841
 
-            category = f"=VLOOKUP(C{index}, FILTER(Categories!$B$2:$C, Categories!$A2:$A = $A{index}), 2, FALSE)"  # noqa: E501
+            category = f"=VLOOKUP(C{index}, FILTER(Categories!$B$2:$C, Categories!$A2:$A = $A{index}), 2, FALSE)"
 
             row: list[str] = [
                 workload,  # Workload column
@@ -132,10 +132,7 @@ class Result:
         rv: dict[str, dict[str, set[str]]] = {}
 
         result: dict = (
-            self.service.spreadsheets()
-            .values()
-            .get(spreadsheetId=self.spreadsheet_id, range="raw!C2:E")
-            .execute()
+            self.service.spreadsheets().values().get(spreadsheetId=self.spreadsheet_id, range="raw!C2:E").execute()
         )
         row_list: list[list[str]] = result.get("values", [])
         for row in row_list:
@@ -163,7 +160,7 @@ class Result:
 
             # Retrieve operations for this workload
             operations = get_workload_operations(workload)
-            if operations is None:
+            if len(operations) == 0:
                 logger.error("Error, no operations found for workload")
                 continue
 

@@ -140,7 +140,7 @@ def get_category_operation_map() -> list[dict]:
     return spec_list
 
 
-def get_workload_operations(workload: str) -> list[str] | None:
+def get_workload_operations(workload: str) -> list[str]:
     """Return all the operations for the given workload."""
     operation_list: list[str] = []
 
@@ -151,13 +151,10 @@ def get_workload_operations(workload: str) -> list[str] | None:
             operation_list = sum(spec["categories"].values(), [])  # noqa: RUF017
             break
 
-    if not operation_list:
-        return None
-
     return sorted(operation_list)
 
 
-def get_workload_operation_categories(workload: str) -> list[str] | None:
+def get_workload_operation_categories(workload: str) -> list[str]:
     """Return all the operation categories for the given workload."""
     category_list: list[str] = []
 
@@ -166,8 +163,5 @@ def get_workload_operation_categories(workload: str) -> list[str] | None:
         if spec["workload"] == workload:
             category_list = list(spec["categories"].keys())
             break
-
-    if not category_list:
-        return None
 
     return sorted(category_list)

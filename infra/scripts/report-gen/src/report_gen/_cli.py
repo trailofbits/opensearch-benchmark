@@ -34,8 +34,7 @@ def build_download_args(download_parser: argparse.ArgumentParser) -> None:
     )
     download_parser.add_argument(
         "--from",
-        help="Download results starting from this date (inclusive). "
-        "Format is YYYY-MM-DD or YYYY-MM-DD hh:mm:ssZ",
+        help="Download results starting from this date (inclusive). " "Format is YYYY-MM-DD or YYYY-MM-DD hh:mm:ssZ",
         dest="from_arg",
         type=str,
         required=True,
@@ -50,8 +49,7 @@ def build_download_args(download_parser: argparse.ArgumentParser) -> None:
     )
     download_parser.add_argument(
         "--run-type",
-        help="Which benchmark data run type (normally dev or official) to download "
-        "(default: %(default)s)",
+        help="Which benchmark data run type (normally dev or official) to download " "(default: %(default)s)",
         type=str,
         default="official",
     )
@@ -91,8 +89,7 @@ def download_command(args: argparse.Namespace) -> None:
         start_date = validate_date(args.from_arg)
     except ValueError:
         print(
-            "Wrong format for the 'from' parameter, "
-            "please use a date in YYYY-MM-DD or YYYY-MM-DD hh:mm:ssZ format"
+            "Wrong format for the 'from' parameter, " "please use a date in YYYY-MM-DD or YYYY-MM-DD hh:mm:ssZ format"
         )
         return
 
@@ -103,8 +100,7 @@ def download_command(args: argparse.Namespace) -> None:
             end_date = validate_date(args.to_arg)
         except ValueError:
             print(
-                "Wrong format for the 'to' parameter, "
-                "please use a date in YYYY-MM-DD or YYYY-MM-DD hh:mm:ssZ format"
+                "Wrong format for the 'to' parameter, " "please use a date in YYYY-MM-DD or YYYY-MM-DD hh:mm:ssZ format"
             )
             return
 
@@ -155,8 +151,7 @@ def build_create_args(create_parser: argparse.ArgumentParser) -> None:
 
     create_parser.add_argument(
         "--token",
-        help="Path to the token file."
-        " If it's missing, use in combination with the --credentials parameter",
+        help="Path to the token file." " If it's missing, use in combination with the --credentials parameter",
         required=True,
     )
 
@@ -192,9 +187,7 @@ def create_command(args: argparse.Namespace) -> bool:
 
 
 def main() -> None:
-    arg_parser = argparse.ArgumentParser(
-        description="Tool to help download benchmark data and generate reports"
-    )
+    arg_parser = argparse.ArgumentParser(description="Tool to help download benchmark data and generate reports")
     subparser = arg_parser.add_subparsers(dest="command", help="Available Commands")
 
     download_parser = subparser.add_parser(
