@@ -215,6 +215,7 @@ class Result:
                 }
             }
 
+
     def format(self):
         """Format Result sheet"""
 

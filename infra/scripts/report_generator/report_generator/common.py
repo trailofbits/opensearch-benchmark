@@ -234,6 +234,16 @@ def get_dark_green() -> dict:
     }
 
 
+def get_light_blue() -> dict:
+    """Returns the light blue color"""
+
+    return {
+            "red":   207 / 255,
+            "green": 226 / 255,
+            "blue":  243 / 255
+    }
+
+
 def adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: str) -> None:
     """Adjusts the columns in the given sheet according to their contents"""
 
@@ -307,4 +317,3 @@ def hide_columns(
     service.spreadsheets().batchUpdate(
         spreadsheetId=spreadsheet_id, body=body
     ).execute()
-
