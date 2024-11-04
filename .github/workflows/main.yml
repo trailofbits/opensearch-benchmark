@@ -37,8 +37,10 @@ jobs:
           | sh
 
       - name: lint
+        working-directory: ./infra/scripts/report-gen
         run: make lint INSTALL_EXTRA=lint
     
+  
   shellcheck:
     runs-on: ${{ matrix.os }}
 
