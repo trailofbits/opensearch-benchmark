@@ -8,6 +8,7 @@ from report_generator.common import get_workload_operations
 
 from googleapiclient.discovery import Resource
 
+
 @dataclass
 class Result:
     """Class for creating Result sheet"""
