@@ -1,0 +1,15 @@
+env/
+pip-wheel-metadata/
+*.egg-info/
+__pycache__/
+.coverage*
+.idea
+html/
+dist/
+
+# Default location for google api token
+token.json
+
+# Default location for downloaded benchmark results
+download_nightly_*/
+download_versioned/

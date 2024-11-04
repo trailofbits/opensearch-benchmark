@@ -1,31 +1,31 @@
-from pathlib import Path
-from typing import Optional
-from dataclasses import dataclass
+"""Class for importing benchmark data."""
+
 import csv
+import logging
+from dataclasses import dataclass
+from pathlib import Path
 
 from googleapiclient.discovery import Resource
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class ImportData:
-    """Class for importing benchmark data"""
+    """Class for importing benchmark data."""
 
     service: Resource
     spreadsheet_id: str
     folder: Path
 
-
     def read_rows(self, csv_path: Path) -> list[list[str]]:
-        """Reads CSV data"""
-
+        """Read CSV data."""
         row_list: list[list[str]]
         with csv_path.open() as csv_file:
             csv_reader = csv.reader(csv_file)
             row_list = list(csv_reader)
 
-        input_columns: dict[str, int] = {}
-        for index, header_column in enumerate(row_list[0]):
-            input_columns[header_column] = index
+        input_columns: dict[str, int] = {header_column: index for index, header_column in enumerate(row_list[0])}
 
         # When changing this, make sure to update the formulas
         output_column_order: list[str] = [
@@ -56,29 +56,23 @@ class ImportData:
 
             processed_row: list[str] = []
             for column_name in output_column_order:
-                source_column_index: Optional[int] = input_columns.get(column_name)
-                column_value: str = (
-                    "(null)"
-                    if source_column_index is None
-                    else row[source_column_index]
-                )
+                source_column_index: int | None = input_columns.get(column_name)
+                column_value: str = "(null)" if source_column_index is None else row[source_column_index]
                 processed_row.append(column_value)
 
             processed_row_list.append(processed_row)
 
         return processed_row_list
 
-
     def get(self) -> bool:
-        """Imports benchmark data into spreadsheet"""
-
+        """Import benchmark data into spreadsheet."""
         # Get CSV files
         csv_files = self.folder.glob("*.csv")
 
         # Read rows in files
         raw_data: list[list[str]] = []
         for fn in csv_files:
-            print(f"Processing {fn.name}")
+            logging.info(f"Processing {fn.name}")
 
             rows = self.read_rows(fn)
 

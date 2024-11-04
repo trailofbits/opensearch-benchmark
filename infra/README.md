@@ -102,18 +102,4 @@ This will produce a file named `segment-timestamps.txt` in the current directory
 
 ## Upload Results to Google Sheets
 
-```shell
-python3 -m venv env
-source env/bin/activate
-
-(env) pip install poetry
-
-(env) cd ./scripts/benchmark_results_downloader/
-(env) poetry install
-(env) ./download_nightly.sh
-(env) ./download_versioned.sh
-
-(env) cd ./scripts/report_generator/
-(env) poetry install
-(env) ./report_nightly.sh
-(env) ./report_versioned.sh
+See the `scripts/report-gen` readme.
