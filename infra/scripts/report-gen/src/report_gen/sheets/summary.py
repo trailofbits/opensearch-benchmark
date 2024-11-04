@@ -5,7 +5,12 @@ from dataclasses import dataclass
 
 from googleapiclient.discovery import Resource
 
-from .common import get_workload_operation_categories, get_workload_operations
+from .common import (
+    adjust_sheet_columns,
+    get_sheet_id,
+    get_workload_operation_categories,
+    get_workload_operations,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +21,25 @@ class Summary:
 
     service: Resource
     spreadsheet_id: str
+    sheet_id: int | None = None
+
+    def format_header_rows(self) -> dict:
+        """Format header rows."""
+        return {
+            "repeatCell": {
+                "range": {"sheetId": self.sheet_id, "startRowIndex": 0, "endRowIndex": 1},
+                "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
+                "fields": "userEnteredFormat.textFormat.bold",
+            }
+        }
+
+    def format(self) -> None:
+        """Format Summary sheet."""
+        requests = []
+        requests.append(self.format_header_rows())
+
+        body = {"requests": requests}
+        self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
 
     def create_stats_table(self, workloads: dict[str, dict[str, set[str]]]) -> None:
         """Create a table summarizing all statistics."""
@@ -105,7 +129,6 @@ class Summary:
             row.append(f"=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-2)))")
             row.append("=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))")
             rows.append(row)
-        rows.append([])
 
         size = len(all_categories) + 1
         rows.append(
@@ -116,7 +139,6 @@ class Summary:
                 "=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))",
             ]
         )
-        rows.append([])
 
         # Update table to Summary sheet
         request_properties: dict = {
@@ -309,6 +331,9 @@ class Summary:
 
     def get(self) -> bool:
         """Process data in Results sheet to fill in Summary sheet."""
+        # Get sheet ID for Results sheet
+        self.sheet_id = get_sheet_id(self.service, self.spreadsheet_id, "Summary")
+
         # Retrieve workload to process and compare
         workloads: dict[str, dict[str, set[str]]] = self.get_workloads()
 
@@ -326,5 +351,11 @@ class Summary:
 
         # Create stats table
         self.create_stats_table(workloads)
+
+        # Format Summary sheet
+        self.format()
+
+        # Adjust columns
+        adjust_sheet_columns(self.service, self.spreadsheet_id, "Summary")
 
         return True
