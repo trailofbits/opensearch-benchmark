@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from itertools import product
 
-from report_generator.common import get_workload_operations, get_sheet_id
+from report_generator.common import get_workload_operations, get_sheet_id, adjust_sheet_columns
 from report_generator.common import get_light_red, get_dark_red, get_light_green, get_dark_green
 
 from googleapiclient.discovery import Resource
@@ -388,5 +388,8 @@ class Result:
 
         # Format Result sheet
         self.format()
+
+        # Adjust columns
+        adjust_sheet_columns(self.service, self.spreadsheet_id, "Results")
 
         return True

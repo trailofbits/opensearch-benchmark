@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 from googleapiclient.discovery import Resource
 
 
@@ -231,3 +232,79 @@ def get_dark_green() -> dict:
             "green": 187 / 255,
             "blue":  138 / 255
     }
+
+
+def adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: str) -> None:
+    """Adjusts the columns in the given sheet according to their contents"""
+
+    spreadsheet_properties: dict = (
+        service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+    )
+
+    sheet_id: Optional[int] = None
+    for sheet in spreadsheet_properties.get("sheets", ""):
+        if sheet["properties"]["title"] == sheet_name:
+            sheet_id = sheet["properties"]["sheetId"]
+            break
+
+    if sheet_id is None:
+        print(f"Failed to locate the sheet named '{sheet_name}'. Formatting has failed")
+        return
+
+    sheet_properties: dict = sheet["properties"]
+    column_count: int = sheet_properties.get("gridProperties", {}).get("columnCount", 0)
+
+    requests: list[dict] = [
+        {
+            "autoResizeDimensions": {
+                "dimensions": {
+                    "sheetId": sheet_id,
+                    "dimension": "COLUMNS",
+                    "startIndex": 0,
+                    "endIndex": column_count,
+                }
+            }
+        }
+    ]
+
+    response: dict = (
+        service.spreadsheets()
+        .batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests})
+        .execute()
+    )
+
+
+def hide_columns(
+    service: Resource, spreadsheet_id: str, sheet_name: str, column_list: list[str]
+) -> None:
+    """Hides the specified columns in the given sheet"""
+
+    sheet_id = get_sheet_id(service, spreadsheet_id, sheet_name)
+    if sheet_id is None:
+        print(
+            f"Failed to locate the sheet named '{sheet_name}'. Failed to hide the columns"
+        )
+        return
+
+    request_list: list[dict] = []
+    for column in column_list:
+        request_list.append(
+            {
+                "updateDimensionProperties": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "dimension": "COLUMNS",
+                        "startIndex": ord(column) - ord("A"),
+                        "endIndex": ord(column) - ord("A") + 1,
+                    },
+                    "properties": {"hiddenByUser": True},
+                    "fields": "hiddenByUser",
+                }
+            }
+        )
+
+    body: dict = {"requests": request_list}
+    service.spreadsheets().batchUpdate(
+        spreadsheetId=spreadsheet_id, body=body
+    ).execute()
+

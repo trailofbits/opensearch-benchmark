@@ -8,7 +8,7 @@ from datetime import date
 from pathlib import Path
 from typing import Optional, Tuple, Any
 
-from report_generator.common import get_category_operation_map
+from report_generator.common import get_category_operation_map, get_sheet_id, adjust_sheet_columns
 from report_generator.import_data import ImportData
 from report_generator.result import Result
 from report_generator.summary import Summary
@@ -107,16 +107,7 @@ def resize_sheet(
 ):
     """Resizes the given sheet"""
 
-    spreadsheet_properties: dict = (
-        service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-    )
-
-    sheet_id: Optional[int] = None
-    for sheet in spreadsheet_properties.get("sheets", ""):
-        if sheet["properties"]["title"] == sheet_name:
-            sheet_id = sheet["properties"]["sheetId"]
-            break
-
+    sheet_id = get_sheet_id(service, spreadsheet_id, sheet_name)
     if sheet_id is None:
         print(f"Failed to locate the sheet named '{sheet_name}'. Formatting has failed")
         return
@@ -269,90 +260,6 @@ def add_categories_sheet(service: Resource, spreadsheet_id: str):
         range="Categories!A1",
         valueInputOption="USER_ENTERED",
         body=request_properties,
-    ).execute()
-
-
-def adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: str):
-    """Adjusts the columns in the given sheet according to their contents"""
-
-    spreadsheet_properties: dict = (
-        service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-    )
-
-    sheet_id: Optional[int] = None
-    for sheet in spreadsheet_properties.get("sheets", ""):
-        if sheet["properties"]["title"] == sheet_name:
-            sheet_id = sheet["properties"]["sheetId"]
-            break
-
-    if sheet_id is None:
-        print(f"Failed to locate the sheet named '{sheet_name}'. Formatting has failed")
-        return
-
-    sheet_properties: dict = sheet["properties"]
-    column_count: int = sheet_properties.get("gridProperties", {}).get("columnCount", 0)
-
-    requests: list[dict] = [
-        {
-            "autoResizeDimensions": {
-                "dimensions": {
-                    "sheetId": sheet_id,
-                    "dimension": "COLUMNS",
-                    "startIndex": 0,
-                    "endIndex": column_count,
-                }
-            }
-        }
-    ]
-
-    response: dict = (
-        service.spreadsheets()
-        .batchUpdate(spreadsheetId=spreadsheet_id, body={"requests": requests})
-        .execute()
-    )
-
-
-def hide_columns(
-    service: Resource, spreadsheet_id: str, sheet_name: str, column_list: list[str]
-):
-    """Hides the specified columns in the given sheet"""
-
-    spreadsheet_properties: dict = (
-        service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-    )
-
-    sheet_id: Optional[int] = None
-    for sheet in spreadsheet_properties.get("sheets", ""):
-        if sheet["properties"]["title"] == sheet_name:
-            sheet_id = sheet["properties"]["sheetId"]
-            break
-
-    if sheet_id is None:
-        print(
-            f"Failed to locate the sheet named '{sheet_name}'. Failed to hide the columns"
-        )
-        return
-
-    request_list: list[dict] = []
-    for column in column_list:
-        request_list.append(
-            {
-                "updateDimensionProperties": {
-                    "range": {
-                        "sheetId": sheet_id,
-                        "dimension": "COLUMNS",
-                        "startIndex": ord(column) - ord("A"),
-                        "endIndex": ord(column) - ord("A") + 1,
-                    },
-                    "properties": {"hiddenByUser": True},
-                    "fields": "hiddenByUser",
-                }
-            }
-        )
-
-    body: dict = {"requests": request_list}
-    service.spreadsheets().batchUpdate(
-        spreadsheetId=spreadsheet_id, body=body
     ).execute()
 
 
