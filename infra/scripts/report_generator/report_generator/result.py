@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 from itertools import product
 
-from report_generator.common import get_workload_operations
+from report_generator.common import get_workload_operations, get_sheet_id, adjust_sheet_columns
+from report_generator.common import get_light_red, get_dark_red, get_light_green, get_dark_green
 
 from googleapiclient.discovery import Resource
 
@@ -15,6 +16,240 @@ class Result:
 
     service: Resource
     spreadsheet_id: str
+    sheet_id: int | None = None
+
+
+    def format_comparison(self) -> list[dict]:
+        """Conditionally formats comparison (ES/OS)"""
+        rv: list[dict] = []
+
+        # Value is less than 0.5
+        rv.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [
+                            {
+                                "sheetId": self.sheet_id,
+                                "startRowIndex": 1,     # Start from second row to avoid headers
+                                "startColumnIndex": 3, # Column D
+                                "endColumnIndex": 4    # Column E
+                            },
+                        ],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "NUMBER_LESS",
+                                "values": [
+                                    {"userEnteredValue": "0.5"}
+                                ]
+                            },
+                            "format": {
+                                "backgroundColor": get_dark_red()
+                            },
+                        }
+                    },
+                    "index": 0
+                }
+            })
+
+        # Value is between 0.5 and 1
+        rv.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [
+                            {
+                                "sheetId": self.sheet_id,
+                                "startRowIndex": 1,     # Start from second row to avoid headers
+                                "startColumnIndex": 3, # Column D
+                                "endColumnIndex": 4    # Column E
+                            },
+                        ],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "NUMBER_BETWEEN",
+                                "values": [
+                                    {"userEnteredValue": "0.5"},
+                                    {"userEnteredValue": "1"}
+                                ]
+                            },
+                            "format": {
+                                "backgroundColor": get_light_red()
+                            },
+                        }
+                    },
+                    "index": 1
+                }
+            })
+
+        # Value is between 1 and 2
+        rv.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [
+                            {
+                                "sheetId": self.sheet_id,
+                                "startRowIndex": 1,     # Start from second row to avoid headers
+                                "startColumnIndex": 3, # Column D
+                                "endColumnIndex": 4    # Column E
+                            },
+                        ],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "NUMBER_BETWEEN",
+                                "values": [
+                                    {"userEnteredValue": "1"},
+                                    {"userEnteredValue": "2"}
+                                ]
+                            },
+                            "format": {
+                                "backgroundColor": get_light_green()
+                            },
+                        }
+                    },
+                    "index": 2
+                }
+            })
+
+        # Value is greater than 2
+        rv.append({
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [
+                            {
+                                "sheetId": self.sheet_id,
+                                "startRowIndex": 1,     # Start from second row to avoid headers
+                                "startColumnIndex": 3, # Column D
+                                "endColumnIndex": 4    # Column E
+                            },
+                        ],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "NUMBER_GREATER",
+                                "values": [
+                                    {"userEnteredValue": "2"}
+                                ]
+                            },
+                            "format": {
+                                "backgroundColor": get_dark_green()
+                            },
+                        }
+                    },
+                    "index": 3
+                }
+            })
+
+
+        return rv
+
+
+    def format_rsd(self) -> dict:
+        """Conditionally formats RSD columns"""
+
+        return {
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [
+                            {
+                                "sheetId": self.sheet_id,
+                                "startRowIndex": 1,     # Start from second row to avoid headers
+                                "startColumnIndex": 10, # Column K
+                                "endColumnIndex": 12    # Column L
+                            },
+                            {
+                                "sheetId": self.sheet_id,
+                                "startRowIndex": 1,     # Start from second row to avoid headers
+                                "startColumnIndex": 18, # Column S
+                                "endColumnIndex": 20    # Column T
+                            }
+                        ],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "NUMBER_GREATER",
+                                "values": [
+                                    {
+                                        "userEnteredValue": "0.05"
+                                    }
+                                ]
+                            },
+                            "format": {
+                                "backgroundColor": get_light_red()
+                            }
+                        }
+                    },
+                    "index": 0
+                }
+            }
+
+
+    def format_freeze_row(self) -> dict:
+        """Freezes rows"""
+
+        return {
+            "updateSheetProperties": {
+                "properties": {
+                    "sheetId": self.sheet_id,
+                    "gridProperties": {
+                        "frozenRowCount": 1
+                    }
+                },
+                "fields": "gridProperties.frozenRowCount"
+            }
+        }
+
+
+    def format_freeze_col(self) -> dict:
+        """Freezes columns"""
+
+        return {
+            "updateSheetProperties": {
+                "properties": {
+                    "sheetId": self.sheet_id,
+                    "gridProperties": {
+                        "frozenColumnCount": 4
+                    }
+                },
+                "fields": "gridProperties.frozenColumnCount"
+            }
+        }
+
+
+    def format_first_row(self) -> dict:
+        """Formats first row"""
+        return {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": self.sheet_id,
+                        "startRowIndex": 0,
+                        "endRowIndex": 1
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "textFormat": {
+                                "bold": True
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat.textFormat.bold"
+                }
+            }
+
+
+    def format(self):
+        """Format Result sheet"""
+
+        requests = []
+        requests.append(self.format_first_row())
+        requests.append(self.format_freeze_row())
+        requests.append(self.format_freeze_col())
+        requests.append(self.format_rsd())
+        requests.append(self.format_comparison())
+
+        body = {
+            "requests": requests
+        }
+        self.service.spreadsheets().batchUpdate(
+            spreadsheetId=self.spreadsheet_id,
+            body=body
+        ).execute()
 
 
     def get_workload_operations(self, index: int, workload: str, os: str, es: str, operations: list[str]) -> list[list[str]]:
@@ -147,6 +382,9 @@ class Result:
     def get(self) -> bool:
         """Processes data in raw sheet to fill in Results sheet"""
 
+        # Get sheet ID for Results sheet
+        self.sheet_id = get_sheet_id(self.service, self.spreadsheet_id, "Results")
+
         # Retrieve workload to process and compare
         workloads: dict[str,dict[str,set[str]]] = self.get_workloads()
 
@@ -166,5 +404,11 @@ class Result:
 
             # Output engine comparisons in Result sheet
             offset = self.compare_engine(offset,workload,operations,engines)
+
+        # Format Result sheet
+        self.format()
+
+        # Adjust columns
+        adjust_sheet_columns(self.service, self.spreadsheet_id, "Results")
 
         return True
