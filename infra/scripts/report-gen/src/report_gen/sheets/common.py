@@ -45,7 +45,7 @@ def get_category_operation_map() -> list[dict]:
                     "sort_numeric_desc",
                     "sort_numeric_desc_with_match",
                 ],
-                "Team Aggregations": [
+                "Term Aggregations": [
                     "cardinality-agg-high",
                     "cardinality-agg-low",
                     "composite_terms-keyword",
@@ -89,7 +89,7 @@ def get_category_operation_map() -> list[dict]:
                     "range-aggregation",
                     "range-numeric-significant-terms",
                 ],
-                "Team Aggregations": [
+                "Term Aggregations": [
                     "keyword-terms",
                     "keyword-terms-low-cardinality",
                     "keyword-terms-low-cardinality-min",

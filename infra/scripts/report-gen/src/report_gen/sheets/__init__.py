@@ -11,6 +11,7 @@ from .auth import authenticate_from_credentials, authenticate_from_token
 from .common import get_category_operation_map
 from .import_data import ImportData
 from .result import Result
+from .summary import Summary
 
 if TYPE_CHECKING:
     from google.oauth2.credentials import Credentials
@@ -54,6 +55,13 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         logger.error("Error creating results sheet")
         return False
     logger.info("Results processed successfully")
+
+    # Create Summary sheet
+    summary = Summary(service=service, spreadsheet_id=spreadsheet_id)
+    if not summary.get():
+        logger.error("Error creating summary sheet")
+        return False
+    logger.info("Summary processed successfully")
 
     # Output spreadsheet URL for ease
     report_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
