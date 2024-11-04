@@ -175,3 +175,59 @@ def get_workload_operation_categories(workload: str) -> list[str] | None:
         return None
 
     return sorted(category_list)
+
+
+def get_sheet_id(service: Resource, spreadsheet_id: str, name: str) -> int | None:
+    """Returns the sheet ID for the given sheet name"""
+
+    # Get the spreadsheet metadata to find the sheetId
+    spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+
+    # Find the sheetId by sheet name
+    sheet_id = None
+    for sheet in spreadsheet['sheets']:
+        if sheet['properties']['title'] == name:
+            sheet_id = sheet['properties']['sheetId']
+            break
+
+    return sheet_id
+
+
+def get_light_red() -> dict:
+    """Returns the light red color"""
+
+    return {
+            "red":   244 / 255,
+            "green": 199 / 255,
+            "blue":  195 / 255
+    }
+
+
+def get_dark_red() -> dict:
+    """Returns the dark red color"""
+
+    return {
+            "red":   244 / 255,
+            "green": 102 / 255,
+            "blue":  102 / 255
+    }
+
+
+def get_light_green() -> dict:
+    """Returns the light green color"""
+
+    return {
+            "red":   183 / 255,
+            "green": 225 / 255,
+            "blue":  205 / 255
+    }
+
+
+def get_dark_green() -> dict:
+    """Returns the dark green color"""
+
+    return {
+            "red":   87 / 255,
+            "green": 187 / 255,
+            "blue":  138 / 255
+    }

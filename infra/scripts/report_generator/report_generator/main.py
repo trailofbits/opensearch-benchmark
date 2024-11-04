@@ -170,7 +170,7 @@ def create_spreadsheet(service: Resource, title: str) -> Optional[str]:
     """Creates a new spreadsheet with the initial columns"""
 
     # Create a new spreadsheet and add the initial columns
-    spreadsheet_id: str = create_blank_spreadsheet(service, title, "Summary", 50, 100)
+    spreadsheet_id: str = create_blank_spreadsheet(service, title, "Summary", 50, 500)
 
     # Create a new sheet for aggregated results
     sheet_name: str = "Results"
