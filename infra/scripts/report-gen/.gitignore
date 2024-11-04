@@ -6,3 +6,9 @@ __pycache__/
 .idea
 html/
 dist/
+
+# Default location for google api token
+token.json
+
+# Default location for downloaded benchmark results
+download_nightly_*/
