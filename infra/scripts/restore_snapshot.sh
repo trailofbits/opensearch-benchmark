@@ -19,7 +19,12 @@ INDEX_NAME=$(workload_index_name $WORKLOAD)
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
-WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
+if [ -z "$WORKLOAD_PARAMS" ]; then
+    WORKLOAD_PARAMS=$(cat <<EOF
+${workload_params}
+EOF
+)
+fi
 
 SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD" "$WORKLOAD_PARAMS")
 
