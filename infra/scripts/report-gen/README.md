@@ -19,10 +19,10 @@ Use `download_nightly.sh` to download nightly benchmark data.
 
 Results will be downloaded to a directory named `download_nightly-{start_date}-{end_date}`.
 
-From then on, use `report_nightly.sh` to create a google spreadsheet report from the generated data.
+From then on, use `create_report.sh` to create a google spreadsheet report from the generated data.
 
 ```shell
-./report_nightly.sh download_nightly_2024-10-21_2024-10-29/ /path/to/credentials.json
+./create_report.sh download_nightly_2024-10-21_2024-10-29/ /path/to/credentials.json
 ```
 
 Check your Google Drive home folder for the generated spreadsheet, or click the link outputted to the commandline.
@@ -32,5 +32,5 @@ Check your Google Drive home folder for the generated spreadsheet, or click the 
 ```shell
 ./download_versioned.sh 2024-10-21 2024-10-29
 
-./report_versioned.sh download_versioned_2024-10-21_2024-10-29/ /path/to/credentials.json
+./create_report.sh download_versioned_2024-10-21_2024-10-29/ /path/to/credentials.json
 ```
