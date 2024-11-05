@@ -1,7 +1,15 @@
 # Report Generator
 
+## Setup
 
-## Quickstart
+```shell
+make dev
+source env/bin/activate
+```
+
+Creating a report will require a google API credentials file. Follow the Python [quickstart guide](https://developers.google.com/docs/api/quickstart/python) for the Google Workspace API tutorial to create one. Make sure to enable Google Docs/Spreadsheet access in the scopes.
+
+## Generate Nightly Report
 
 Use `download_nightly.sh` to download nightly benchmark data.
 
@@ -11,14 +19,18 @@ Use `download_nightly.sh` to download nightly benchmark data.
 
 Results will be downloaded to a directory named `download_nightly-{start_date}-{end_date}`.
 
-Creating a report will require a google API credentials file. 
-Follow the Follow the [Python quickstart guide for the Google Workspace API](https://developers.google.com/docs/api/quickstart/python) tutorial to create one.
-Make sure to enable Google Docs/Spreadsheet access in the scopes.
-
-From then on, use `create_report.sh` to create a google spreadsheet report from the generated data.
+From then on, use `report_nightly.sh` to create a google spreadsheet report from the generated data.
 
 ```shell
-./create_report.sh download_nightly_2024-10-21_2024-10-29/ /path/to/credentials.json
+./report_nightly.sh download_nightly_2024-10-21_2024-10-29/ /path/to/credentials.json
 ```
 
-## Google Credentials
+Check your Google Drive home folder for the generated spreadsheet, or click the link outputted to the commandline.
+
+## Generate ES Version Report
+
+```shell
+./download_versioned.sh 2024-10-21 2024-10-29
+
+./report_versioned.sh download_versioned_2024-10-21_2024-10-29/ /path/to/credentials.json
+```
