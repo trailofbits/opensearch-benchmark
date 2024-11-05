@@ -1,3 +1,20 @@
+# AWS variables
+aws_region                          = "us-east-1"
+aws_subnet_zone                     = "us-east-1a"
+target_cluster_type                 = "OpenSearch"
+prefix_list_id                      = "pl-06f77c0b59dbf70fe"
+snapshot_user_aws_access_key_id     = "<ACCESS-KEY>"
+snapshot_user_aws_secret_access_key = "<SECRET-KEY>"
+
+# Datastore variables
+benchmark_environment = "<ENVIRONMENT>"
+datastore_host        = "<HOST>"
+datastore_username    = "<USERNAME>"
+datastore_password    = "<PASSWORD>"
+
+# Workload variables
+workload                            = "vectorsearch"
+workload_params = <<EOF
 {
     "target_index_name": "target_index",
     "target_field_name": "target_field",
@@ -27,3 +44,4 @@
 
     "target_throughput": 0
 }
+EOF
