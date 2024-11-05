@@ -102,4 +102,4 @@ This will produce a file named `segment-timestamps.txt` in the current directory
 
 ## Upload Results to Google Sheets
 
-See the `scripts/report-gen` readme.
+See the `scripts/report-gen` [README](scripts/report-gen/README.md) for instructions.
