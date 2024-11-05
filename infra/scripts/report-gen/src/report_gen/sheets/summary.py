@@ -319,15 +319,15 @@ class Summary:
 
             if "OS" not in rv[workload]:
                 rv[workload]["OS"] = []
-                if os_version not in rv[workload]["OS"]:
-                    rv[workload]["OS"].append(os_version)
-                rv[workload]["OS"].sort(key=Version)
+            if os_version not in rv[workload]["OS"]:
+                rv[workload]["OS"].append(os_version)
+            rv[workload]["OS"].sort(key=Version)
 
             if "ES" not in rv[workload]:
                 rv[workload]["ES"] = []
-                if es_version not in rv[workload]["ES"]:
-                    rv[workload]["ES"].append(es_version)
-                rv[workload]["ES"].sort(key=Version)
+            if es_version not in rv[workload]["ES"]:
+                rv[workload]["ES"].append(es_version)
+            rv[workload]["ES"].sort(key=Version)
 
         return rv
 
