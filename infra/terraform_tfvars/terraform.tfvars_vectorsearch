@@ -14,7 +14,7 @@ datastore_password    = "<PASSWORD>"
 
 # Workload variables
 workload                            = "vectorsearch"
-workload_params = <<EOF
+workload_params                     = <<EOF
 {
     "target_index_name": "target_index",
     "target_field_name": "target_field",

@@ -109,7 +109,7 @@ snapshot_name() {
     workload_params=$2
 
     # Join the workload name and sorted params with `;` and md5sum it (return only the hash)
-    echo "$workload_name;$(jq -c '.' "$workload_params")" | md5sum | cut -d' ' -f1
+    echo "$workload_name;$(jq -cS '.' "$workload_params")" | md5sum | cut -d' ' -f1
 }
 
 register_snapshot_repo() {
