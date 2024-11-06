@@ -13,7 +13,7 @@ on:
         description: 'Workload parameters'
         required: true
         type: string
-        default: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
+        default: '{"number_of_replicas":0,"bulk_indexing_clients":1,"target_throughput":0}'
       cluster_type:
         description: 'Cluster type'
         required: true

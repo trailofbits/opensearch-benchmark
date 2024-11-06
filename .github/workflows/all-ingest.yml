@@ -16,7 +16,7 @@ on:
         description: 'Base Workload parameters'
         required: true
         type: string
-        default: number_of_replicas:0,bulk_indexing_clients:1,target_throughput:0
+        default: '{"number_of_replicas":0,"bulk_indexing_clients":1,"target_throughput":0}'
       cluster_types:
         description: 'Cluster types (comma separated)'
         required: true

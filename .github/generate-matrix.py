@@ -4,7 +4,7 @@ import json
 import sys
 
 workloads = [x.lower() for x in sys.argv[1].split(',')]
-workload_params = sys.argv[2]
+workload_params = json.loads(sys.argv[2])
 cluster_types = sys.argv[3].split(',')
 
 if not all(x in ["OpenSearch", "ElasticSearch"] for x in cluster_types):
@@ -29,10 +29,14 @@ if "ElasticSearch" in cluster_types:
 
 # big5 requires extra workload params
 if "big5" in workloads:
+    params = {
+        "max_num_segments": 10,
+        **workload_params,
+    }
     includes = [
         {
             "workload": "big5",
-            "workload_params": "max_num_segments:10," + workload_params
+            "workload_params": json.dumps(params),
         }
     ] + includes
 
