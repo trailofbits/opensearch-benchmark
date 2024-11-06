@@ -1,17 +1,7 @@
 #!/usr/bin/env python3
 
 import sqlite3
-from typing import TypedDict, NotRequired
-
-Meta = TypedDict(
-    "Meta",
-    {
-        "distribution_version": NotRequired[str],
-        "tag_run-group": NotRequired[str],
-        "tag_engine-type": NotRequired[str],
-        "tag_run-type": NotRequired[str],
-    },
-)
+from typing import TypedDict
 
 Source = TypedDict(
     "Source",
@@ -22,10 +12,10 @@ Source = TypedDict(
         "environment": str,
         "workload": str,
         "name": str,
-        "value": NotRequired[float],
-        "sample-type": NotRequired[str],
-        "task": NotRequired[str],
-        "meta": NotRequired[Meta],
+        "value": float,
+        "sample-type": str,
+        "task": str,
+        "meta": dict[str, str],
     },
 )
 
@@ -48,13 +38,11 @@ class OSResponse(TypedDict):
 def _define_schema(db: sqlite3.Connection):
     db.executescript(
         """
-        CREATE TABLE IF NOT EXISTS runs(id, index_name, exec_time, environment, workload, distribution_version, run_group, engine_type, run_type, PRIMARY KEY(id));
-        CREATE TABLE IF NOT EXISTS tasks                    (run_id, task, timestamp, PRIMARY KEY(run_id, task));
-        CREATE TABLE IF NOT EXISTS latency                  (id, run_id, task, sample_type, value, PRIMARY KEY(id));
-        CREATE TABLE IF NOT EXISTS service_time             (id, run_id, task, sample_type, value, PRIMARY KEY(id));
-        CREATE TABLE IF NOT EXISTS processing_time          (id, run_id, task, sample_type, value, PRIMARY KEY(id));
-        CREATE TABLE IF NOT EXISTS client_processing_time   (id, run_id, task, sample_type, value, PRIMARY KEY(id));
-        CREATE TABLE IF NOT EXISTS throughput               (id, run_id, task, sample_type, value, PRIMARY KEY(id));
+        CREATE TABLE IF NOT EXISTS runs       (id, index_name, exec_time, environment, workload, distribution_version, PRIMARY KEY(id));
+        CREATE TABLE IF NOT EXISTS tasks      (run_id, task, timestamp, PRIMARY KEY(run_id, task));
+        CREATE TABLE IF NOT EXISTS metrics    (id, name, run_id, task, sample_type, value, PRIMARY KEY(id));
+        CREATE TABLE IF NOT EXISTS tags       (run_id, name, value, PRIMARY KEY(run_id, name));
+        CREATE TABLE IF NOT EXISTS attributes (run_id, name, value, PRIMARY KEY(run_id, name));
         """
     )
     db.commit()
@@ -80,19 +68,15 @@ def _get_hits(host: str, index: str, user: str, password: str):
                             },
                         },
                         {
-                            "terms": {
-                                "name": [
-                                    "latency",
-                                    "service_time",
-                                    "processing_time",
-                                    "client_processing_time",
-                                    "throughput",
-                                ],
+                            "term": {
+                                "meta.success": True,
                             },
                         },
                         {
-                            "term": {
-                                "sample-type": "normal",
+                            "terms": {
+                                "name": [
+                                    "service_time",
+                                ],
                             },
                         },
                         {
@@ -100,11 +84,24 @@ def _get_hits(host: str, index: str, user: str, password: str):
                                 "field": "task",
                             },
                         },
-                    ],
-                    "must_not": [
                         {
-                            "term": {
-                                "meta.tag_run": "0"
+                            "exists": {
+                                "field": "value",
+                            },
+                        },
+                        {
+                            "exists": {
+                                "field": "sample-type",
+                            },
+                        },
+                        {
+                            "exists": {
+                                "field": "meta.distribution_version",
+                            },
+                        },
+                        {
+                            "prefix": {
+                                "environment": "gh-nightly-",
                             },
                         },
                     ],
@@ -147,13 +144,10 @@ def _ingest_data(
         source = hit["_source"]
         meta = source["meta"]
 
-        if "value" not in source:
-            continue
-
         db.execute(
             """
-            INSERT OR IGNORE INTO runs(id, index_name, exec_time, environment, workload, distribution_version, run_group, engine_type, run_type)
-            VALUES(:exec_id, :index, :exec_time, :environment, :workload, :distribution_version, :run_group, :engine_type, :run_type)
+            INSERT OR IGNORE INTO runs(id, index_name, exec_time, environment, workload, distribution_version)
+            VALUES(:exec_id, :index, :exec_time, :environment, :workload, :distribution_version)
             """,
             {
                 "exec_id": source["test-execution-id"],
@@ -161,10 +155,7 @@ def _ingest_data(
                 "exec_time": source["test-execution-timestamp"],
                 "environment": source["environment"],
                 "workload": source["workload"],
-                "distribution_version": meta.get("distribution_version", None),
-                "run_group": meta.get("tag_run-group", None),
-                "engine_type": meta.get("tag_engine-type", None),
-                "run_type": meta.get("tag_run-type", None),
+                "distribution_version": meta["distribution_version"],
             },
         )
 
@@ -180,11 +171,12 @@ def _ingest_data(
         )
 
         db.execute(
-            f"""
-            INSERT OR IGNORE INTO "{source["name"]}"(id, run_id, task, sample_type, value) VALUES(:id, :run_id, :task, :sample_type, :value)
+            """
+            INSERT OR IGNORE INTO metrics (id, name, run_id, task, sample_type, value) VALUES(:id, :name, :run_id, :task, :sample_type, :value)
             """,
             {
                 "id": hit["_id"],
+                "name": source["name"],
                 "run_id": source["test-execution-id"],
                 "task": source["task"],
                 "value": source["value"],
@@ -192,7 +184,33 @@ def _ingest_data(
             },
         )
 
-        db.commit()
+        db.executemany(
+            "INSERT OR IGNORE INTO tags(run_id, name, value) VALUES(:id, :name, :value)",
+            [
+                {
+                    "id": source["test-execution-id"],
+                    "name": tag_name[4:],
+                    "value": tag_value,
+                }
+                for tag_name, tag_value in meta.items()
+                if tag_name.startswith("tag_")
+            ],
+        )
+
+        db.executemany(
+            "INSERT OR IGNORE INTO attributes(run_id, name, value) VALUES(:id, :name, :value)",
+            [
+                {
+                    "id": source["test-execution-id"],
+                    "name": attr_name[10:],
+                    "value": attr_value,
+                }
+                for attr_name, attr_value in meta.items()
+                if attr_name.startswith("attribute_")
+            ],
+        )
+
+    db.commit()
 
 
 def _main():
