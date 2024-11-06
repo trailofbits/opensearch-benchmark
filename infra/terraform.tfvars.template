@@ -18,4 +18,10 @@ datastore_password    = "<PASSWORD>"
 
 # Workload variables
 workload                            = "<NAME>"
-workload_params                     = ""
+workload_params                     = <<EOF
+{
+	"number_of_replicas": 0,
+	"bulk_indexing_clients": 1,
+	"target_throughput": 0
+}
+EOF
