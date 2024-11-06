@@ -19,11 +19,6 @@ on:
         required: true
         type: string
         default: OpenSearch
-      s3_bucket_name:
-        description: 'S3 bucket name'
-        required: true
-        type: string
-        default: os-snapshots-osb
       benchmark_type:
         description: 'Benchmark type'
         required: false
@@ -92,7 +87,6 @@ env:
   TF_VAR_aws_region: ${{ inputs.aws_region }}
   TF_VAR_aws_subnet_zone: ${{ inputs.aws_region }}a
   TF_VAR_target_cluster_type: ${{ inputs.cluster_type}}
-  TF_VAR_s3_bucket_name: ${{ inputs.s3_bucket_name }}
   TF_VAR_prefix_list_id: pl-06f77c0b59dbf70fe
   TF_VAR_workload: ${{ inputs.workload}}
   TF_VAR_workload_params: ${{ inputs.workload_params }}
