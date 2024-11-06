@@ -51,7 +51,7 @@ if "noaa" in workloads:
 
 includes = [
     {
-      "workload_params": workload_params
+      "workload_params": json.dumps(workload_params)
     }
 ] + includes
 
