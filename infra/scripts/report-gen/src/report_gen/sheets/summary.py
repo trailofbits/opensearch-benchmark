@@ -121,12 +121,12 @@ class Summary:
             row.append("=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))")
             rows.append(row)
 
-        size = len(all_categories) + 1
+        size = len(all_categories)
         rows.append(
             [
                 "Total",
-                f'=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&":"&ADDRESS(ROW()-2,COLUMN()) ))',
-                f'=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&":"&ADDRESS(ROW()-2,COLUMN()) ))',
+                f'=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&":"&ADDRESS(ROW()-1,COLUMN()) ))',
+                f'=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&":"&ADDRESS(ROW()-1,COLUMN()) ))',
                 "=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))",
             ]
         )
