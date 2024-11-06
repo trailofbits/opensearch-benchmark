@@ -75,7 +75,6 @@ jobs:
     uses: ./.github/workflows/benchmark.yml
     with:
       cluster_type: ${{ matrix.cluster_type}}
-      s3_bucket_name: ${{ matrix.s3_bucket_name }}
       workload: ${{ matrix.workload }}
       workload_params: ${{ matrix.workload_params }}
       perform_benchmark: false

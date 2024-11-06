@@ -13,21 +13,17 @@ if not all(x in ["OpenSearch", "ElasticSearch"] for x in cluster_types):
 
 includes = []
 
-# OpenSearch requires a specific s3_bucket_name
 if "OpenSearch" in cluster_types:
     includes = [
         {
             "cluster_type": "OpenSearch",
-            "s3_bucket_name": "os-snapshots-osb"
         }
     ] + includes
 
-# ElasticSearch requires a specific s3_bucket_name
 if "ElasticSearch" in cluster_types:
     includes = [
         {
             "cluster_type": "ElasticSearch",
-            "s3_bucket_name": "es-snapshots-osb"
         }
     ] + includes
 
