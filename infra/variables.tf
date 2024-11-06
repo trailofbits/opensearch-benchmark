@@ -68,7 +68,13 @@ variable "snapshot_user_aws_secret_access_key" {
 variable "workload_params" {
   description = "Workload parameters for the cluster"
   type        = string
-  default     = "number_of_replicas:0,bulk_indexing_clients:1,max_num_segments:10,target_throughput:0"
+  default     = <<EOF
+{
+	"number_of_replicas": 0,
+	"bulk_indexing_clients": 1,
+	"target_throughput": 0
+}
+EOF
 }
 
 variable "test_procedure" {

@@ -26,15 +26,7 @@ WORKLOAD="$${WORKLOAD:-${workload}}"
 
 # Based on the workload, we can figure out the index name. It is mostly the same, but sometimes not.
 INDEX_NAME=$(workload_index_name $WORKLOAD)
-
-# This comes from the user `terraform.tfvars` configuration file
-# shellcheck disable=SC2154
-if [ -z "$WORKLOAD_PARAMS" ]; then
-    WORKLOAD_PARAMS=$(cat <<EOF
-${workload_params}
-EOF
-)
-fi
+WORKLOAD_PARAMS=/mnt/workload_params.json
 
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154

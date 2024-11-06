@@ -102,7 +102,6 @@ resource "aws_instance" "load-generation" {
     content = templatefile("${path.module}/../../scripts/ingest.sh",
       {
         workload         = var.workload,
-        workload_params  = var.workload_params,
         s3_bucket_name   = var.s3_bucket_name,
         snapshot_version = var.snapshot_version,
       }
@@ -115,7 +114,6 @@ resource "aws_instance" "load-generation" {
       {
         workload         = var.workload
         s3_bucket_name   = var.s3_bucket_name,
-        workload_params  = var.workload_params,
         snapshot_version = var.snapshot_version,
       }
     )
@@ -125,9 +123,8 @@ resource "aws_instance" "load-generation" {
   provisioner "file" {
     content = templatefile("${path.module}/../../scripts/benchmark.sh",
       {
-        workload        = var.workload
-        workload_params = var.workload_params,
-        test_procedure  = var.test_procedure,
+        workload       = var.workload
+        test_procedure = var.test_procedure,
       }
     )
     destination = "/mnt/benchmark.sh"
@@ -141,10 +138,15 @@ resource "aws_instance" "load-generation" {
   provisioner "file" {
     content = templatefile("${path.module}/../../scripts/segment_timestamps.sh",
       {
-        workload         = var.workload
+        workload = var.workload
       }
     )
     destination = "/mnt/segment_timestamps.sh"
+  }
+
+  provisioner "file" {
+    content     = var.workload_params
+    destination = "/mnt/workload_params.json"
   }
 
   private_dns_name_options {
