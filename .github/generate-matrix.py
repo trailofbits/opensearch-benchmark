@@ -36,7 +36,7 @@ if "big5" in workloads:
     includes = [
         {
             "workload": "big5",
-            "workload_params": json.dumps(params),
+            "workload_params": repr(json.dumps(params)),
         }
     ] + includes
 
@@ -51,7 +51,7 @@ if "noaa" in workloads:
 
 includes = [
     {
-      "workload_params": json.dumps(workload_params)
+      "workload_params": repr(json.dumps(workload_params))
     }
 ] + includes
 
