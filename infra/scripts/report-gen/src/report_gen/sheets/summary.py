@@ -17,6 +17,7 @@ from .common import (
     get_sheet_id,
     get_workload_operation_categories,
     get_workload_operations,
+    sheet_add,
 )
 
 logger = logging.getLogger(__name__)
@@ -42,12 +43,13 @@ class Summary:
             }
         }
 
-    def format_color(self, range_str: str, color: dict) -> None:
+    def format_color(self, range_str: list[str], color: dict) -> None:
         """Color range."""
-        range_dict = convert_range_to_dict(range_str)
-        range_dict["sheetId"] = self.sheet_id
-        requests = [
-            {
+        requests: list[dict] = []
+        for r in range_str:
+            range_dict = convert_range_to_dict(r)
+            range_dict["sheetId"] = self.sheet_id
+            request = {
                 "repeatCell": {
                     "range": range_dict,
                     "cell": {
@@ -58,7 +60,7 @@ class Summary:
                     "fields": "userEnteredFormat(backgroundColor)",
                 }
             }
-        ]
+            requests.append(request)
 
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
@@ -72,19 +74,20 @@ class Summary:
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
 
-    def format_bold(self, range_str: str) -> None:
+    def format_bold(self, range_str: list[str]) -> None:
         """Bold range."""
-        range_dict = convert_range_to_dict(range_str)
-        range_dict["sheetId"] = self.sheet_id
-        requests = [
-            {
-                "repeatCell": {
-                    "range": range_dict,
-                    "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
-                    "fields": "userEnteredFormat.textFormat.bold",
+        requests: list[dict] = []
+        for r in range_str:
+            range_dict = convert_range_to_dict(r)
+            range_dict["sheetId"] = self.sheet_id
+            request = {
+                    "repeatCell": {
+                        "range": range_dict,
+                        "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
+                        "fields": "userEnteredFormat.textFormat.bold",
+                    }
                 }
-            }
-        ]
+            requests.append(request)
 
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
@@ -148,9 +151,9 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
         updated_range = result["updates"]["updatedRange"]
-        self.format_bold(updated_range)
+        self.format_bold([updated_range])
         self.format_merge(updated_range)
-        self.format_color(updated_range, get_light_blue())
+        self.format_color([updated_range], get_light_blue())
 
         # Add data
         rows: list[list[str]] = []
@@ -196,6 +199,7 @@ class Summary:
         """Create a table summarizing all categories."""
         rows: list[list[str]] = []
         rows_added: int = 0
+        header: list[str] = []
 
         # Find versions to compare
         for engines in workloads.values():
@@ -252,9 +256,9 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
         updated_range = result["updates"]["updatedRange"]
-        self.format_bold(updated_range)
+        self.format_bold([updated_range])
         self.format_merge(updated_range)
-        self.format_color(updated_range, get_light_blue())
+        self.format_color([updated_range], get_light_blue())
 
         # Add data
         rows: list[list[str]] = []
@@ -300,9 +304,11 @@ class Summary:
 
         return rows_added
 
-    def create_summary_table(self, workload: str, os_version: str, es_version: str) -> list[list[str]]:
+    def create_summary_table(self, workload: str, os_version: str, es_version: str) -> tuple[list[list[str]], list[int]]:
         """Create a summary table for a workload and OS vs. ES engine version."""
         rows: list[list[str]] = []
+        header_rows: list[int] = []
+        header_row_count = 0
 
         number_of_operations = len(get_workload_operations(workload))
 
@@ -310,14 +316,19 @@ class Summary:
         count_str = f'Results!$A$2:$A,"{workload}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
 
         # Add overview of results
+        header_rows.append(header_row_count)
+        start_count = len(rows)
         rows.append([f"{workload}", f"ES v{es_version}", ""])
         rows.append(["Total Tasks", f"=ROWS(UNIQUE(FILTER(Results!$C$2:$C,{filter_str})))", ""])
         rows.append(["Tasks faster than ES", f'=COUNTIFS({count_str}, Results!$D$2:$D,">1")', ""])
         rows.append(["Fast Outliers (> 2)", f'=COUNTIFS({count_str}, Results!$D$2:$D,">2")', ""])
         rows.append(["Slow Outliers (< 0.5)", f'=COUNTIFS({count_str}, Results!$D$2:$D,"<0.5")', ""])
-        rows.append([])
+        rows.append([""])
+        header_row_count += len(rows) - start_count
 
         # Add categories OS is faster
+        header_rows.append(header_row_count)
+        start_count = len(rows)
         rows.append(["", f"Categories: OS v{os_version} is Faster", ""])
         rows.append(["Category", "Count", "Total"])
 
@@ -331,7 +342,7 @@ class Summary:
             row.append(f"=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-2)))")
             rows.append(row)
             row = [""]
-        rows.append([])
+        rows.append([""])
         size = len(categories) + 1
         rows.append(
             [
@@ -340,9 +351,12 @@ class Summary:
                 f'=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&":"&ADDRESS(ROW()-2,COLUMN()) ))',
             ]
         )
-        rows.append([])
+        rows.append([""])
+        header_row_count += len(rows) - start_count
 
         # Add operations OS is faster
+        header_rows.append(header_row_count)
+        start_count = len(rows)
         rows.append(["", f"Operations: OS v{os_version} is Faster", ""])
         rows.append(["Category", "Operation", "ES/OS"])
         rows.append(
@@ -353,10 +367,13 @@ class Summary:
             ]
         )
         for _ in range(number_of_operations):
-            rows.append([])  # noqa: PERF401
-        rows.append([])
+            rows.append([""])  # noqa: PERF401
+        rows.append([""])
+        header_row_count += len(rows) - start_count
 
         # Add operations OS is slower
+        header_rows.append(header_row_count)
+        start_count = len(rows)
         rows.append(["", f"Operations: OS v{os_version} is Slower", ""])
         rows.append(["Category", "Operation", "ES/OS"])
         rows.append(
@@ -367,10 +384,10 @@ class Summary:
             ]
         )
         for _ in range(number_of_operations):
-            rows.append([])  # noqa: PERF401
-        rows.append([])
+            rows.append([""])  # noqa: PERF401
+        rows.append([""])
 
-        return rows
+        return rows,header_rows
 
     def create_summary_tables(self, workload: str, engines: dict[str, list[str]], index: int) -> int:
         """Create summary tables for each engine for this workload."""
@@ -386,9 +403,20 @@ class Summary:
         # Get most recent version of os_version
         os_version = engines["OS"][-1]
 
+        header_ranges: list[str] = []
+
+        cell = "I"
         for es_version in engines["ES"]:
             # Retrieve operation comparison
-            col = self.create_summary_table(workload, os_version, es_version)
+            col,header_rows = self.create_summary_table(workload, os_version, es_version)
+
+            # Keep track of where headers are
+            for h in header_rows:
+                end_cell = sheet_add(cell,2)
+                header_ranges.append(f"Summary!{cell}{index+h}:{end_cell}{index+h}")
+
+            # Increment column
+            cell = sheet_add(cell,4)
 
             # Append column
             if not rows:
@@ -407,6 +435,9 @@ class Summary:
             valueInputOption="USER_ENTERED",
             body=request_properties,
         ).execute()
+
+        self.format_bold(header_ranges)
+        self.format_color(header_ranges, get_light_blue())
 
         return index + len(rows)
 
@@ -457,8 +488,8 @@ class Summary:
         )
         rows_added += result["updates"]["updatedRows"]
         updated_range = result["updates"]["updatedRange"]
-        self.format_bold(updated_range)
-        self.format_color(updated_range, get_light_blue())
+        self.format_bold([updated_range])
+        self.format_color([updated_range], get_light_blue())
 
         colors = [
             get_light_orange(),
@@ -494,7 +525,7 @@ class Summary:
             )
             rows_added += result["updates"]["updatedRows"]
             updated_range = result["updates"]["updatedRange"]
-            self.format_color(updated_range, color)
+            self.format_color([updated_range], color)
 
         return rows_added
 

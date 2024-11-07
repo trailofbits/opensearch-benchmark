@@ -328,3 +328,15 @@ def convert_range_to_dict(range_str: str) -> dict:
         "startColumnIndex": start_column_index,
         "endColumnIndex": end_column_index,
     }
+
+def sheet_add(cell: str, value: int) -> str:
+    """Increases value to column letter."""
+    cells = [c for c in cell]
+    for _ in range(value):
+        if cells[-1] == 'Z':
+            cells[-1] = "A"
+            cells.append("A")
+        else:
+            cells[-1] = chr(ord(cells[-1]) + 1)
+
+    return "".join(cells)
