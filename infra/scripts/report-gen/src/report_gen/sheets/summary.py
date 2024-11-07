@@ -502,14 +502,14 @@ class Summary:
         index = 2
 
         for e, (workload, engines) in enumerate(workloads.items()):
-            rows: list[list[str]] = []
+            rows = []
             row, index = self.get_workload_engines(workload, engines, index)
             rows.extend(row)
 
             color = colors[e % len(colors)]
 
             # Add table to Result sheet
-            request_properties: dict = {
+            request_properties = {
                 "majorDimension": "ROWS",
                 "values": rows,
             }

@@ -312,10 +312,21 @@ def convert_range_to_dict(range_str: str) -> dict:
     # Extract the column letters and row numbers
     import re
 
-    start_col = re.match(r"[A-Z]+", start_cell).group()
-    start_row = int(re.search(r"\d+", start_cell).group()) - 1  # Convert to 0-indexed
-    end_col = re.match(r"[A-Z]+", end_cell).group()
-    end_row = int(re.search(r"\d+", end_cell).group())  # No need to subtract 1 since it's non-inclusive
+    m = re.match(r"[A-Z]+", start_cell)
+    if m:
+        start_col = m.group()
+
+    m = re.search(r"\d+", start_cell)
+    if m:
+        start_row = int(m.group()) - 1  # Convert to 0-indexed
+
+    m = re.match(r"[A-Z]+", end_cell)
+    if m:
+        end_col = m.group()
+
+    m = re.search(r"\d+", end_cell)
+    if m:
+        end_row = int(m.group())  # No need to subtract 1 since it's non-inclusive
 
     # Convert column letters to 0-indexed numbers
     start_column_index = column_to_index(start_col)
