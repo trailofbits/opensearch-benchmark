@@ -24,6 +24,18 @@ class Summary:
     spreadsheet_id: str
     sheet_id: int | None = None
 
+    def format_numbers(self) -> dict:
+        """Format numbers."""
+        return {
+            "repeatCell": {
+                "range": {
+                    "sheetId": self.sheet_id,
+                },
+                "cell": {"userEnteredFormat": {"numberFormat": {"type": "NUMBER", "pattern": "#,##0.000"}}},
+                "fields": "userEnteredFormat.numberFormat",
+            }
+        }
+
     def format_header_rows(self) -> dict:
         """Format header rows."""
         return {
@@ -38,6 +50,7 @@ class Summary:
         """Format Summary sheet."""
         requests = []
         requests.append(self.format_header_rows())
+        requests.append(self.format_numbers())
 
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()

@@ -9,6 +9,8 @@ source env/bin/activate
 
 Creating a report will require a google API credentials file. Follow the Python [quickstart guide](https://developers.google.com/docs/api/quickstart/python) for the Google Workspace API tutorial to create one. Make sure to enable Google Docs/Spreadsheet access in the scopes.
 
+If you see `Authentication has failed`, just delete `token.json` and run the script again.
+
 ## Generate Nightly Report
 
 Use `download_nightly.sh` to download nightly benchmark data.
