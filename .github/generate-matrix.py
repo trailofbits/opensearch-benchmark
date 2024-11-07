@@ -61,9 +61,9 @@ if "vectorsearch" in workloads:
         "target_index_bulk_size": 100,
         "target_index_bulk_index_data_set_format": "hdf5",
         "target_index_bulk_index_data_set_corpus": "cohere-1m",
-        "target_index_bulk_indexing_clients": 1,
+        "target_index_bulk_indexing_clients": 10,
 
-        "target_index_max_num_segments": 10,
+        "target_index_max_num_segments": 1,
         "hnsw_ef_search": 256,
         "hnsw_ef_construction": 256,
 
@@ -75,9 +75,7 @@ if "vectorsearch" in workloads:
 
         "query_data_set_format": "hdf5",
         "query_data_set_corpus": "cohere-1m",
-        "query_count": 10000,
-
-        "target_throughput": 0,
+        "query_count": 10000
         # TODO support user-specified workload params
     }
     includes = [
