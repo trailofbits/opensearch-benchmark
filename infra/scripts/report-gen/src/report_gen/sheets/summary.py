@@ -8,6 +8,12 @@ from packaging.version import Version
 
 from .common import (
     adjust_sheet_columns,
+    convert_range_to_dict,
+    get_light_blue,
+    get_light_cyan,
+    get_light_orange,
+    get_light_purple,
+    get_light_yellow,
     get_sheet_id,
     get_workload_operation_categories,
     get_workload_operations,
@@ -36,20 +42,56 @@ class Summary:
             }
         }
 
-    def format_header_rows(self) -> dict:
-        """Format header rows."""
-        return {
-            "repeatCell": {
-                "range": {"sheetId": self.sheet_id, "startRowIndex": 0, "endRowIndex": 1},
-                "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
-                "fields": "userEnteredFormat.textFormat.bold",
+    def format_color(self, range_str: str, color: dict) -> None:
+        """Color range."""
+        range_dict = convert_range_to_dict(range_str)
+        range_dict["sheetId"] = self.sheet_id
+        requests = [
+            {
+                "repeatCell": {
+                    "range": range_dict,
+                    "cell": {
+                        "userEnteredFormat": {
+                            "backgroundColor": color,
+                        }
+                    },
+                    "fields": "userEnteredFormat(backgroundColor)",
+                }
             }
-        }
+        ]
+
+        body = {"requests": requests}
+        self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
+
+    def format_merge(self, range_str: str) -> None:
+        """Merge range."""
+        range_dict = convert_range_to_dict(range_str)
+        range_dict["sheetId"] = self.sheet_id
+        requests = [{"mergeCells": {"range": range_dict, "mergeType": "MERGE_ALL"}}]
+
+        body = {"requests": requests}
+        self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
+
+    def format_bold(self, range_str: str) -> None:
+        """Bold range."""
+        range_dict = convert_range_to_dict(range_str)
+        range_dict["sheetId"] = self.sheet_id
+        requests = [
+            {
+                "repeatCell": {
+                    "range": range_dict,
+                    "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
+                    "fields": "userEnteredFormat.textFormat.bold",
+                }
+            }
+        ]
+
+        body = {"requests": requests}
+        self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
 
     def format(self) -> None:
         """Format Summary sheet."""
         requests = []
-        requests.append(self.format_header_rows())
         requests.append(self.format_numbers())
 
         body = {"requests": requests}
@@ -58,14 +100,61 @@ class Summary:
     def create_stats_table(self, workloads: dict[str, dict[str, list[str]]], offset: int) -> int:
         """Create a table summarizing all statistics."""
         rows: list[list[str]] = []
+        rows_added: int = 0
 
         # Find versions to compare
         for engines in workloads.values():
             os_version = engines["OS"][-1]
             es_version = engines["ES"][-1]
 
-        rows.append([])
-        rows.append([f"Statistics comparing: OS v{os_version} and ES v{es_version}", "", "", ""])
+        # Add space
+        rows.append([""])
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+
+        # Add header row
+        rows: list[list[str]] = []
+        rows.append([f"Statistics comparing: OS v{os_version} and ES v{es_version}", "", "", "", "", "", ""])
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+        updated_range = result["updates"]["updatedRange"]
+        self.format_bold(updated_range)
+        self.format_merge(updated_range)
+        self.format_color(updated_range, get_light_blue())
+
+        # Add data
+        rows: list[list[str]] = []
+
         rows.append(["ES/OS", "Average", "Median", "Max", "Min", "Stdev", "Variance"])
 
         filter_faster = f'Results!$F$2:$F="{os_version}",Results!$N$2:$N="{es_version}",Results!$D$2:$D>1'
@@ -101,11 +190,12 @@ class Summary:
             body=request_properties,
         ).execute()
 
-        return len(rows)
+        return rows_added
 
     def create_all_categories_table(self, workloads: dict[str, dict[str, list[str]]], offset: int) -> int:
         """Create a table summarizing all categories."""
         rows: list[list[str]] = []
+        rows_added: int = 0
 
         # Find versions to compare
         for engines in workloads.values():
@@ -121,8 +211,53 @@ class Summary:
 
         count_str = f'Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
 
-        rows.append([])
+        # Add space
+        rows.append([""])
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+
+        # Add header row
+        rows: list[list[str]] = []
         rows.append([f"All Categories: OS v{os_version} is Faster than ES v{es_version}", "", "", ""])
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+        updated_range = result["updates"]["updatedRange"]
+        self.format_bold(updated_range)
+        self.format_merge(updated_range)
+        self.format_color(updated_range, get_light_blue())
+
+        # Add data
+        rows: list[list[str]] = []
         rows.append(["Category", "Count", "Total", "Percentage (%)"])
         for category in sorted(all_categories):
             row: list[str] = []
@@ -149,14 +284,21 @@ class Summary:
             "majorDimension": "ROWS",
             "values": rows,
         }
-        self.service.spreadsheets().values().append(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"Summary!$A{offset}",
-            valueInputOption="USER_ENTERED",
-            body=request_properties,
-        ).execute()
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!$A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
 
-        return len(rows)
+        return rows_added
 
     def create_summary_table(self, workload: str, os_version: str, es_version: str) -> list[list[str]]:
         """Create a summary table for a workload and OS vs. ES engine version."""
@@ -294,28 +436,67 @@ class Summary:
     def create_overview_table(self, workloads: dict[str, dict[str, list[str]]]) -> int:
         """Create Overview table in Summary sheet."""
         rows: list[list[str]] = []
+        rows_added: int = 0
 
+        # Add header row
         rows.append(["Engine", "Version", "Workload", "Number of Tests"])
-
-        index = 2
-
-        for workload, engines in workloads.items():
-            row, index = self.get_workload_engines(workload, engines, index)
-            rows.extend(row)
-
-        # Add table to Result sheet
         request_properties: dict = {
             "majorDimension": "ROWS",
             "values": rows,
         }
-        self.service.spreadsheets().values().update(
-            spreadsheetId=self.spreadsheet_id,
-            range="Summary!A1",
-            valueInputOption="USER_ENTERED",
-            body=request_properties,
-        ).execute()
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range="Summary!A1",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        rows_added += result["updates"]["updatedRows"]
+        updated_range = result["updates"]["updatedRange"]
+        self.format_bold(updated_range)
+        self.format_color(updated_range, get_light_blue())
 
-        return len(rows)
+        colors = [
+            get_light_orange(),
+            get_light_cyan(),
+            get_light_purple(),
+            get_light_yellow(),
+        ]
+
+        index = 2
+
+        for e, (workload, engines) in enumerate(workloads.items()):
+            rows: list[list[str]] = []
+            row, index = self.get_workload_engines(workload, engines, index)
+            rows.extend(row)
+
+            color = colors[e % len(colors)]
+
+            # Add table to Result sheet
+            request_properties: dict = {
+                "majorDimension": "ROWS",
+                "values": rows,
+            }
+            result = (
+                self.service.spreadsheets()
+                .values()
+                .append(
+                    spreadsheetId=self.spreadsheet_id,
+                    range="Summary!A1",
+                    valueInputOption="USER_ENTERED",
+                    body=request_properties,
+                )
+                .execute()
+            )
+            rows_added += result["updates"]["updatedRows"]
+            updated_range = result["updates"]["updatedRange"]
+            self.format_color(updated_range, color)
+
+        return rows_added
 
     def get_workloads(self) -> dict[str, dict[str, list[str]]]:
         """Retrieve tuples of (engine,version,workload) for benchmarks in the spreadsheet."""
@@ -352,7 +533,7 @@ class Summary:
         # Retrieve workload to process and compare
         workloads: dict[str, dict[str, list[str]]] = self.get_workloads()
 
-        offset = 0
+        offset = 1
 
         # Create overview table
         offset += self.create_overview_table(workloads)

@@ -213,6 +213,26 @@ def get_light_blue() -> dict:
     return {"red": 207 / 255, "green": 226 / 255, "blue": 243 / 255}
 
 
+def get_light_orange() -> dict:
+    """Return the light orange color."""
+    return {"red": 252 / 255, "green": 229 / 255, "blue": 205 / 255}
+
+
+def get_light_cyan() -> dict:
+    """Return the light cyan color."""
+    return {"red": 208 / 255, "green": 224 / 255, "blue": 227 / 255}
+
+
+def get_light_purple() -> dict:
+    """Return the light purple color."""
+    return {"red": 217 / 255, "green": 210 / 255, "blue": 233 / 255}
+
+
+def get_light_yellow() -> dict:
+    """Return the light yellow color."""
+    return {"red": 255 / 255, "green": 242 / 255, "blue": 204 / 255}
+
+
 def adjust_sheet_columns(service: Resource, spreadsheet_id: str, sheet_name: str) -> None:
     """Adjust the columns in the given sheet according to their contents."""
     spreadsheet_properties: dict = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
@@ -271,3 +291,40 @@ def hide_columns(service: Resource, spreadsheet_id: str, sheet_name: str, column
 
     body: dict = {"requests": request_list}
     service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body).execute()
+
+
+def convert_range_to_dict(range_str: str) -> dict:
+    """Convert range string to dictionary."""
+    # Example updated_range: 'Sheet1!A5:D5'
+    # Split the sheet name from the range
+    sheet_name, cell_range = range_str.split("!")
+
+    # Split start and end cells (e.g., 'A5:D5')
+    start_cell, end_cell = cell_range.split(":")
+
+    # Function to convert column letters to index
+    def column_to_index(col: str) -> int:
+        index = 0
+        for char in col:
+            index = index * 26 + (ord(char.upper()) - ord("A")) + 1
+        return index - 1  # Convert to 0-indexed
+
+    # Extract the column letters and row numbers
+    import re
+
+    start_col = re.match(r"[A-Z]+", start_cell).group()
+    start_row = int(re.search(r"\d+", start_cell).group()) - 1  # Convert to 0-indexed
+    end_col = re.match(r"[A-Z]+", end_cell).group()
+    end_row = int(re.search(r"\d+", end_cell).group())  # No need to subtract 1 since it's non-inclusive
+
+    # Convert column letters to 0-indexed numbers
+    start_column_index = column_to_index(start_col)
+    end_column_index = column_to_index(end_col) + 1  # End is non-inclusive, so add 1
+
+    # Construct the range dictionary
+    return {
+        "startRowIndex": start_row,
+        "endRowIndex": end_row,
+        "startColumnIndex": start_column_index,
+        "endColumnIndex": end_column_index,
+    }
