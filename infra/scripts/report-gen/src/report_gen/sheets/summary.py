@@ -81,12 +81,12 @@ class Summary:
             range_dict = convert_range_to_dict(r)
             range_dict["sheetId"] = self.sheet_id
             request = {
-                    "repeatCell": {
-                        "range": range_dict,
-                        "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
-                        "fields": "userEnteredFormat.textFormat.bold",
-                    }
+                "repeatCell": {
+                    "range": range_dict,
+                    "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
+                    "fields": "userEnteredFormat.textFormat.bold",
                 }
+            }
             requests.append(request)
 
         body = {"requests": requests}
@@ -199,7 +199,6 @@ class Summary:
         """Create a table summarizing all categories."""
         rows: list[list[str]] = []
         rows_added: int = 0
-        header: list[str] = []
 
         # Find versions to compare
         for engines in workloads.values():
@@ -304,7 +303,9 @@ class Summary:
 
         return rows_added
 
-    def create_summary_table(self, workload: str, os_version: str, es_version: str) -> tuple[list[list[str]], list[int]]:
+    def create_summary_table(
+        self, workload: str, os_version: str, es_version: str
+    ) -> tuple[list[list[str]], list[int]]:
         """Create a summary table for a workload and OS vs. ES engine version."""
         rows: list[list[str]] = []
         header_rows: list[int] = []
@@ -387,7 +388,7 @@ class Summary:
             rows.append([""])  # noqa: PERF401
         rows.append([""])
 
-        return rows,header_rows
+        return rows, header_rows
 
     def create_summary_tables(self, workload: str, engines: dict[str, list[str]], index: int) -> int:
         """Create summary tables for each engine for this workload."""
@@ -408,15 +409,15 @@ class Summary:
         cell = "I"
         for es_version in engines["ES"]:
             # Retrieve operation comparison
-            col,header_rows = self.create_summary_table(workload, os_version, es_version)
+            col, header_rows = self.create_summary_table(workload, os_version, es_version)
 
             # Keep track of where headers are
             for h in header_rows:
-                end_cell = sheet_add(cell,2)
+                end_cell = sheet_add(cell, 2)
                 header_ranges.append(f"Summary!{cell}{index+h}:{end_cell}{index+h}")
 
             # Increment column
-            cell = sheet_add(cell,4)
+            cell = sheet_add(cell, 4)
 
             # Append column
             if not rows:

@@ -329,11 +329,12 @@ def convert_range_to_dict(range_str: str) -> dict:
         "endColumnIndex": end_column_index,
     }
 
+
 def sheet_add(cell: str, value: int) -> str:
     """Increases value to column letter."""
-    cells = [c for c in cell]
+    cells = list(cell)
     for _ in range(value):
-        if cells[-1] == 'Z':
+        if cells[-1] == "Z":
             cells[-1] = "A"
             cells.append("A")
         else:
