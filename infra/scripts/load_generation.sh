@@ -56,7 +56,6 @@ opensearch-benchmark execute-test \
     --target-hosts="$CLUSTER_HOST" \
     --client-options="$CLIENT_OPTIONS" \
     --test-mode \
-    --workload-params=number_of_replicas:0 \
     --distribution-version=$DISTRIBUTION_VERSION \
     --kill-running-processes \
     '--include-tasks=""'
