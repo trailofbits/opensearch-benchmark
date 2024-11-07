@@ -1,0 +1,242 @@
+Engine,Version,Workload,Number of Tests,,,,,nyc_taxis,ES v8.15.0,
+OS,2.16.0,nyc_taxis,4,,,,,Total Tasks,7,
+ES,8.15.0,nyc_taxis,4,,,,,Tasks faster than ES,4,
+OS,2.16.0,big5,4,,,,,Fast Outliers (> 2),3,
+ES,8.15.0,big5,4,,,,,Slow Outliers (< 0.5),2,
+OS,2.16.0,pmc,4,,,,,,,
+ES,8.15.0,pmc,4,,,,,,Categories: OS v2.16.0 is Faster,
+OS,2.16.0,noaa,4,,,,,Category,Count,Total
+ES,8.15.0,noaa,4,,,,,Aggregation,2,3
+,,,,,,,,General Operations,0,1
+All Categories: OS v2.16.0 is Faster than ES v8.15.0,,,,,,,,Range Queries,0,1
+Category,Count,Total,Percentage (%),,,,,Sorting,2,2
+Aggregation,3,5,60,,,,,,,
+Date Histogram,6,16,37.5,,,,,Total,4,7
+General Operations,0,5,0,,,,,,,
+Range & Date Histogram,0,5,0,,,,,,Operations: OS v2.16.0 is Faster,
+Range Queries,2,12,16.66666667,,,,,Category,Operation,ES/OS
+Sorting,8,16,50,,,,,Aggregation,autohisto_agg,75.75531587
+Term Aggregations,7,13,53.84615385,,,,,Aggregation,date_histogram_agg,1.08195038
+Text Querying,1,6,16.66666667,,,,,Sorting,asc_sort_tip_amount,2211.519469
+Total,26,72,36.11111111,,,,,Sorting,desc_sort_tip_amount,193.8999937
+,,,,,,,,,,
+Statistics comparing: OS v2.16.0 and ES v8.15.0,,,,,,,,,,
+ES/OS,Average,Median,Max,Min,Stdev,Variance,,,,
+"When OS is faster
+(OS service_time is smaller)",167.5421507,1.331407657,2211.519469,1.006457517,496.219209,246233.5034,,,,
+"When OS is slower
+(OS service_time is larger)",0.5806958874,0.5650285972,0.9982987645,0.01586139859,0.3484582582,0.1214231577,,,,
+,,,,,,,,,Operations: OS v2.16.0 is Slower,
+,,,,,,,,Category,Operation,ES/OS
+,,,,,,,,Aggregation,distance_amount_agg,0.2286335714
+,,,,,,,,General Operations,default,0.5515655091
+,,,,,,,,Range Queries,range,0.3143897125
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,big5,ES v8.15.0,
+,,,,,,,,Total Tasks,41,
+,,,,,,,,Tasks faster than ES,15,
+,,,,,,,,Fast Outliers (> 2),8,
+,,,,,,,,Slow Outliers (< 0.5),9,
+,,,,,,,,,,
+,,,,,,,,,Categories: OS v2.16.0 is Faster,
+,,,,,,,,Category,Count,Total
+,,,,,,,,Date Histogram,3,5
+,,,,,,,,General Operations,0,2
+,,,,,,,,Range Queries,2,9
+,,,,,,,,Sorting,6,14
+,,,,,,,,Term Aggregations,3,7
+,,,,,,,,Text Querying,1,4
+,,,,,,,,,,
+,,,,,,,,Total,15,41
+,,,,,,,,,,
+,,,,,,,,,Operations: OS v2.16.0 is Faster,
+,,,,,,,,Category,Operation,ES/OS
+,,,,,,,,Date Histogram,composite-date_histogram-daily,1454.577473
+,,,,,,,,Date Histogram,date_histogram_hourly_agg,280.5347587
+,,,,,,,,Date Histogram,date_histogram_minute_agg,36.74034936
+,,,,,,,,Range Queries,range-agg-1,1.250982092
+,,,,,,,,Range Queries,range-agg-2,1.113957673
+,,,,,,,,Sorting,asc_sort_timestamp,2.64588178
+,,,,,,,,Sorting,asc_sort_timestamp_can_match_shortcut,2.446355343
+,,,,,,,,Sorting,asc_sort_timestamp_no_can_match_shortcut,2.409263983
+,,,,,,,,Sorting,asc_sort_with_after_timestamp,1.779077512
+,,,,,,,,Sorting,sort_keyword_no_can_match_shortcut,1.069297425
+,,,,,,,,Sorting,sort_keyword_can_match_shortcut,1.049520042
+,,,,,,,,Term Aggregations,keyword-terms-low-cardinality,129.7739153
+,,,,,,,,Term Aggregations,keyword-terms,114.4041342
+,,,,,,,,Term Aggregations,multi_terms-keyword,1.591750103
+,,,,,,,,Text Querying,query-string-on-message-filtered-sorted-num,1.041625206
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,Operations: OS v2.16.0 is Slower,
+,,,,,,,,Category,Operation,ES/OS
+,,,,,,,,Date Histogram,range-auto-date-histo-with-metrics,0.2350234093
+,,,,,,,,Date Histogram,range-auto-date-histo,0.2310155794
+,,,,,,,,General Operations,scroll,0.8376122754
+,,,,,,,,General Operations,default,0.5643551746
+,,,,,,,,Range Queries,range_field_disjunction_big_range_small_term_query,0.9761164557
+,,,,,,,,Range Queries,range_field_conjunction_small_range_small_term_query,0.9701157595
+,,,,,,,,Range Queries,range-numeric,0.9549642702
+,,,,,,,,Range Queries,range_field_conjunction_small_range_big_term_query,0.9548523214
+,,,,,,,,Range Queries,range_field_conjunction_big_range_big_term_query,0.9385106038
+,,,,,,,,Range Queries,keyword-in-range,0.8784335364
+,,,,,,,,Range Queries,range,0.7800611371
+,,,,,,,,Sorting,sort_numeric_asc_with_match,0.9555425355
+,,,,,,,,Sorting,sort_numeric_desc_with_match,0.9073515542
+,,,,,,,,Sorting,sort_numeric_asc,0.8292552867
+,,,,,,,,Sorting,sort_numeric_desc,0.8130897994
+,,,,,,,,Sorting,desc_sort_with_after_timestamp,0.3562288028
+,,,,,,,,Sorting,desc_sort_timestamp_can_match_shortcut,0.2805900874
+,,,,,,,,Sorting,desc_sort_timestamp_no_can_match_shortcut,0.2750530991
+,,,,,,,,Sorting,desc_sort_timestamp,0.1155385715
+,,,,,,,,Term Aggregations,composite-terms,0.962168968
+,,,,,,,,Term Aggregations,composite_terms-keyword,0.8993218578
+,,,,,,,,Term Aggregations,cardinality-agg-low,0.5650285972
+,,,,,,,,Term Aggregations,cardinality-agg-high,0.301357147
+,,,,,,,,Text Querying,term,0.5132456568
+,,,,,,,,Text Querying,query-string-on-message-filtered,0.39715899
+,,,,,,,,Text Querying,query-string-on-message,0.02536858456
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,pmc,ES v8.15.0,
+,,,,,,,,Total Tasks,6,
+,,,,,,,,Tasks faster than ES,1,
+,,,,,,,,Fast Outliers (> 2),0,
+,,,,,,,,Slow Outliers (< 0.5),0,
+,,,,,,,,,,
+,,,,,,,,,Categories: OS v2.16.0 is Faster,
+,,,,,,,,Category,Count,Total
+,,,,,,,,Aggregation,1,2
+,,,,,,,,General Operations,0,2
+,,,,,,,,Text Querying,0,2
+,,,,,,,,,,
+,,,,,,,,Total,1,6
+,,,,,,,,,,
+,,,,,,,,,Operations: OS v2.16.0 is Faster,
+,,,,,,,,Category,Operation,ES/OS
+,,,,,,,,Aggregation,articles_monthly_agg_uncached,1.191295127
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,Operations: OS v2.16.0 is Slower,
+,,,,,,,,Category,Operation,ES/OS
+,,,,,,,,Aggregation,articles_monthly_agg_cached,0.7313720789
+,,,,,,,,General Operations,default,0.8054102403
+,,,,,,,,General Operations,scroll,0.7736877277
+,,,,,,,,Text Querying,term,0.9977472585
+,,,,,,,,Text Querying,phrase,0.9575777239
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,noaa,ES v8.15.0,
+,,,,,,,,Total Tasks,24,
+,,,,,,,,Tasks faster than ES,7,
+,,,,,,,,Fast Outliers (> 2),0,
+,,,,,,,,Slow Outliers (< 0.5),10,
+,,,,,,,,,,
+,,,,,,,,,Categories: OS v2.16.0 is Faster,
+,,,,,,,,Category,Count,Total
+,,,,,,,,Date Histogram,3,11
+,,,,,,,,Range & Date Histogram,0,5
+,,,,,,,,Range Queries,0,2
+,,,,,,,,Term Aggregations,4,6
+,,,,,,,,,,
+,,,,,,,,Total,7,24
+,,,,,,,,,,
+,,,,,,,,,Operations: OS v2.16.0 is Faster,
+,,,,,,,,Category,Operation,ES/OS
+,,,,,,,,Date Histogram,date-histo-entire-range,1.179293894
+,,,,,,,,Date Histogram,date-histo-numeric-terms,1.04780494
+,,,,,,,,Date Histogram,date-histo-string-significant-terms-via-default-strategy,1.006457517
+,,,,,,,,Term Aggregations,keyword-terms,1.331407657
+,,,,,,,,Term Aggregations,keyword-terms-numeric-terms,1.11310345
+,,,,,,,,Term Aggregations,keyword-terms-min,1.07238711
+,,,,,,,,Term Aggregations,numeric-terms-numeric-terms,1.011247962
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,,
+,,,,,,,,,Operations: OS v2.16.0 is Slower,
+,,,,,,,,Category,Operation,ES/OS
+,,,,,,,,Date Histogram,date-histo-string-significant-terms-via-global-ords,0.9982987645
+,,,,,,,,Date Histogram,date-histo-string-terms-via-global-ords,0.9933845651
+,,,,,,,,Date Histogram,date-histo-string-terms-via-default-strategy,0.9923980241
+,,,,,,,,Date Histogram,date-histo-string-significant-terms-via-map,0.9683174462
+,,,,,,,,Date Histogram,date-histo-string-terms-via-map,0.9657125394
+,,,,,,,,Date Histogram,date-histo-histo,0.2380972196
+,,,,,,,,Date Histogram,date-histo-geohash-grid,0.2371762695
+,,,,,,,,Date Histogram,date-histo-geotile-grid,0.2028690995
+,,,,,,,,Range & Date Histogram,range-date-histo-with-metrics,0.1630571003
+,,,,,,,,Range & Date Histogram,range-auto-date-histo-with-metrics,0.1557716422
+,,,,,,,,Range & Date Histogram,range-auto-date-histo-with-time-zone,0.1083689558
+,,,,,,,,Range & Date Histogram,range-auto-date-histo,0.1052134588
+,,,,,,,,Range & Date Histogram,range-date-histo,0.1039186087
+,,,,,,,,Range Queries,range-aggregation,0.83869466
+,,,,,,,,Range Queries,range-numeric-significant-terms,0.5162876351
+,,,,,,,,Term Aggregations,keyword-terms-low-cardinality-min,0.134318987
+,,,,,,,,Term Aggregations,keyword-terms-low-cardinality,0.01586139859

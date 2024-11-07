@@ -197,7 +197,7 @@ def create_command(args: argparse.Namespace) -> bool:
             print(f"token path '{credential_path}' is not a file")
             return False
 
-    return create_report(benchmark_data, token_path, credential_path)
+    return create_report(benchmark_data, token_path, credential_path) is not None
 
 
 def main() -> None:
