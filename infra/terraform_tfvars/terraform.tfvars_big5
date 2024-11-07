@@ -21,7 +21,7 @@ workload                            = "big5"
 workload_params                     = <<EOF
 {
 	"number_of_replicas": 0,
-    "max_num_segments": 10,
+	"max_num_segments": 10,
 	"bulk_indexing_clients": 1,
 	"target_throughput": 0
 }
