@@ -168,11 +168,27 @@ data "external" "latest_snapshot_version" {
   }
 }
 
+locals {
+  # set instance types based on the workload
+  # TODO set r*.4xlarge if vectorsearch with 10 million docs
+  workload_cluster_instance_map = {
+    vectorsearch = "r5d.2xlarge"
+  }
+  workload_loadgen_instance_map = {
+    vectorsearch = "c5d.4xlarge"
+  }
+  default_cluster_instance = "c5d.2xlarge"
+  default_loadgen_instance = "c5d.2xlarge"
+  cluster_instance_type    = lookup(local.workload_cluster_instance_map, var.workload, local.default_cluster_instance)
+  loadgen_instance_type    = lookup(local.workload_loadgen_instance_map, var.workload, local.default_loadgen_instance)
+}
+
 module "es-cluster" {
   count = var.target_cluster_type == "ElasticSearch" ? 1 : 0
 
   source                = "./modules/elasticsearch"
-  instance_type         = var.instance_type
+  cluster_instance_type = local.cluster_instance_type
+  loadgen_instance_type = local.loadgen_instance_type
   ami_id                = data.aws_ami.ubuntu_ami.id
   es_version            = var.es_version
   distribution_version  = var.distribution_version
@@ -210,7 +226,8 @@ module "os-cluster" {
   count = var.target_cluster_type == "OpenSearch" ? 1 : 0
 
   source                = "./modules/opensearch"
-  instance_type         = var.instance_type
+  cluster_instance_type = local.cluster_instance_type
+  loadgen_instance_type = local.loadgen_instance_type
   ami_id                = data.aws_ami.ubuntu_ami.id
   os_version            = var.os_version
   distribution_version  = var.distribution_version
