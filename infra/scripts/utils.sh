@@ -150,6 +150,7 @@ benchmark_single() {
     test_procedure=$7
     distribution_version=$8
     user_tags=$9
+    include_tasks=${10}
 
     opensearch-benchmark execute-test \
         --pipeline=benchmark-only \
@@ -158,7 +159,7 @@ benchmark_single() {
         --workload-params="$workload_params" \
         --client-options="$client_options" \
         --kill-running-processes \
-        --include-tasks="type:search" \
+        --include-tasks="$include_tasks" \
         --results-file="$results_file" \
         --test-execution-id="$test_execution_id" \
         --test-procedure="$test_procedure" \

@@ -86,6 +86,12 @@ set -x
 EXECUTION_DIR="/mnt/test_executions"
 mkdir -p "$EXECUTION_DIR"
 
+INCLUDE_TASKS="type:search,prod-queries"
+if [ "$ENGINE_TYPE" == "OS" ]; then
+    # ElasticSearch doesn't support the warmup-indices operation
+    INCLUDE_TASKS+=",warmup-indices"
+fi
+
 # Queries only
 echo "Running Queries Only"
 for i in $(seq 0 4)
@@ -103,7 +109,8 @@ do
             "$TEST_EXECUTION_ID" \
             "$TEST_PROCEDURE" \
             "$DISTRIBUTION_VERSION" \
-            "$USER_TAGS"
+            "$USER_TAGS" \
+            "$INCLUDE_TASKS"
 done
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
