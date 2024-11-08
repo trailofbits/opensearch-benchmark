@@ -27,6 +27,18 @@ class Result:
     spreadsheet_id: str
     sheet_id: int | None = None
 
+    def format_numbers(self) -> dict:
+        """Format numbers."""
+        return {
+            "repeatCell": {
+                "range": {
+                    "sheetId": self.sheet_id,
+                },
+                "cell": {"userEnteredFormat": {"numberFormat": {"type": "NUMBER", "pattern": "#,##0.000"}}},
+                "fields": "userEnteredFormat.numberFormat",
+            }
+        }
+
     def format_comparison(self) -> list[dict]:
         """Conditionally formats comparison (ES/OS)."""
         rv: list[dict] = []
@@ -195,6 +207,7 @@ class Result:
         requests.append(self.format_freeze_col())
         requests.append(self.format_rsd())
         requests.extend(self.format_comparison())
+        requests.append(self.format_numbers())
 
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()

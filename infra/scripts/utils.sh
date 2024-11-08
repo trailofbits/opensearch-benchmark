@@ -162,7 +162,7 @@ benchmark_single() {
         --results-file="$results_file" \
         --test-execution-id="$test_execution_id" \
         --test-procedure="$test_procedure" \
-        --distribution-version=$distribution_version \
+        --distribution-version="$distribution_version" \
         --user-tag="$user_tags" \
         --telemetry="node-stats"
 }
