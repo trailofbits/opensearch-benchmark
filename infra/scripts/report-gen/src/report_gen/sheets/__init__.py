@@ -1,10 +1,10 @@
 """Functions to create a summary report in Google Sheets."""
 
 import logging
+import time
 from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
-import time
 
 from googleapiclient.discovery import Resource, build
 
@@ -57,9 +57,9 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         return False
     logger.info("Results processed successfully")
 
-#   # Create a pause here because of the default limit of 60 requests per minute
-#   logger.info("Pausing for 60 seconds because of Google API rate limiting.")
-#   time.sleep(60)
+    # Create a pause here because of the default limit of 60 requests per minute
+    logger.info("Pausing for 60 seconds because of Google API rate limiting.")
+    time.sleep(60)
 
     # Create Summary sheet
     summary = Summary(service=service, spreadsheet_id=spreadsheet_id)

@@ -9,10 +9,14 @@ from packaging.version import Version
 from .common import (
     adjust_sheet_columns,
     convert_range_to_dict,
+    get_dark_green,
+    get_dark_red,
     get_light_blue,
     get_light_cyan,
+    get_light_green,
     get_light_orange,
     get_light_purple,
+    get_light_red,
     get_light_yellow,
     get_sheet_id,
     get_workload_operation_categories,
@@ -42,6 +46,86 @@ class Summary:
                 "fields": "userEnteredFormat.numberFormat",
             }
         }
+
+    def format_comparison(self, range_str: str) -> None:
+        """Conditionally formats comparison (ES/OS)."""
+        range_dict = convert_range_to_dict(range_str)
+        range_dict["sheetId"] = self.sheet_id
+
+        requests: list[dict] = []
+
+        # Value is less than 0.5
+        requests.append(
+            {
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [range_dict],
+                        "booleanRule": {
+                            "condition": {"type": "NUMBER_LESS", "values": [{"userEnteredValue": "0.5"}]},
+                            "format": {"backgroundColor": get_dark_red()},
+                        },
+                    },
+                    "index": 0,
+                }
+            }
+        )
+
+        # Value is between 0.5 and 1
+        requests.append(
+            {
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [range_dict],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "NUMBER_BETWEEN",
+                                "values": [{"userEnteredValue": "0.5"}, {"userEnteredValue": "1"}],
+                            },
+                            "format": {"backgroundColor": get_light_red()},
+                        },
+                    },
+                    "index": 1,
+                }
+            }
+        )
+
+        # Value is between 1 and 2
+        requests.append(
+            {
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [range_dict],
+                        "booleanRule": {
+                            "condition": {
+                                "type": "NUMBER_BETWEEN",
+                                "values": [{"userEnteredValue": "1"}, {"userEnteredValue": "2"}],
+                            },
+                            "format": {"backgroundColor": get_light_green()},
+                        },
+                    },
+                    "index": 2,
+                }
+            }
+        )
+
+        # Value is greater than 2
+        requests.append(
+            {
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [range_dict],
+                        "booleanRule": {
+                            "condition": {"type": "NUMBER_GREATER", "values": [{"userEnteredValue": "2"}]},
+                            "format": {"backgroundColor": get_dark_green()},
+                        },
+                    },
+                    "index": 3,
+                }
+            }
+        )
+
+        body = {"requests": requests}
+        self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
 
     def format_color(self, range_str: list[str], color: dict) -> None:
         """Color range."""
@@ -164,9 +248,11 @@ class Summary:
             row.append(op)
 
             for e, es_version in enumerate(workload["ES"]):
-                filter_str = f'Results!$A$2:$A="{workload_str}",Results!$F$2:$F="{os_version}",Results!$N$2:$N="{es_version}"'
+                filter_str = (
+                    f'Results!$A$2:$A="{workload_str}",Results!$F$2:$F="{os_version}",Results!$N$2:$N="{es_version}"'
+                )
                 row.append(
-                    f'=FILTER(Results!$D2:D, {filter_str}, Results!$C2:C = INDIRECT(ADDRESS(ROW(), COLUMN()-1-{e})))'
+                    f"=FILTER(Results!$D2:D, {filter_str}, Results!$C2:C = INDIRECT(ADDRESS(ROW(), COLUMN()-1-{e})))"
                 )
 
             rows.append(row)
@@ -188,6 +274,10 @@ class Summary:
         )
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
+        updated_range = result["updates"]["updatedRange"]
+
+        # Add formula
+        self.format_comparison(updated_range)
 
         return rows_added
 
@@ -253,21 +343,27 @@ class Summary:
         row: list[str] = []
         row.append("Tasks faster than ES")
         for es_version in workload["ES"]:
-            count_str = f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+            count_str = (
+                f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+            )
             row.append(f'=COUNTIFS({count_str}, Results!$D$2:$D,">1")')
         rows.append(row)
 
         row: list[str] = []
         row.append("Fast Outliers (> 2)")
         for es_version in workload["ES"]:
-            count_str = f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+            count_str = (
+                f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+            )
             row.append(f'=COUNTIFS({count_str}, Results!$D$2:$D,">2")')
         rows.append(row)
 
         row: list[str] = []
         row.append("Slow Outliers (< 0.5)")
         for es_version in workload["ES"]:
-            count_str = f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+            count_str = (
+                f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+            )
             row.append(f'=COUNTIFS({count_str}, Results!$D$2:$D,"<0.5")')
         rows.append(row)
 
@@ -359,7 +455,7 @@ class Summary:
                     f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
                 )
                 row.append(
-                    f'=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-1-{e})), Results!$D$2:$D,">1")'
+                    f'=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-1-{e})), Results!$D$2:$D,">1")'  # noqa: E501
                 )
 
             rows.append(row)
@@ -479,12 +575,15 @@ class Summary:
             "values": rows,
         }
         result = (
-            self.service.spreadsheets().values().append(
+            self.service.spreadsheets()
+            .values()
+            .append(
                 spreadsheetId=self.spreadsheet_id,
                 range=f"Summary!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
-            ).execute()
+            )
+            .execute()
         )
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
@@ -866,11 +965,11 @@ class Summary:
         # Create overview table
         offset += self.create_overview_table(workloads)
 
-#       # For each workload, summarize results
-#       index = 1
-#       for workload, engines in workloads.items():
-#           logger.info(f"Summarizing {workload}")
-#           index = self.create_summary_tables(workload, engines, index)
+        # For each workload, summarize results
+        index = 1
+        for workload, engines in workloads.items():
+            logger.info(f"Summarizing {workload}")
+            index = self.create_summary_tables(workload, engines, index)
 
         # Create all categories table
         offset += self.create_all_categories_table(workloads, offset)
