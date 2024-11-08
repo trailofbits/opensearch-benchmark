@@ -181,7 +181,7 @@ class Result:
             }
             self.service.spreadsheets().values().append(
                 spreadsheetId=self.spreadsheet_id,
-                range="Results!A1",
+                range=f"{self.sheet_name}!A1",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             ).execute()

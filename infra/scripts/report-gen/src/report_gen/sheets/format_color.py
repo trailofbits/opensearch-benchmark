@@ -137,3 +137,18 @@ def format_color_rsd(range_dict: dict) -> dict:
             "index": 0,
         }
     }
+
+
+def format_color(range_dict: dict, color: dict) -> dict:
+    """Color header."""
+    return {
+        "repeatCell": {
+            "range": range_dict,
+            "cell": {
+                "userEnteredFormat": {
+                    "backgroundColor": color,
+                }
+            },
+            "fields": "userEnteredFormat(backgroundColor)",
+        }
+    }

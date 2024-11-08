@@ -12,8 +12,7 @@ from .auth import authenticate_from_credentials, authenticate_from_token
 from .common import adjust_sheet_columns, get_category_operation_map, get_sheet_id
 from .import_data import ImportData
 from .result import Result
-
-# from .summary import Summary
+from .summary import Summary
 
 if TYPE_CHECKING:
     from google.oauth2.credentials import Credentials
@@ -58,16 +57,16 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         return False
     logger.info("Results processed successfully")
 
-    #   # Create a pause here because of the default limit of 60 requests per minute
-    #   logger.info("Pausing for 60 seconds because of Google API rate limiting.")
-    #   time.sleep(60)
+    # Create a pause here because of the default limit of 60 requests per minute
+    logger.info("Pausing for 60 seconds because of Google API rate limiting.")
+    time.sleep(60)
 
-    #   # Create Summary sheet
-    #   summary = Summary(service=service, spreadsheet_id=spreadsheet_id)
-    #   if not summary.get():
-    #       logger.error("Error creating summary sheet")
-    #       return False
-    #   logger.info("Summary processed successfully")
+    # Create Summary sheet
+    summary = Summary(service=service, spreadsheet_id=spreadsheet_id)
+    if not summary.get():
+        logger.error("Error creating summary sheet")
+        return False
+    logger.info("Summary processed successfully")
 
     # Output spreadsheet URL for ease
     report_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
