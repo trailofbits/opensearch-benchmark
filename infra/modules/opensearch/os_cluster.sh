@@ -74,3 +74,12 @@ cd /mnt || exit 1
 wget https://github.com/async-profiler/async-profiler/releases/download/v3.0/async-profiler-3.0-linux-x64.tar.gz
 tar -xvf async-profiler-3.0-linux-x64.tar.gz
 cd async-profiler-3.0-linux-x64 || exit 1
+
+cd /mnt || exit 1
+git clone https://github.com/opensearch-project/OpenSearch.git opensearch-git
+sudo apt update
+sudo apt install -y openjdk-17-jdk-headless
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
+echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/' >> ~/.bashrc
+cd opensearch-git || exit 1
+./gradlew localDistro
