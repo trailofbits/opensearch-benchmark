@@ -12,7 +12,8 @@ from .auth import authenticate_from_credentials, authenticate_from_token
 from .common import adjust_sheet_columns, get_category_operation_map, get_sheet_id
 from .import_data import ImportData
 from .result import Result
-from .summary import Summary
+
+# from .summary import Summary
 
 if TYPE_CHECKING:
     from google.oauth2.credentials import Credentials
@@ -57,16 +58,16 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         return False
     logger.info("Results processed successfully")
 
-    # Create a pause here because of the default limit of 60 requests per minute
-    logger.info("Pausing for 60 seconds because of Google API rate limiting.")
-    time.sleep(60)
+    #   # Create a pause here because of the default limit of 60 requests per minute
+    #   logger.info("Pausing for 60 seconds because of Google API rate limiting.")
+    #   time.sleep(60)
 
-    # Create Summary sheet
-    summary = Summary(service=service, spreadsheet_id=spreadsheet_id)
-    if not summary.get():
-        logger.error("Error creating summary sheet")
-        return False
-    logger.info("Summary processed successfully")
+    #   # Create Summary sheet
+    #   summary = Summary(service=service, spreadsheet_id=spreadsheet_id)
+    #   if not summary.get():
+    #       logger.error("Error creating summary sheet")
+    #       return False
+    #   logger.info("Summary processed successfully")
 
     # Output spreadsheet URL for ease
     report_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
@@ -75,14 +76,8 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
     return True
 
 
-def _resize_sheet(service: Resource, spreadsheet_id: str, sheet_name: str, width: int, height: int) -> None:
+def _resize_sheet(service: Resource, spreadsheet_id: str, sheet_id: int, width: int, height: int) -> None:
     """Resize the given sheet."""
-    sheet_id = get_sheet_id(service, spreadsheet_id, sheet_name)
-
-    if sheet_id is None:
-        logger.error(f"Failed to locate the sheet named '{sheet_name}'. Formatting has failed")
-        return
-
     body: dict = {
         "requests": [
             {
@@ -114,7 +109,11 @@ def _create_blank_spreadsheet(service: Resource, title: str, sheet_name: str, wi
     spreadsheet: dict = service.spreadsheets().create(body=request_properties, fields="spreadsheetId").execute()
 
     spreadsheet_id: str = cast(str, spreadsheet.get("spreadsheetId"))
-    _resize_sheet(service, spreadsheet_id, sheet_name, width, height)
+    sheet_id, _ = get_sheet_id(service, spreadsheet_id, sheet_name)
+    if sheet_id is None:
+        logger.error(f"Failed to locate the sheet named '{sheet_name}'. Formatting has failed")
+        return None
+    _resize_sheet(service, spreadsheet_id, sheet_id, width, height)
 
     return spreadsheet_id
 
@@ -173,7 +172,11 @@ def _create_spreadsheet(service: Resource, title: str) -> str | None:
     # Add the categories now so that we can query the row count when generating the
     # VLOOKUP formula for the category column
     _add_categories_sheet(service, spreadsheet_id)
-    adjust_sheet_columns(service, spreadsheet_id, "Categories")
+    sheet_id, sheet = get_sheet_id(service, spreadsheet_id, "Categories")
+    if sheet_id is None:
+        logger.error("Failed to locate the sheet named 'Categories'. Formatting has failed")
+        return None
+    adjust_sheet_columns(service, spreadsheet_id, sheet_id, sheet)
 
     # Create a new sheet for all benchmark data
     _add_sheet(service, spreadsheet_id, "raw")

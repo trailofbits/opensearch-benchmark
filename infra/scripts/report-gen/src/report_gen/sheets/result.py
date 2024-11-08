@@ -8,12 +8,24 @@ from googleapiclient.discovery import Resource
 
 from .common import (
     adjust_sheet_columns,
-    get_dark_green,
-    get_dark_red,
-    get_light_green,
-    get_light_red,
+    convert_range_to_dict,
     get_sheet_id,
     get_workload_operations,
+    get_workloads,
+)
+from .format_color import (
+    format_color_comparison,
+    format_color_rsd,
+)
+from .format_font import (
+    format_font_bold,
+)
+from .format_freeze import (
+    format_freeze_col,
+    format_freeze_row,
+)
+from .format_number import (
+    format_number_float,
 )
 
 logger = logging.getLogger(__name__)
@@ -25,189 +37,47 @@ class Result:
 
     service: Resource
     spreadsheet_id: str
+    sheet_name: str = "Results"
     sheet_id: int | None = None
-
-    def format_numbers(self) -> dict:
-        """Format numbers."""
-        return {
-            "repeatCell": {
-                "range": {
-                    "sheetId": self.sheet_id,
-                },
-                "cell": {"userEnteredFormat": {"numberFormat": {"type": "NUMBER", "pattern": "#,##0.000"}}},
-                "fields": "userEnteredFormat.numberFormat",
-            }
-        }
-
-    def format_comparison(self) -> list[dict]:
-        """Conditionally formats comparison (ES/OS)."""
-        rv: list[dict] = []
-
-        # Value is less than 0.5
-        rv.append(
-            {
-                "addConditionalFormatRule": {
-                    "rule": {
-                        "ranges": [
-                            {
-                                "sheetId": self.sheet_id,
-                                "startRowIndex": 1,  # Start from second row to avoid headers
-                                "startColumnIndex": 3,  # Column D
-                                "endColumnIndex": 4,  # Column E
-                            },
-                        ],
-                        "booleanRule": {
-                            "condition": {"type": "NUMBER_LESS", "values": [{"userEnteredValue": "0.5"}]},
-                            "format": {"backgroundColor": get_dark_red()},
-                        },
-                    },
-                    "index": 0,
-                }
-            }
-        )
-
-        # Value is between 0.5 and 1
-        rv.append(
-            {
-                "addConditionalFormatRule": {
-                    "rule": {
-                        "ranges": [
-                            {
-                                "sheetId": self.sheet_id,
-                                "startRowIndex": 1,  # Start from second row to avoid headers
-                                "startColumnIndex": 3,  # Column D
-                                "endColumnIndex": 4,  # Column E
-                            },
-                        ],
-                        "booleanRule": {
-                            "condition": {
-                                "type": "NUMBER_BETWEEN",
-                                "values": [{"userEnteredValue": "0.5"}, {"userEnteredValue": "1"}],
-                            },
-                            "format": {"backgroundColor": get_light_red()},
-                        },
-                    },
-                    "index": 1,
-                }
-            }
-        )
-
-        # Value is between 1 and 2
-        rv.append(
-            {
-                "addConditionalFormatRule": {
-                    "rule": {
-                        "ranges": [
-                            {
-                                "sheetId": self.sheet_id,
-                                "startRowIndex": 1,  # Start from second row to avoid headers
-                                "startColumnIndex": 3,  # Column D
-                                "endColumnIndex": 4,  # Column E
-                            },
-                        ],
-                        "booleanRule": {
-                            "condition": {
-                                "type": "NUMBER_BETWEEN",
-                                "values": [{"userEnteredValue": "1"}, {"userEnteredValue": "2"}],
-                            },
-                            "format": {"backgroundColor": get_light_green()},
-                        },
-                    },
-                    "index": 2,
-                }
-            }
-        )
-
-        # Value is greater than 2
-        rv.append(
-            {
-                "addConditionalFormatRule": {
-                    "rule": {
-                        "ranges": [
-                            {
-                                "sheetId": self.sheet_id,
-                                "startRowIndex": 1,  # Start from second row to avoid headers
-                                "startColumnIndex": 3,  # Column D
-                                "endColumnIndex": 4,  # Column E
-                            },
-                        ],
-                        "booleanRule": {
-                            "condition": {"type": "NUMBER_GREATER", "values": [{"userEnteredValue": "2"}]},
-                            "format": {"backgroundColor": get_dark_green()},
-                        },
-                    },
-                    "index": 3,
-                }
-            }
-        )
-
-        return rv
-
-    def format_rsd(self) -> dict:
-        """Conditionally formats RSD columns."""
-        return {
-            "addConditionalFormatRule": {
-                "rule": {
-                    "ranges": [
-                        {
-                            "sheetId": self.sheet_id,
-                            "startRowIndex": 1,  # Start from second row to avoid headers
-                            "startColumnIndex": 10,  # Column K
-                            "endColumnIndex": 12,  # Column L
-                        },
-                        {
-                            "sheetId": self.sheet_id,
-                            "startRowIndex": 1,  # Start from second row to avoid headers
-                            "startColumnIndex": 18,  # Column S
-                            "endColumnIndex": 20,  # Column T
-                        },
-                    ],
-                    "booleanRule": {
-                        "condition": {"type": "NUMBER_GREATER", "values": [{"userEnteredValue": "0.05"}]},
-                        "format": {"backgroundColor": get_light_red()},
-                    },
-                },
-                "index": 0,
-            }
-        }
-
-    def format_freeze_row(self) -> dict:
-        """Freeze rows."""
-        return {
-            "updateSheetProperties": {
-                "properties": {"sheetId": self.sheet_id, "gridProperties": {"frozenRowCount": 1}},
-                "fields": "gridProperties.frozenRowCount",
-            }
-        }
-
-    def format_freeze_col(self) -> dict:
-        """Freeze columns."""
-        return {
-            "updateSheetProperties": {
-                "properties": {"sheetId": self.sheet_id, "gridProperties": {"frozenColumnCount": 4}},
-                "fields": "gridProperties.frozenColumnCount",
-            }
-        }
-
-    def format_first_row(self) -> dict:
-        """Format first row."""
-        return {
-            "repeatCell": {
-                "range": {"sheetId": self.sheet_id, "startRowIndex": 0, "endRowIndex": 1},
-                "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
-                "fields": "userEnteredFormat.textFormat.bold",
-            }
-        }
+    sheet: dict | None = None
 
     def format(self) -> None:
         """Format Result sheet."""
-        requests = []
-        requests.append(self.format_first_row())
-        requests.append(self.format_freeze_row())
-        requests.append(self.format_freeze_col())
-        requests.append(self.format_rsd())
-        requests.extend(self.format_comparison())
-        requests.append(self.format_numbers())
+        requests: list[dict] = []
+        range_dict: dict = {}
+
+        # Bold first row
+        range_dict = convert_range_to_dict(f"{self.sheet_name}!A1:T1")
+        range_dict["sheetId"] = self.sheet_id
+        requests.append(format_font_bold(range_dict))
+
+        # Freeze first row
+        r = format_freeze_row(self.sheet_id, 1)
+        if r is not None:
+            requests.append(r)
+
+        # Freeze first four columns
+        r = format_freeze_col(self.sheet_id, 4)
+        if r is not None:
+            requests.append(r)
+
+        # Format numbers
+        for cells in ["D2:D", "G2:L", "O2:T"]:
+            range_dict = convert_range_to_dict(f"{self.sheet_name}!{cells}")
+            range_dict["sheetId"] = self.sheet_id
+            requests.append(format_number_float(range_dict))
+
+        # Format ES/OS colors
+        for cells in ["D2:D"]:
+            range_dict = convert_range_to_dict(f"{self.sheet_name}!{cells}")
+            range_dict["sheetId"] = self.sheet_id
+            requests.extend(format_color_comparison(range_dict))
+
+        # Format RSD colors
+        for cells in ["K2:L", "S2:T"]:
+            range_dict = convert_range_to_dict(f"{self.sheet_name}!{cells}")
+            range_dict["sheetId"] = self.sheet_id
+            requests.append(format_color_rsd(range_dict))
 
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
@@ -285,18 +155,17 @@ class Result:
         offset: int,
         workload: str,
         operations: list[str],
-        engines: dict[str, set[str]],
+        engines: dict[str, list[str]],
     ) -> int:
-        """Fill in Result sheet with combination of engine comparisons.
-
-        Returns the number of rows written.
-        """
+        """Fill in Result sheet with combination of engine comparisons.Returns the number of rows written."""
         if "OS" not in engines:
             logger.error("Error, no OS engines found")
             return 0
         if "ES" not in engines:
             logger.error("Error, no ES engines found")
             return 0
+
+        rows_added: int = 0
 
         # For each combination of OS/ES engines
         for os, es in product(engines["OS"], engines["ES"]):
@@ -318,34 +187,19 @@ class Result:
             ).execute()
 
             offset += len(rows)
+            rows_added += len(rows)
 
-        return offset
-
-    def get_workloads(self) -> dict[str, dict[str, set[str]]]:
-        """Retrieve tuples of (engine,version,workload) for all benchmarks in the spreadsheet."""
-        rv: dict[str, dict[str, set[str]]] = {}
-
-        result: dict = (
-            self.service.spreadsheets().values().get(spreadsheetId=self.spreadsheet_id, range="raw!C2:E").execute()
-        )
-        row_list: list[list[str]] = result.get("values", [])
-        for row in row_list:
-            engine, version, workload = row
-            if workload not in rv:
-                rv[workload] = {}
-            if engine not in rv[workload]:
-                rv[workload][engine] = set()
-            rv[workload][engine].add(version)
-
-        return rv
+        return rows_added
 
     def get(self) -> bool:
         """Process data in raw sheet to fill in Results sheet."""
         # Get sheet ID for Results sheet
-        self.sheet_id = get_sheet_id(self.service, self.spreadsheet_id, "Results")
+        self.sheet_id, self.sheet = get_sheet_id(self.service, self.spreadsheet_id, self.sheet_name)
+        if self.sheet_id is None:
+            return False
 
         # Retrieve workload to process and compare
-        workloads: dict[str, dict[str, set[str]]] = self.get_workloads()
+        workloads: dict[str, dict[str, list[str]]] = get_workloads(self.service, self.spreadsheet_id)
 
         # Offset for keeping track of the number of rows we've filled in
         # We start with 2 because the header row is already filled in
@@ -362,12 +216,12 @@ class Result:
                 continue
 
             # Output engine comparisons in Result sheet
-            offset = self.compare_engine(offset, workload, operations, engines)
+            offset += self.compare_engine(offset, workload, operations, engines)
 
         # Format Result sheet
         self.format()
 
         # Adjust columns
-        adjust_sheet_columns(self.service, self.spreadsheet_id, "Results")
+        adjust_sheet_columns(self.service, self.spreadsheet_id, self.sheet_id, self.sheet)
 
         return True
