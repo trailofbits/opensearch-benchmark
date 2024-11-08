@@ -12,7 +12,7 @@ data "aws_caller_identity" "current" {}
 
 resource "aws_instance" "target-cluster" {
   ami                    = var.ami_id
-  instance_type          = var.instance_type
+  instance_type          = var.cluster_instance_type
   key_name               = var.ssh_key_name
   vpc_security_group_ids = var.security_groups
 
@@ -41,7 +41,7 @@ resource "aws_instance" "target-cluster" {
 
 resource "aws_instance" "load-generation" {
   ami                    = var.ami_id
-  instance_type          = var.instance_type
+  instance_type          = var.loadgen_instance_type
   key_name               = var.ssh_key_name
   vpc_security_group_ids = var.security_groups
 
@@ -69,7 +69,7 @@ resource "aws_instance" "load-generation" {
       datastore_host        = var.datastore_host
       datastore_username    = var.datastore_username
       datastore_password    = var.datastore_password
-      instance_type         = var.instance_type
+      instance_type         = var.cluster_instance_type
       cluster_instance_id   = aws_instance.target-cluster.id
       ssh_private_key       = base64gzip(var.ssh_priv_key)
     }

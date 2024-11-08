@@ -23,11 +23,6 @@ variable "target_cluster_type" {
   default = "OpenSearch"
 }
 
-variable "instance_type" {
-  description = "Instance type to use for the cluster"
-  type        = string
-  default     = "c5d.2xlarge"
-}
 
 variable "es_version" {
   description = "Version of ElasticSearch to deploy"

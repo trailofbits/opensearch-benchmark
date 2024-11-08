@@ -1,7 +1,11 @@
-variable "instance_type" {
-  description = "Instance type to use for the cluster"
+variable "cluster_instance_type" {
+  description = "Instance type for the cluster"
   type        = string
-  default     = "c5d.2xlarge"
+}
+
+variable "loadgen_instance_type" {
+  description = "Instance type for the load generation machine"
+  type        = string
 }
 
 variable "ami_id" {
