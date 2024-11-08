@@ -100,6 +100,298 @@ class Summary:
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
 
+    def create_es_operation_compare_table(self, workload_str: str, workload: dict[str, list[str]], offset: int) -> int:
+        """Create a tables comparing ES versions operation speeds."""
+        rows: list[list[str]] = []
+        rows_added: int = 0
+
+        # Compare ES versions to latest OS version
+        os_version = workload["OS"][-1]
+        num_es_versions = len(workload["ES"])
+
+        # Add space
+        rows.append([""])
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+
+        # Add header row
+        rows: list[list[str]] = []
+        rows.append([f"Tasks where OS is faster ({workload_str})"] + [""] * num_es_versions)
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+        updated_range = result["updates"]["updatedRange"]
+        self.format_bold([updated_range])
+        self.format_merge(updated_range)
+        self.format_color([updated_range], get_light_blue())
+
+        # Add data
+        rows: list[list[str]] = []
+
+        rows.append(["ES Version"] + workload["ES"])
+        operations = get_workload_operations(workload_str)
+        for op in sorted(operations):
+            row: list[str] = []
+            row.append(op)
+
+            for e, es_version in enumerate(workload["ES"]):
+                filter_str = f'Results!$A$2:$A="{workload_str}",Results!$F$2:$F="{os_version}",Results!$N$2:$N="{es_version}"'
+                row.append(
+                    f'=FILTER(Results!$D2:D, {filter_str}, Results!$C2:C = INDIRECT(ADDRESS(ROW(), COLUMN()-1-{e})))'
+                )
+
+            rows.append(row)
+
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+
+        return rows_added
+
+    def create_es_task_compare_table(self, workload_str: str, workload: dict[str, list[str]], offset: int) -> int:
+        """Create a tables comparing ES versions task speeds."""
+        rows: list[list[str]] = []
+        rows_added: int = 0
+
+        # Compare ES versions to latest OS version
+        os_version = workload["OS"][-1]
+        num_es_versions = len(workload["ES"])
+
+        # Add space
+        rows.append([""])
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+
+        # Add header row
+        rows: list[list[str]] = []
+        rows.append([f"Task Speed ({workload_str})"] + [""] * num_es_versions)
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+        updated_range = result["updates"]["updatedRange"]
+        self.format_bold([updated_range])
+        self.format_merge(updated_range)
+        self.format_color([updated_range], get_light_blue())
+
+        # Add data
+        rows: list[list[str]] = []
+
+        rows.append(["ES Version"] + workload["ES"])
+
+        row: list[str] = []
+        row.append("Tasks faster than ES")
+        for es_version in workload["ES"]:
+            count_str = f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+            row.append(f'=COUNTIFS({count_str}, Results!$D$2:$D,">1")')
+        rows.append(row)
+
+        row: list[str] = []
+        row.append("Fast Outliers (> 2)")
+        for es_version in workload["ES"]:
+            count_str = f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+            row.append(f'=COUNTIFS({count_str}, Results!$D$2:$D,">2")')
+        rows.append(row)
+
+        row: list[str] = []
+        row.append("Slow Outliers (< 0.5)")
+        for es_version in workload["ES"]:
+            count_str = f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+            row.append(f'=COUNTIFS({count_str}, Results!$D$2:$D,"<0.5")')
+        rows.append(row)
+
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+
+        return rows_added
+
+    def create_es_category_compare_table(self, workload_str: str, workload: dict[str, list[str]], offset: int) -> int:
+        """Create a tables comparing ES versions task categories."""
+        rows: list[list[str]] = []
+        rows_added: int = 0
+
+        # Compare ES versions to latest OS version
+        os_version = workload["OS"][-1]
+        num_es_versions = len(workload["ES"])
+
+        # Add space
+        rows.append([""])
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+
+        # Add header row
+        rows: list[list[str]] = []
+        rows.append([f"Task Categories where OS is faster ({workload_str})"] + [""] * num_es_versions)
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+        updated_range = result["updates"]["updatedRange"]
+        self.format_bold([updated_range])
+        self.format_merge(updated_range)
+        self.format_color([updated_range], get_light_blue())
+
+        # Add data
+        rows: list[list[str]] = []
+
+        rows.append(["ES Version"] + workload["ES"])
+        categories = get_workload_operation_categories(workload_str)
+        for category in sorted(categories):
+            row: list[str] = []
+            row.append(category)
+
+            for e, es_version in enumerate(workload["ES"]):
+                count_str = (
+                    f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+                )
+                row.append(
+                    f'=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-1-{e})), Results!$D$2:$D,">1")'
+                )
+
+            rows.append(row)
+
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
+
+        return rows_added
+
+    def create_es_compare_tables(self, workload_str: str, workload: dict[str, list[str]], offset: int) -> int:
+        """Create a tables comparing ES versions."""
+        offset += self.create_es_category_compare_table(workload_str, workload, offset)
+        offset += self.create_es_task_compare_table(workload_str, workload, offset)
+        offset += self.create_es_operation_compare_table(workload_str, workload, offset)
+
+        return offset
+
     def create_stats_table(self, workloads: dict[str, dict[str, list[str]]], offset: int) -> int:
         """Create a table summarizing all statistics."""
         rows: list[list[str]] = []
@@ -186,12 +478,16 @@ class Summary:
             "majorDimension": "ROWS",
             "values": rows,
         }
-        self.service.spreadsheets().values().append(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"Summary!A{offset}",
-            valueInputOption="USER_ENTERED",
-            body=request_properties,
-        ).execute()
+        result = (
+            self.service.spreadsheets().values().append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"Summary!A{offset}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            ).execute()
+        )
+        offset += result["updates"]["updatedRows"]
+        rows_added += result["updates"]["updatedRows"]
 
         return rows_added
 
@@ -570,17 +866,23 @@ class Summary:
         # Create overview table
         offset += self.create_overview_table(workloads)
 
-        # For each workload, summarize results
-        index = 1
-        for workload, engines in workloads.items():
-            logger.info(f"Summarizing {workload}")
-            index = self.create_summary_tables(workload, engines, index)
+#       # For each workload, summarize results
+#       index = 1
+#       for workload, engines in workloads.items():
+#           logger.info(f"Summarizing {workload}")
+#           index = self.create_summary_tables(workload, engines, index)
 
         # Create all categories table
         offset += self.create_all_categories_table(workloads, offset)
 
         # Create stats table
-        self.create_stats_table(workloads, offset)
+        offset += self.create_stats_table(workloads, offset)
+
+        # If there are more than 1 ES versions for big5, create tables comparing them
+        workload_str = "big5"
+        if workload_str in workloads and "ES" in workloads[workload_str] and len(workloads[workload_str]["ES"]) > 1:
+            logger.info(f"Comparing ES versions for {workload_str}")
+            offset += self.create_es_compare_tables(workload_str, workloads[workload_str], offset)
 
         # Format Summary sheet
         self.format()
