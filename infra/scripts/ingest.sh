@@ -49,6 +49,8 @@ if [[ $(echo "$response" | jq -r '.snapshots | length') -gt 0 ]] && [ -z "$FORCE
     exit 1
 fi
 
+EXCLUDE_TASKS="type:search,prod-queries,warmup-indices"
+
 # Ingest data in the cluster
 opensearch-benchmark execute-test \
     --pipeline=benchmark-only \
@@ -60,7 +62,7 @@ opensearch-benchmark execute-test \
     --results-file=$INGESTION_RESULTS \
     --test-execution-id=ingestion \
     --distribution-version=$DISTRIBUTION_VERSION \
-    --exclude-tasks="type:search" \
+    --exclude-tasks="$EXCLUDE_TASKS" \
     --user-tag="$USER_TAGS" \
     --telemetry="node-stats"
 
