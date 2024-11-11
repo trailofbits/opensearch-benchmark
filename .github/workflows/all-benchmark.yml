@@ -81,7 +81,7 @@ jobs:
       cluster_type: ${{ matrix.cluster_type}}
       workload: ${{ matrix.workload }}
       workload_params: ${{ matrix.workload_params }}
-      benchmark_type: ${{ inputs.BENCHMARK_TYPE || 'official' }}
+      benchmark_type: ${{ matrix.benchmark_type || 'official' }}
       perform_benchmark: true
       test_procedure: ${{ matrix.test_procedure }}
       es_version: ${{ inputs.es_version || '8.15.0' }}

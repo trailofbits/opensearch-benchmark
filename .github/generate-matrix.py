@@ -49,7 +49,7 @@ if "noaa" in workloads:
         }
     ] + includes
 
-if "vectorsearch" in workloads:
+if "vectorsearch-faiss" in workloads or "vectorsearch" in workloads:
     params = {
         "target_index_name": "target_index",
         "target_field_name": "target_field",
@@ -80,8 +80,48 @@ if "vectorsearch" in workloads:
     }
     includes = [
         {
+            "name": "vectorsearch-faiss",
             "workload": "vectorsearch",
             "workload_params": str(json.dumps(params)),
+            "benchmark_type": "dev",
+        }
+    ] + includes
+
+if "vectorsearch-lucene" in workloads or "vectorsearch" in workloads:
+    params = {
+        "target_index_name": "target_index",
+        "target_field_name": "target_field",
+        "target_index_body": "indices/lucene-index.json",
+        "target_index_primary_shards": 3,
+        "target_index_dimension": 768,
+        "target_index_space_type": "innerproduct",
+
+        "target_index_bulk_size": 100,
+        "target_index_bulk_index_data_set_format": "hdf5",
+        "target_index_bulk_index_data_set_corpus": "cohere-1m",
+        "target_index_bulk_indexing_clients": 10,
+
+        "target_index_max_num_segments": 1,
+        "hnsw_ef_search": 256,
+        "hnsw_ef_construction": 256,
+
+        "query_k": 100,
+        "query_body": {
+            "docvalue_fields" : ["_id"],
+            "stored_fields" : "_none_"
+        },
+
+        "query_data_set_format": "hdf5",
+        "query_data_set_corpus": "cohere-1m",
+        "query_count": 10000
+        # TODO support user-specified workload params
+    }
+    includes = [
+        {
+            "name": "vectorsearch-lucene",
+            "workload": "vectorsearch",
+            "workload_params": str(json.dumps(params)),
+            "benchmark_type": "dev",
         }
     ] + includes
 
