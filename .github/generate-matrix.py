@@ -49,6 +49,7 @@ DEFAULT_WORKLOAD_PARAMS = {
     },
 }
 
+
 def get_available_cluster_types(cluster_types: list[str]) -> list[str]:
     """Get the cluster types"""
     return [
@@ -56,6 +57,12 @@ def get_available_cluster_types(cluster_types: list[str]) -> list[str]:
         for cluster_type in ["OpenSearch", "ElasticSearch"]
         if cluster_type.lower() in cluster_types
     ]
+
+
+def add_includes(includes: list[dict], cluster_types: list[str], include: dict) -> None:
+    """Add includes"""
+    for cluster_type in get_available_cluster_types(cluster_types):
+        includes.insert(0, {**include, "cluster_type": cluster_type})
 
 
 def main() -> None:
@@ -77,19 +84,17 @@ def main() -> None:
     includes = []
 
     # Setup the right cluster types
-    for cluster_type in get_available_cluster_types(cluster_types):
-        includes.insert(0, {"cluster_type": cluster_type})
+    add_includes(includes, cluster_types, {})
 
     # Associate a name with the workload
     for workload in workloads:
         if workload.startswith("vectorsearch"):
             continue
 
-        for cluster_type in get_available_cluster_types(cluster_types):
-            includes.insert(0, {"name": workload, "workload": workload, "cluster_type": cluster_type})
+        add_includes(includes, cluster_types, {"name": workload, "workload": workload})
 
     # Default to the input benchmark type
-    includes.insert(0, {"benchmark_type": benchmark_type})
+    add_includes(includes, cluster_types, {"benchmark_type": benchmark_type})
 
     # big5 requires extra workload params
     if "big5" in workloads:
@@ -97,13 +102,17 @@ def main() -> None:
             **DEFAULT_WORKLOAD_PARAMS.get("big5", {}),
             **workload_params,
         }
-        includes.insert(
-            0, {"workload": "big5", "workload_params": str(json.dumps(params))}
+        add_includes(
+            includes,
+            cluster_types,
+            {"workload": "big5", "workload_params": str(json.dumps(params))},
         )
 
     # noaa requires a specific test procedure
     if "noaa" in workloads:
-        includes.insert(0, {"workload": "noaa", "test_procedure": "aggs"})
+        add_includes(
+            includes, cluster_types, {"workload": "noaa", "test_procedure": "aggs"}
+        )
 
     # vectorsearch requires specific workload params
     if "vectorsearch-faiss" in workloads or "vectorsearch" in workloads:
@@ -119,8 +128,9 @@ def main() -> None:
         )
     if "vectorsearch-lucene" in workloads or "vectorsearch" in workloads:
         params = DEFAULT_WORKLOAD_PARAMS.get("vectorsearch-lucene", {})
-        includes.insert(
-            0,
+        add_includes(
+            includes,
+            cluster_types,
             {
                 "name": "vectorsearch-lucene",
                 "workload": "vectorsearch",
@@ -129,7 +139,9 @@ def main() -> None:
             },
         )
 
-    includes.insert(0, {"workload_params": str(json.dumps(workload_params))})
+    add_includes(
+        includes, cluster_types, {"workload_params": str(json.dumps(workload_params))}
+    )
 
     output = {
         "cluster_type": cluster_types,
@@ -140,16 +152,7 @@ def main() -> None:
             {
                 "name": "exclude",
             },
-            {
-                "name": "",
-            },
-            {
-                "cluster_type": "",
-            },
-            {
-                "workload": "",
-            },
-        ]
+        ],
     }
     print(json.dumps(output))
 
