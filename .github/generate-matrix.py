@@ -124,8 +124,13 @@ def main() -> None:
     output = {
         "cluster_type": cluster_types,
         "workload": workloads,
-        "name": [""],
+        "name": ["exclude"],
         "include": includes,
+        "exclude": [
+            {
+                "name": "exclude",
+            }
+        ]
     }
     print(json.dumps(output))
 
