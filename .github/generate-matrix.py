@@ -55,7 +55,7 @@ def get_available_cluster_types(cluster_types: list[str]) -> list[str]:
     return [
         cluster_type
         for cluster_type in ["OpenSearch", "ElasticSearch"]
-        if cluster_type.lower() in cluster_types
+        if cluster_type.lower() in (x.lower() for x in cluster_types)
     ]
 
 
@@ -117,8 +117,8 @@ def main() -> None:
     # vectorsearch requires specific workload params
     if "vectorsearch-faiss" in workloads or "vectorsearch" in workloads:
         params = DEFAULT_WORKLOAD_PARAMS.get("vectorsearch-faiss", {})
-        includes.insert(
-            0,
+        add_includes(
+            includes, cluster_types,
             {
                 "name": "vectorsearch-faiss",
                 "workload": "vectorsearch",
@@ -129,8 +129,7 @@ def main() -> None:
     if "vectorsearch-lucene" in workloads or "vectorsearch" in workloads:
         params = DEFAULT_WORKLOAD_PARAMS.get("vectorsearch-lucene", {})
         add_includes(
-            includes,
-            cluster_types,
+            includes, cluster_types,
             {
                 "name": "vectorsearch-lucene",
                 "workload": "vectorsearch",
