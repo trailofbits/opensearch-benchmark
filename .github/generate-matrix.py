@@ -124,6 +124,7 @@ def main() -> None:
     output = {
         "cluster_type": cluster_types,
         "workload": workloads,
+        "name": [],
         "include": includes,
     }
     print(json.dumps(output))
