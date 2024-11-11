@@ -3,6 +3,11 @@
 import json
 import sys
 
+WORKLOAD_NAME_MAP = {
+    "vectorsearch-faiss": "vectorsearch",
+    "vectorsearch-lucene": "vectorsearch",
+}
+
 DEFAULT_WORKLOAD_PARAMS = {
     "big5": {
         "max_num_segments": 10,
@@ -87,16 +92,18 @@ def main() -> None:
     if "vectorsearch" in workloads:
         workloads = [x for x in workloads if x != "vectorsearch"] + ["vectorsearch-faiss", "vectorsearch-lucene"]
 
-    for workload in workloads:
+    for workload_name in workloads:
         for cluster_type in get_available_cluster_types(cluster_types):
             # vectorsearch workload requires completely different workload params
-            params = {} if workload.startswith("vectorsearch") else workload_params
-            params.update(DEFAULT_WORKLOAD_PARAMS.get(workload, {}))
+            params = {} if workload_name.startswith("vectorsearch") else workload_params
+            params.update(DEFAULT_WORKLOAD_PARAMS.get(workload_name, {}))
 
-            extra_params = DEFAULT_EXTRA_PARAMS.get(workload, {})
-            workflow_benchmark_type = "dev" if workload.startswith("vectorsearch") else benchmark_type
+            extra_params = DEFAULT_EXTRA_PARAMS.get(workload_name, {})
+            workflow_benchmark_type = "dev" if workload_name.startswith("vectorsearch") else benchmark_type
 
+            workload = WORKLOAD_NAME_MAP.get(workload_name, workload_name)
             includes.insert(0, {
+                "name": workload_name,
                 "workload": workload,
                 "workload_params": str(json.dumps(params)),
                 "benchmark_type": workflow_benchmark_type,
