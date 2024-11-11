@@ -79,6 +79,7 @@ jobs:
 
     uses: ./.github/workflows/benchmark.yml
     with:
+      name: ${{ matrix.name }}
       cluster_type: ${{ matrix.cluster_type}}
       workload: ${{ matrix.workload }}
       workload_params: ${{ matrix.workload_params }}

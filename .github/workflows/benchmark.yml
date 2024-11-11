@@ -4,6 +4,10 @@ name: OSB-Benchmark
 on:
   workflow_call:
     inputs:
+      name:
+        description: 'Name of the workflow to run'
+        required: true
+        type: string
       workload:
         description: 'Workload to run'
         required: true
