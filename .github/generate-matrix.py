@@ -75,8 +75,12 @@ def main() -> None:
 
     # Associate a name with the workload
     for workload in workloads:
-        if not workload.startswith("vectorsearch"):
-            includes.insert(0, {"name": workload, "workload": workload})
+        if workload.startswith("vectorsearch"):
+            continue
+
+        for cluster_type in ["OpenSearch", "ElasticSearch"]:
+            if cluster_type.lower() in cluster_types:
+                includes.insert(0, {"name": workload, "workload": workload, "cluster_type": cluster_type})
 
     # Default to the input benchmark type
     includes.insert(0, {"benchmark_type": benchmark_type})
