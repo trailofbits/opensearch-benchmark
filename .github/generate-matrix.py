@@ -49,6 +49,12 @@ DEFAULT_WORKLOAD_PARAMS = {
     },
 }
 
+DEFAULT_EXTRA_PARAMS = {
+    "noaa": {
+        "test_procedure": "aggs",
+    }
+}
+
 
 def get_available_cluster_types(cluster_types: list[str]) -> list[str]:
     """Get the cluster types"""
@@ -57,12 +63,6 @@ def get_available_cluster_types(cluster_types: list[str]) -> list[str]:
         for cluster_type in ["OpenSearch", "ElasticSearch"]
         if cluster_type.lower() in (x.lower() for x in cluster_types)
     ]
-
-
-def add_includes(includes: list[dict], cluster_types: list[str], include: dict) -> None:
-    """Add includes"""
-    for cluster_type in get_available_cluster_types(cluster_types):
-        includes.insert(0, {**include, "cluster_type": cluster_type})
 
 
 def main() -> None:
@@ -83,75 +83,29 @@ def main() -> None:
 
     includes = []
 
-    # Setup the right cluster types
-    add_includes(includes, cluster_types, {})
+    # vectorsearch refers to both vectorsearch-faiss and vectorsearch-lucene
+    if "vectorsearch" in workloads:
+        workloads = [x for x in workloads if x != "vectorsearch"] + ["vectorsearch-faiss", "vectorsearch-lucene"]
 
-    # Associate a name with the workload
     for workload in workloads:
-        if workload.startswith("vectorsearch"):
-            continue
+        for cluster_type in get_available_cluster_types(cluster_types):
+            # vectorsearch workload requires completely different workload params
+            params = {} if workload.startswith("vectorsearch") else workload_params
+            params.update(DEFAULT_WORKLOAD_PARAMS.get(workload, {}))
 
-        add_includes(includes, cluster_types, {"name": workload, "workload": workload})
+            extra_params = DEFAULT_EXTRA_PARAMS.get(workload, {})
+            workflow_benchmark_type = "dev" if workload.startswith("vectorsearch") else benchmark_type
 
-    # Default to the input benchmark type
-    add_includes(includes, cluster_types, {"benchmark_type": benchmark_type})
-
-    # big5 requires extra workload params
-    if "big5" in workloads:
-        params = {
-            **DEFAULT_WORKLOAD_PARAMS.get("big5", {}),
-            **workload_params,
-        }
-        add_includes(
-            includes,
-            cluster_types,
-            {"workload": "big5", "workload_params": str(json.dumps(params))},
-        )
-
-    # noaa requires a specific test procedure
-    if "noaa" in workloads:
-        add_includes(
-            includes, cluster_types, {"workload": "noaa", "test_procedure": "aggs"}
-        )
-
-    # vectorsearch requires specific workload params
-    if "vectorsearch-faiss" in workloads or "vectorsearch" in workloads:
-        params = DEFAULT_WORKLOAD_PARAMS.get("vectorsearch-faiss", {})
-        add_includes(
-            includes, cluster_types,
-            {
-                "name": "vectorsearch-faiss",
-                "workload": "vectorsearch",
+            includes.insert(0, {
+                "workload": workload,
                 "workload_params": str(json.dumps(params)),
-                "benchmark_type": "dev",
-            },
-        )
-    if "vectorsearch-lucene" in workloads or "vectorsearch" in workloads:
-        params = DEFAULT_WORKLOAD_PARAMS.get("vectorsearch-lucene", {})
-        add_includes(
-            includes, cluster_types,
-            {
-                "name": "vectorsearch-lucene",
-                "workload": "vectorsearch",
-                "workload_params": str(json.dumps(params)),
-                "benchmark_type": "dev",
-            },
-        )
-
-    add_includes(
-        includes, cluster_types, {"workload_params": str(json.dumps(workload_params))}
-    )
+                "benchmark_type": workflow_benchmark_type,
+                "cluster_type": cluster_type,
+                **extra_params,
+            })
 
     output = {
-        "cluster_type": cluster_types,
-        "workload": workloads,
-        "name": ["exclude"],
         "include": includes,
-        "exclude": [
-            {
-                "name": "exclude",
-            },
-        ],
     }
     print(json.dumps(output))
 
