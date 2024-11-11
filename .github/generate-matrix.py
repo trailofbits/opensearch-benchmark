@@ -104,10 +104,10 @@ def main() -> None:
             workload = WORKLOAD_NAME_MAP.get(workload_name, workload_name)
             includes.insert(0, {
                 "name": workload_name,
+                "cluster_type": cluster_type,
                 "workload": workload,
                 "workload_params": str(json.dumps(params)),
                 "benchmark_type": workflow_benchmark_type,
-                "cluster_type": cluster_type,
                 **extra_params,
             })
 
