@@ -49,6 +49,14 @@ DEFAULT_WORKLOAD_PARAMS = {
     },
 }
 
+def get_available_cluster_types(cluster_types: list[str]) -> list[str]:
+    """Get the cluster types"""
+    return [
+        cluster_type
+        for cluster_type in ["OpenSearch", "ElasticSearch"]
+        if cluster_type.lower() in cluster_types
+    ]
+
 
 def main() -> None:
     workloads = [x.lower() for x in sys.argv[1].split(",")]
@@ -69,18 +77,16 @@ def main() -> None:
     includes = []
 
     # Setup the right cluster types
-    for cluster_type in ["OpenSearch", "ElasticSearch"]:
-        if cluster_type.lower() in cluster_types:
-            includes.insert(0, {"cluster_type": cluster_type})
+    for cluster_type in get_available_cluster_types(cluster_types):
+        includes.insert(0, {"cluster_type": cluster_type})
 
     # Associate a name with the workload
     for workload in workloads:
         if workload.startswith("vectorsearch"):
             continue
 
-        for cluster_type in ["OpenSearch", "ElasticSearch"]:
-            if cluster_type.lower() in cluster_types:
-                includes.insert(0, {"name": workload, "workload": workload, "cluster_type": cluster_type})
+        for cluster_type in get_available_cluster_types(cluster_types):
+            includes.insert(0, {"name": workload, "workload": workload, "cluster_type": cluster_type})
 
     # Default to the input benchmark type
     includes.insert(0, {"benchmark_type": benchmark_type})
@@ -133,7 +139,16 @@ def main() -> None:
         "exclude": [
             {
                 "name": "exclude",
-            }
+            },
+            {
+                "name": "",
+            },
+            {
+                "cluster_type": "",
+            },
+            {
+                "workload": "",
+            },
         ]
     }
     print(json.dumps(output))
