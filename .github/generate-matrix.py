@@ -90,26 +90,41 @@ def main() -> None:
 
     # vectorsearch refers to both vectorsearch-faiss and vectorsearch-lucene
     if "vectorsearch" in workloads:
-        workloads = [x for x in workloads if x != "vectorsearch"] + ["vectorsearch-faiss", "vectorsearch-lucene"]
+        workloads = [x for x in workloads if x != "vectorsearch"] + [
+            "vectorsearch-faiss",
+            "vectorsearch-lucene",
+        ]
 
     for workload_name in workloads:
         for cluster_type in get_available_cluster_types(cluster_types):
+            if (
+                workload_name.startswith("vectorsearch")
+                and cluster_type == "ElasticSearch"
+            ):
+                # Skip vectorsearch workloads on ElasticSearch for now because
+                # they don't work
+                continue
+
             # vectorsearch workload requires completely different workload params
             params = {} if workload_name.startswith("vectorsearch") else workload_params
             params.update(DEFAULT_WORKLOAD_PARAMS.get(workload_name, {}))
 
             extra_params = DEFAULT_EXTRA_PARAMS.get(workload_name, {})
-            workflow_benchmark_type = "dev" if workload_name.startswith("vectorsearch") else benchmark_type
+            workflow_benchmark_type = (
+                "dev" if workload_name.startswith("vectorsearch") else benchmark_type
+            )
 
             workload = WORKLOAD_NAME_MAP.get(workload_name, workload_name)
-            includes.insert(0, {
-                "name": workload_name,
-                "cluster_type": cluster_type,
-                "workload": workload,
-                "workload_params": str(json.dumps(params)),
-                "benchmark_type": workflow_benchmark_type,
-                **extra_params,
-            })
+            includes.append(
+                {
+                    "name": workload_name,
+                    "cluster_type": cluster_type,
+                    "workload": workload,
+                    "workload_params": str(json.dumps(params)),
+                    "benchmark_type": workflow_benchmark_type,
+                    **extra_params,
+                }
+            )
 
     output = {
         "include": includes,
