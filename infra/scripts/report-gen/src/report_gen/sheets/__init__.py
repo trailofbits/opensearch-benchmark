@@ -69,14 +69,8 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
     return spreadsheet_id
 
 
-def _resize_sheet(service: Resource, spreadsheet_id: str, sheet_name: str, width: int, height: int) -> None:
+def _resize_sheet(service: Resource, spreadsheet_id: str, sheet_id: int, width: int, height: int) -> None:
     """Resize the given sheet."""
-    sheet_id = get_sheet_id(service, spreadsheet_id, sheet_name)
-
-    if sheet_id is None:
-        logger.error(f"Failed to locate the sheet named '{sheet_name}'. Formatting has failed")
-        return
-
     body: dict = {
         "requests": [
             {
@@ -108,7 +102,11 @@ def _create_blank_spreadsheet(service: Resource, title: str, sheet_name: str, wi
     spreadsheet: dict = service.spreadsheets().create(body=request_properties, fields="spreadsheetId").execute()
 
     spreadsheet_id: str = cast(str, spreadsheet.get("spreadsheetId"))
-    _resize_sheet(service, spreadsheet_id, sheet_name, width, height)
+    sheet_id, _ = get_sheet_id(service, spreadsheet_id, sheet_name)
+    if sheet_id is None:
+        logger.error(f"Failed to locate the sheet named '{sheet_name}'. Formatting has failed")
+        return None
+    _resize_sheet(service, spreadsheet_id, sheet_id, width, height)
 
     return spreadsheet_id
 
@@ -167,7 +165,11 @@ def _create_spreadsheet(service: Resource, title: str) -> str | None:
     # Add the categories now so that we can query the row count when generating the
     # VLOOKUP formula for the category column
     _add_categories_sheet(service, spreadsheet_id)
-    adjust_sheet_columns(service, spreadsheet_id, "Categories")
+    sheet_id, sheet = get_sheet_id(service, spreadsheet_id, "Categories")
+    if sheet_id is None:
+        logger.error("Failed to locate the sheet named 'Categories'. Formatting has failed")
+        return None
+    adjust_sheet_columns(service, spreadsheet_id, sheet_id, sheet)
 
     # Create a new sheet for all benchmark data
     _add_sheet(service, spreadsheet_id, "raw")
