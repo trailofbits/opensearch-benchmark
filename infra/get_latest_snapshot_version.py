@@ -41,8 +41,8 @@ except subprocess.CalledProcessError as e:
             f"s3://{input_map['s3_bucket_name']}/",
         ]
         try:
-            subprocess.check_output(cmd, universal_newlines=True)
             ignore_error = True
+            subprocess.check_output(cmd, universal_newlines=True)
         except subprocess.CalledProcessError as e:
             pass
 

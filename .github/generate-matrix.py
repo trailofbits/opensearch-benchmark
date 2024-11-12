@@ -4,7 +4,7 @@ import json
 import sys
 
 workloads = [x.lower() for x in sys.argv[1].split(',')]
-workload_params = sys.argv[2]
+workload_params = json.loads(sys.argv[2])
 cluster_types = sys.argv[3].split(',')
 
 if not all(x in ["OpenSearch", "ElasticSearch"] for x in cluster_types):
@@ -29,10 +29,14 @@ if "ElasticSearch" in cluster_types:
 
 # big5 requires extra workload params
 if "big5" in workloads:
+    params = {
+        "max_num_segments": 10,
+        **workload_params,
+    }
     includes = [
         {
             "workload": "big5",
-            "workload_params": "max_num_segments:10," + workload_params
+            "workload_params": str(json.dumps(params)),
         }
     ] + includes
 
@@ -45,9 +49,47 @@ if "noaa" in workloads:
         }
     ] + includes
 
+if "vectorsearch" in workloads:
+    params = {
+        "target_index_name": "target_index",
+        "target_field_name": "target_field",
+        "target_index_body": "indices/faiss-index.json",
+        "target_index_primary_shards": 3,
+        "target_index_dimension": 768,
+        "target_index_space_type": "innerproduct",
+
+        "target_index_bulk_size": 100,
+        "target_index_bulk_index_data_set_format": "hdf5",
+        "target_index_bulk_index_data_set_corpus": "cohere-1m",
+        "target_index_bulk_indexing_clients": 1,
+
+        "target_index_max_num_segments": 10,
+        "hnsw_ef_search": 256,
+        "hnsw_ef_construction": 256,
+
+        "query_k": 100,
+        "query_body": {
+            "docvalue_fields" : ["_id"],
+            "stored_fields" : "_none_"
+        },
+
+        "query_data_set_format": "hdf5",
+        "query_data_set_corpus": "cohere-1m",
+        "query_count": 10000,
+
+        "target_throughput": 0,
+        # TODO support user-specified workload params
+    }
+    includes = [
+        {
+            "workload": "vectorsearch",
+            "workload_params": str(json.dumps(params)),
+        }
+    ] + includes
+
 includes = [
     {
-      "workload_params": workload_params
+      "workload_params": str(json.dumps(workload_params))
     }
 ] + includes
 

@@ -8,6 +8,7 @@ get_doc_count() {
     doc_counts["nyc_taxis"]=165346691 # NOTE: should be 165346692 but there's an issue with one document
     doc_counts["pmc"]=574199
     doc_counts["noaa"]=33659481
+    doc_counts["vectorsearch"]=1000000
 
     # Check if the workload exists in the associative array
     if [[ -v "doc_counts[$workload]" ]]; then
@@ -25,6 +26,7 @@ get_shards_count() {
     declare -A shards_count
     shards_count["big5"]=1
     shards_count["pmc"]=5
+    shards_count["vectorsearch"]=3
 
     # Check if the workload exists in the associative array
     if [[ -v "shards_count[$workload]" ]]; then
@@ -106,12 +108,8 @@ snapshot_name() {
     workload_name=$1
     workload_params=$2
 
-    # Sort the params alphabetically
-    sorted_params=$(IFS=,; echo "$workload_params" | tr ',' '\n' | sort | tr '\n' ',')
-    # Remove the last ','
-    sorted_params=${sorted_params%,}
     # Join the workload name and sorted params with `;` and md5sum it (return only the hash)
-    echo "$workload_name;$sorted_params" | md5sum | cut -d' ' -f1
+    echo "$workload_name;$(jq -cS '.' "$workload_params")" | md5sum | cut -d' ' -f1
 }
 
 register_snapshot_repo() {
@@ -164,7 +162,7 @@ benchmark_single() {
         --results-file="$results_file" \
         --test-execution-id="$test_execution_id" \
         --test-procedure="$test_procedure" \
-        --distribution-version=$distribution_version \
+        --distribution-version="$distribution_version" \
         --user-tag="$user_tags" \
         --telemetry="node-stats"
 }

@@ -18,13 +18,10 @@ SNAPSHOT_VERSION="${snapshot_version}"
 # This comes from the user `terraform.tfvars` configuration file
 # shellcheck disable=SC2154
 WORKLOAD="$${WORKLOAD:-${workload}}"
+WORKLOAD_PARAMS=/mnt/workload_params.json
 
 # Based on the workload, we can figure out the index name. It is mostly the same, but somtimes not.
 INDEX_NAME=$(workload_index_name $WORKLOAD)
-
-# This comes from the user `terraform.tfvars` configuration file
-# shellcheck disable=SC2154
-WORKLOAD_PARAMS="$${WORKLOAD_PARAMS:-${workload_params}}"
 
 CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
 SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD" "$WORKLOAD_PARAMS")
