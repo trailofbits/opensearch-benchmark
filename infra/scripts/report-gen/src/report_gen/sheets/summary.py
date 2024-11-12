@@ -4,24 +4,30 @@ import logging
 from dataclasses import dataclass
 
 from googleapiclient.discovery import Resource
-from packaging.version import Version
 
 from .common import (
     adjust_sheet_columns,
+    column_add,
     convert_range_to_dict,
-    get_dark_green,
-    get_dark_red,
-    get_light_blue,
-    get_light_cyan,
-    get_light_green,
-    get_light_orange,
-    get_light_purple,
-    get_light_red,
-    get_light_yellow,
     get_sheet_id,
     get_workload_operation_categories,
     get_workload_operations,
-    sheet_add,
+    get_workloads,
+)
+from .format_color import (
+    format_color,
+    format_color_comparison,
+    get_light_blue,
+    get_light_cyan,
+    get_light_orange,
+    get_light_purple,
+    get_light_yellow,
+)
+from .format_font import (
+    format_font_bold,
+)
+from .format_merge import (
+    format_merge,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,158 +39,58 @@ class Summary:
 
     service: Resource
     spreadsheet_id: str
+    sheet_name: str = "Summary"
     sheet_id: int | None = None
+    sheet: dict | None = None
 
-    def format_numbers(self) -> dict:
-        """Format numbers."""
-        return {
-            "repeatCell": {
-                "range": {
-                    "sheetId": self.sheet_id,
-                },
-                "cell": {"userEnteredFormat": {"numberFormat": {"type": "NUMBER", "pattern": "#,##0.000"}}},
-                "fields": "userEnteredFormat.numberFormat",
-            }
-        }
+    def format_workload(self, ranges: list[str]) -> list[dict]:
+        """Format workload rows."""
+        # Get colors for coloring workloads
+        colors = [
+            get_light_orange(),
+            get_light_cyan(),
+            get_light_purple(),
+            get_light_yellow(),
+        ]
 
-    def format_comparison(self, range_str: str) -> None:
-        """Conditionally formats comparison (ES/OS)."""
-        range_dict = convert_range_to_dict(range_str)
-        range_dict["sheetId"] = self.sheet_id
-
+        # Format ranges with colors
         requests: list[dict] = []
-
-        # Value is less than 0.5
-        requests.append(
-            {
-                "addConditionalFormatRule": {
-                    "rule": {
-                        "ranges": [range_dict],
-                        "booleanRule": {
-                            "condition": {"type": "NUMBER_LESS", "values": [{"userEnteredValue": "0.5"}]},
-                            "format": {"backgroundColor": get_dark_red()},
-                        },
-                    },
-                    "index": 0,
-                }
-            }
-        )
-
-        # Value is between 0.5 and 1
-        requests.append(
-            {
-                "addConditionalFormatRule": {
-                    "rule": {
-                        "ranges": [range_dict],
-                        "booleanRule": {
-                            "condition": {
-                                "type": "NUMBER_BETWEEN",
-                                "values": [{"userEnteredValue": "0.5"}, {"userEnteredValue": "1"}],
-                            },
-                            "format": {"backgroundColor": get_light_red()},
-                        },
-                    },
-                    "index": 1,
-                }
-            }
-        )
-
-        # Value is between 1 and 2
-        requests.append(
-            {
-                "addConditionalFormatRule": {
-                    "rule": {
-                        "ranges": [range_dict],
-                        "booleanRule": {
-                            "condition": {
-                                "type": "NUMBER_BETWEEN",
-                                "values": [{"userEnteredValue": "1"}, {"userEnteredValue": "2"}],
-                            },
-                            "format": {"backgroundColor": get_light_green()},
-                        },
-                    },
-                    "index": 2,
-                }
-            }
-        )
-
-        # Value is greater than 2
-        requests.append(
-            {
-                "addConditionalFormatRule": {
-                    "rule": {
-                        "ranges": [range_dict],
-                        "booleanRule": {
-                            "condition": {"type": "NUMBER_GREATER", "values": [{"userEnteredValue": "2"}]},
-                            "format": {"backgroundColor": get_dark_green()},
-                        },
-                    },
-                    "index": 3,
-                }
-            }
-        )
-
-        body = {"requests": requests}
-        self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
-
-    def format_color(self, range_str: list[str], color: dict) -> None:
-        """Color range."""
-        requests: list[dict] = []
-        for r in range_str:
-            range_dict = convert_range_to_dict(r)
+        for e, range_str in enumerate(ranges):
+            range_dict = convert_range_to_dict(range_str)
             range_dict["sheetId"] = self.sheet_id
-            request = {
-                "repeatCell": {
-                    "range": range_dict,
-                    "cell": {
-                        "userEnteredFormat": {
-                            "backgroundColor": color,
-                        }
-                    },
-                    "fields": "userEnteredFormat(backgroundColor)",
-                }
-            }
-            requests.append(request)
+            color = colors[e % len(colors)]
+            requests.append(format_color(range_dict, color))
+        return requests
 
-        body = {"requests": requests}
-        self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
-
-    def format_merge(self, range_str: str) -> None:
-        """Merge range."""
-        range_dict = convert_range_to_dict(range_str)
-        range_dict["sheetId"] = self.sheet_id
-        requests = [{"mergeCells": {"range": range_dict, "mergeType": "MERGE_ALL"}}]
-
-        body = {"requests": requests}
-        self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
-
-    def format_bold(self, range_str: list[str]) -> None:
-        """Bold range."""
+    def format_headers(self, range_list: list[str]) -> list[dict]:
+        """Format header rows."""
         requests: list[dict] = []
-        for r in range_str:
-            range_dict = convert_range_to_dict(r)
+        for range_str in range_list:
+            range_dict = convert_range_to_dict(range_str)
             range_dict["sheetId"] = self.sheet_id
-            request = {
-                "repeatCell": {
-                    "range": range_dict,
-                    "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
-                    "fields": "userEnteredFormat.textFormat.bold",
-                }
-            }
-            requests.append(request)
+            requests.append(format_font_bold(range_dict))
+            requests.append(format_color(range_dict, get_light_blue()))
+        return requests
 
+    def format_headers_merge(self, range_list: list[str]) -> list[dict]:
+        """Format header rows."""
+        requests: list[dict] = []
+        for range_str in range_list:
+            range_dict = convert_range_to_dict(range_str)
+            range_dict["sheetId"] = self.sheet_id
+            requests.append(format_font_bold(range_dict))
+            requests.append(format_merge(range_dict))
+            requests.append(format_color(range_dict, get_light_blue()))
+        return requests
+
+    def format(self, requests: list[dict]) -> None:
+        """Format summary sheet."""
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
 
-    def format(self) -> None:
-        """Format Summary sheet."""
-        requests = []
-        requests.append(self.format_numbers())
-
-        body = {"requests": requests}
-        self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
-
-    def create_es_operation_compare_table(self, workload_str: str, workload: dict[str, list[str]], offset: int) -> int:
+    def create_es_operation_compare_table(
+        self, workload_str: str, workload: dict[str, list[str]], offset: int
+    ) -> tuple[int, list[dict]]:
         """Create a tables comparing ES versions operation speeds."""
         rows: list[list[str]] = []
         rows_added: int = 0
@@ -204,7 +110,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -225,7 +131,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -234,9 +140,9 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
         updated_range = result["updates"]["updatedRange"]
-        self.format_bold([updated_range])
-        self.format_merge(updated_range)
-        self.format_color([updated_range], get_light_blue())
+
+        # Format header
+        requests = self.format_headers_merge([updated_range])
 
         # Add data
         rows: list[list[str]] = []
@@ -266,7 +172,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -277,11 +183,15 @@ class Summary:
         updated_range = result["updates"]["updatedRange"]
 
         # Add formula
-        self.format_comparison(updated_range)
+        range_dict = convert_range_to_dict(updated_range)
+        range_dict["sheetId"] = self.sheet_id
+        requests.extend(format_color_comparison(range_dict))
 
-        return rows_added
+        return rows_added, requests
 
-    def create_es_task_compare_table(self, workload_str: str, workload: dict[str, list[str]], offset: int) -> int:
+    def create_es_task_compare_table(
+        self, workload_str: str, workload: dict[str, list[str]], offset: int
+    ) -> tuple[int, list[dict]]:
         """Create a tables comparing ES versions task speeds."""
         rows: list[list[str]] = []
         rows_added: int = 0
@@ -301,7 +211,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -322,7 +232,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -331,9 +241,9 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
         updated_range = result["updates"]["updatedRange"]
-        self.format_bold([updated_range])
-        self.format_merge(updated_range)
-        self.format_color([updated_range], get_light_blue())
+
+        # Format header
+        requests = self.format_headers_merge([updated_range])
 
         # Add data
         rows: list[list[str]] = []
@@ -376,7 +286,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -385,9 +295,11 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
 
-        return rows_added
+        return rows_added, requests
 
-    def create_es_category_compare_table(self, workload_str: str, workload: dict[str, list[str]], offset: int) -> int:
+    def create_es_category_compare_table(
+        self, workload_str: str, workload: dict[str, list[str]], offset: int
+    ) -> tuple[int, list[dict]]:
         """Create a tables comparing ES versions task categories."""
         rows: list[list[str]] = []
         rows_added: int = 0
@@ -407,7 +319,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -428,7 +340,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -437,9 +349,9 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
         updated_range = result["updates"]["updatedRange"]
-        self.format_bold([updated_range])
-        self.format_merge(updated_range)
-        self.format_color([updated_range], get_light_blue())
+
+        # Format header
+        requests = self.format_headers_merge([updated_range])
 
         # Add data
         rows: list[list[str]] = []
@@ -469,7 +381,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -478,17 +390,29 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
 
-        return rows_added
+        return rows_added, requests
 
-    def create_es_compare_tables(self, workload_str: str, workload: dict[str, list[str]], offset: int) -> int:
+    def create_es_compare_tables(
+        self, workload_str: str, workload: dict[str, list[str]], offset: int
+    ) -> tuple[int, list[dict]]:
         """Create a tables comparing ES versions."""
-        offset += self.create_es_category_compare_table(workload_str, workload, offset)
-        offset += self.create_es_task_compare_table(workload_str, workload, offset)
-        offset += self.create_es_operation_compare_table(workload_str, workload, offset)
+        requests: list[dict] = []
 
-        return offset
+        o, r = self.create_es_category_compare_table(workload_str, workload, offset)
+        offset += o
+        requests.extend(r)
 
-    def create_stats_table(self, workloads: dict[str, dict[str, list[str]]], offset: int) -> int:
+        o, r = self.create_es_task_compare_table(workload_str, workload, offset)
+        offset += o
+        requests.extend(r)
+
+        o, r = self.create_es_operation_compare_table(workload_str, workload, offset)
+        offset += o
+        requests.extend(r)
+
+        return offset, requests
+
+    def create_stats_table(self, workloads: dict[str, dict[str, list[str]]], offset: int) -> tuple[int, list[dict]]:
         """Create a table summarizing all statistics."""
         rows: list[list[str]] = []
         rows_added: int = 0
@@ -509,7 +433,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -530,7 +454,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -539,9 +463,9 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
         updated_range = result["updates"]["updatedRange"]
-        self.format_bold([updated_range])
-        self.format_merge(updated_range)
-        self.format_color([updated_range], get_light_blue())
+
+        # Format header
+        requests = self.format_headers_merge([updated_range])
 
         # Add data
         rows: list[list[str]] = []
@@ -579,7 +503,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -588,9 +512,11 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
 
-        return rows_added
+        return rows_added, requests
 
-    def create_all_categories_table(self, workloads: dict[str, dict[str, list[str]]], offset: int) -> int:
+    def create_all_categories_table(
+        self, workloads: dict[str, dict[str, list[str]]], offset: int
+    ) -> tuple[int, list[dict]]:
         """Create a table summarizing all categories."""
         rows: list[list[str]] = []
         rows_added: int = 0
@@ -620,7 +546,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -641,7 +567,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!A{offset}",
+                range=f"{self.sheet_name}!A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -650,9 +576,9 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
         updated_range = result["updates"]["updatedRange"]
-        self.format_bold([updated_range])
-        self.format_merge(updated_range)
-        self.format_color([updated_range], get_light_blue())
+
+        # Format header
+        requests = self.format_headers_merge([updated_range])
 
         # Add data
         rows: list[list[str]] = []
@@ -687,7 +613,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"Summary!$A{offset}",
+                range=f"{self.sheet_name}!$A{offset}",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -696,7 +622,7 @@ class Summary:
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
 
-        return rows_added
+        return rows_added, requests
 
     def create_summary_table(
         self, workload: str, os_version: str, es_version: str
@@ -785,14 +711,16 @@ class Summary:
 
         return rows, header_rows
 
-    def create_summary_tables(self, workload: str, engines: dict[str, list[str]], index: int) -> int:
+    def create_summary_tables(
+        self, workload: str, engines: dict[str, list[str]], offset: int
+    ) -> tuple[int, list[dict]]:
         """Create summary tables for each engine for this workload."""
         if "OS" not in engines:
             logging.error("Error, no OS engines found")
-            return index
+            return 0, []
         if "ES" not in engines:
             logging.error("Error, no ES engines found")
-            return index
+            return 0, []
 
         rows: list[list[str]] = []
 
@@ -808,11 +736,11 @@ class Summary:
 
             # Keep track of where headers are
             for h in header_rows:
-                end_cell = sheet_add(cell, 2)
-                header_ranges.append(f"Summary!{cell}{index+h}:{end_cell}{index+h}")
+                end_cell = column_add(cell, 2)
+                header_ranges.append(f"{self.sheet_name}!{cell}{offset+h}:{end_cell}{offset+h}")
 
             # Increment column
-            cell = sheet_add(cell, 4)
+            cell = column_add(cell, 4)
 
             # Append column
             if not rows:
@@ -827,15 +755,15 @@ class Summary:
         }
         self.service.spreadsheets().values().update(
             spreadsheetId=self.spreadsheet_id,
-            range=f"Summary!$I{index}",
+            range=f"{self.sheet_name}!$I{offset}",
             valueInputOption="USER_ENTERED",
             body=request_properties,
         ).execute()
 
-        self.format_bold(header_ranges)
-        self.format_color(header_ranges, get_light_blue())
+        # Format workload headers
+        requests = self.format_headers(header_ranges)
 
-        return index + len(rows)
+        return len(rows), requests
 
     def get_workload_engines(
         self, workload: str, engines: dict[str, list[str]], index: int
@@ -860,7 +788,7 @@ class Summary:
 
         return rows, index
 
-    def create_overview_table(self, workloads: dict[str, dict[str, list[str]]]) -> int:
+    def create_overview_table(self, workloads: dict[str, dict[str, list[str]]]) -> tuple[int, list[dict]]:
         """Create Overview table in Summary sheet."""
         rows: list[list[str]] = []
         rows_added: int = 0
@@ -876,7 +804,7 @@ class Summary:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range="Summary!A1",
+                range=f"{self.sheet_name}!A1",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -884,24 +812,16 @@ class Summary:
         )
         rows_added += result["updates"]["updatedRows"]
         updated_range = result["updates"]["updatedRange"]
-        self.format_bold([updated_range])
-        self.format_color([updated_range], get_light_blue())
 
-        colors = [
-            get_light_orange(),
-            get_light_cyan(),
-            get_light_purple(),
-            get_light_yellow(),
-        ]
+        # Format header cells
+        requests = self.format_headers([updated_range])
 
         index = 2
-
-        for e, (workload, engines) in enumerate(workloads.items()):
+        workload_ranges: list[str] = []
+        for workload, engines in workloads.items():
             rows = []
             row, index = self.get_workload_engines(workload, engines, index)
             rows.extend(row)
-
-            color = colors[e % len(colors)]
 
             # Add table to Result sheet
             request_properties = {
@@ -913,7 +833,7 @@ class Summary:
                 .values()
                 .append(
                     spreadsheetId=self.spreadsheet_id,
-                    range="Summary!A1",
+                    range=f"{self.sheet_name}!A1",
                     valueInputOption="USER_ENTERED",
                     body=request_properties,
                 )
@@ -921,72 +841,65 @@ class Summary:
             )
             rows_added += result["updates"]["updatedRows"]
             updated_range = result["updates"]["updatedRange"]
-            self.format_color([updated_range], color)
+            workload_ranges.append(updated_range)
 
-        return rows_added
+        # Format workload/engine cells
+        requests.extend(self.format_workload(workload_ranges))
 
-    def get_workloads(self) -> dict[str, dict[str, list[str]]]:
-        """Retrieve tuples of (engine,version,workload) for benchmarks in the spreadsheet."""
-        rv: dict[str, dict[str, list[str]]] = {}
-
-        result: dict = (
-            self.service.spreadsheets().values().get(spreadsheetId=self.spreadsheet_id, range="Results!A2:N").execute()
-        )
-        row_list: list[list[str]] = result.get("values", [])
-        for row in row_list:
-            workload, _, _, _, _, os_version, _, _, _, _, _, _, _, es_version = row
-            if workload not in rv:
-                rv[workload] = {}
-
-            if "OS" not in rv[workload]:
-                rv[workload]["OS"] = []
-            if os_version not in rv[workload]["OS"]:
-                rv[workload]["OS"].append(os_version)
-            rv[workload]["OS"].sort(key=Version)
-
-            if "ES" not in rv[workload]:
-                rv[workload]["ES"] = []
-            if es_version not in rv[workload]["ES"]:
-                rv[workload]["ES"].append(es_version)
-            rv[workload]["ES"].sort(key=Version)
-
-        return rv
+        return rows_added, requests
 
     def get(self) -> bool:
         """Process data in Results sheet to fill in Summary sheet."""
         # Get sheet ID for Results sheet
-        self.sheet_id = get_sheet_id(self.service, self.spreadsheet_id, "Summary")
+        self.sheet_id, self.sheet = get_sheet_id(self.service, self.spreadsheet_id, self.sheet_name)
+        if self.sheet_id is None:
+            return False
 
         # Retrieve workload to process and compare
-        workloads: dict[str, dict[str, list[str]]] = self.get_workloads()
+        workloads: dict[str, dict[str, list[str]]] = get_workloads(self.service, self.spreadsheet_id)
 
-        offset = 1
+        # Offset for keeping track of the number of rows we've filled in
+        # We start with 1 because there is no header row for this sheet
+        offset: int = 1
+
+        # Requests to call
+        requests: list[dict] = []
 
         # Create overview table
-        offset += self.create_overview_table(workloads)
+        o, r = self.create_overview_table(workloads)
+        offset += o
+        requests.extend(r)
 
         # For each workload, summarize results
-        index = 1
+        workload_offset = 1
         for workload, engines in workloads.items():
             logger.info(f"Summarizing {workload}")
-            index = self.create_summary_tables(workload, engines, index)
+            o, r = self.create_summary_tables(workload, engines, workload_offset)
+            workload_offset += o
+            requests.extend(r)
 
         # Create all categories table
-        offset += self.create_all_categories_table(workloads, offset)
+        o, r = self.create_all_categories_table(workloads, offset)
+        offset += o
+        requests.extend(r)
 
         # Create stats table
-        offset += self.create_stats_table(workloads, offset)
+        o, r = self.create_stats_table(workloads, offset)
+        offset += o
+        requests.extend(r)
 
         # If there are more than 1 ES versions for big5, create tables comparing them
         workload_str = "big5"
         if workload_str in workloads and "ES" in workloads[workload_str] and len(workloads[workload_str]["ES"]) > 1:
             logger.info(f"Comparing ES versions for {workload_str}")
-            offset += self.create_es_compare_tables(workload_str, workloads[workload_str], offset)
+            o, r = self.create_es_compare_tables(workload_str, workloads[workload_str], offset)
+            offset += o
+            requests.extend(r)
 
-        # Format Summary sheet
-        self.format()
+        # Format sheet
+        self.format(requests)
 
         # Adjust columns
-        adjust_sheet_columns(self.service, self.spreadsheet_id, "Summary")
+        adjust_sheet_columns(self.service, self.spreadsheet_id, self.sheet_id, self.sheet)
 
         return True
