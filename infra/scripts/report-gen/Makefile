@@ -68,7 +68,7 @@ reformat:
 .PHONY: test tests
 test tests: $(VENV)/pyvenv.cfg
 	. $(VENV_BIN)/activate && \
-		pytest --cov=$(PY_IMPORT) $(T) $(TEST_ARGS) && \
+		pytest -s --capture=tee-sys --log-cli-level=INFO --cov=$(PY_IMPORT) $(T) $(TEST_ARGS) && \
 		python -m coverage report -m $(COV_ARGS)
 
 .PHONY: doc

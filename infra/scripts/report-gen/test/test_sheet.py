@@ -1,4 +1,5 @@
 import csv
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +23,8 @@ def sheet_data() -> SheetData:
 
     pytest fixture with session scope allows common setup to be used in multiple tests.
     """
+    logging.basicConfig(level=logging.INFO)
+
     # Setup credentials
     credential_path_str = os.environ.get("GOOGLE_CRED")
     assert credential_path_str is not None, "Set GOOGLE_CRED to path to credentials.json to run tests"
