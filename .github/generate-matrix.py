@@ -106,7 +106,7 @@ def main() -> None:
                 continue
 
             # vectorsearch workload requires completely different workload params
-            params = {} if workload_name.startswith("vectorsearch") else workload_params
+            params = {} if workload_name.startswith("vectorsearch") else dict(workload_params)
             params.update(DEFAULT_WORKLOAD_PARAMS.get(workload_name, {}))
 
             extra_params = DEFAULT_EXTRA_PARAMS.get(workload_name, {})
