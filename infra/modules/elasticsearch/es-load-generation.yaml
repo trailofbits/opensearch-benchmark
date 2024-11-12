@@ -25,6 +25,12 @@ write_files:
       ${big5_es_index_8}
     owner: root:root
     permissions: '0644'
+  - path: /es_indexes/vectorsearch/es_index_8.json
+    encoding: gz+b64
+    content: |
+      ${vectorsearch_es_index_8}
+    owner: root:root
+    permissions: '0644'
   - path: /id_rsa
     encoding: gz+b64
     content: ${ssh_private_key}

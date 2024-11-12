@@ -61,18 +61,19 @@ resource "aws_instance" "load-generation" {
           aws_userid = replace(data.aws_caller_identity.current.arn, "/.+//", "")
         }
       ))),
-      es_cluster            = aws_instance.target-cluster.public_dns
-      es_password           = var.password,
-      distribution_version  = var.distribution_version,
-      es_version            = var.es_version,
-      workload              = var.workload
-      big5_es_index_8       = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.json"))),
-      benchmark_environment = var.benchmark_environment
-      datastore_host        = var.datastore_host
-      datastore_username    = var.datastore_username
-      datastore_password    = var.datastore_password
-      instance_type         = var.cluster_instance_type
-      cluster_instance_id   = aws_instance.target-cluster.id
+      es_cluster              = aws_instance.target-cluster.public_dns
+      es_password             = var.password,
+      distribution_version    = var.distribution_version,
+      es_version              = var.es_version,
+      workload                = var.workload
+      big5_es_index_8         = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.json"))),
+      vectorsearch_es_index_8 = yamlencode(base64gzip(file("${path.module}/es_indexes/vectorsearch/es_index_8.json"))),
+      benchmark_environment   = var.benchmark_environment
+      datastore_host          = var.datastore_host
+      datastore_username      = var.datastore_username
+      datastore_password      = var.datastore_password
+      instance_type           = var.cluster_instance_type
+      cluster_instance_id     = aws_instance.target-cluster.id
       fix_index_script = yamlencode(base64gzip(templatefile("${path.module}/fix_index.sh",
         {
           workload = var.workload,
