@@ -1,11 +1,46 @@
 import csv
 import os
+from dataclasses import dataclass
 from pathlib import Path
 
+import pytest
 from googleapiclient.discovery import Resource, build
 
 from report_gen.sheets import create_report
 from report_gen.sheets.auth import authenticate
+
+
+@dataclass
+class SheetData:
+    service: Resource
+    spreadsheet_id: str
+
+
+@pytest.fixture(scope="session")
+def sheet_data() -> SheetData:
+    """Authenticate sheets API and generate a spreadsheet.
+
+    pytest fixture with session scope allows common setup to be used in multiple tests.
+    """
+    # Setup credentials
+    credential_path_str = os.environ.get("GOOGLE_CRED")
+    assert credential_path_str is not None, "Set GOOGLE_CRED to path to credentials.json to run tests"
+    credential_path = Path(credential_path_str)
+    token_path = Path("token.json")
+    service = setup_api_access(credential_path, token_path)
+
+    # Generate a report to check
+    spreadsheet_id = create_report(
+        benchmark_data=Path("test/data/test_data"),
+        token_path=token_path,
+        credential_path=None,  # token should be valid because we authenticated in setup_api_access
+    )
+    assert spreadsheet_id is not None, "Failed to create spreadsheet"
+
+    return SheetData(service, spreadsheet_id)
+
+    # TODO: Change above return to yeld and then delete spreadsheet_id. #noqa: TD002, TD003, FIX002
+    # Requires new scope and google files API.
 
 
 def setup_api_access(credential_path: Path, token_path: Path) -> Resource:
@@ -16,23 +51,10 @@ def setup_api_access(credential_path: Path, token_path: Path) -> Resource:
     return service
 
 
-def read_result_sheet(service: Resource, spreadsheet_id: str) -> list[dict]:
-    result = (
-        service.spreadsheets()
-        .values()
-        .get(
-            spreadsheetId=spreadsheet_id,
-            range="Results!A1:T",
-        )
-        .execute()
-    )
-    values = result.get("values", [])
-    headers = values[0]
-    return [dict(zip(headers, row, strict=False)) for row in values[1:]]
+def test_results_sheet(sheet_data: SheetData) -> None:
+    """Check the results sheet.
 
 
-def check_results_sheet(service: Resource, spreadsheet_id: str) -> None:
-    """
     The results are put into a format that looks like:
     {
         # {Workload}-{Category}-{Operation}-{OS version}-{Es version}
@@ -46,6 +68,9 @@ def check_results_sheet(service: Resource, spreadsheet_id: str) -> None:
     The value is a dict of header names and the corresponding cell value.
     This allows rows to be compared even if the layout of the columns changes in the future.
     """
+    service = sheet_data.service
+    spreadsheet_id = sheet_data.spreadsheet_id
+
     # Use these to identify rows that should be compared
     key_rows = ["Workload", "Category", "Operation", "OS version", "ES version"]
 
@@ -72,12 +97,29 @@ def check_results_sheet(service: Resource, spreadsheet_id: str) -> None:
         assert expected_row == actual_row
 
 
-def check_summary_sheet(service: Resource, spreadsheet_id: str) -> None:
+def read_result_sheet(service: Resource, spreadsheet_id: str) -> list[dict]:
+    result = (
+        service.spreadsheets()
+        .values()
+        .get(
+            spreadsheetId=spreadsheet_id,
+            range="Results!A1:T",
+        )
+        .execute()
+    )
+    values = result.get("values", [])
+    headers = values[0]
+    return [dict(zip(headers, row, strict=False)) for row in values[1:]]
+
+
+def test_summary_sheet(sheet_data: SheetData) -> None:
     """Check the summary sheet.
 
     Note, because this sheet holds tables, it just checks the raw CSV.
     Any changes to the structure will cause the test to fail.
     """
+    service = sheet_data.service
+    spreadsheet_id = sheet_data.spreadsheet_id
 
     result = (
         service.spreadsheets()
@@ -117,26 +159,3 @@ def check_summary_sheet(service: Resource, spreadsheet_id: str) -> None:
                 if actual[y][x] != expected[y][x]:
                     msg += f"{sheet_col(x)}{y} - Expected {expected[y][x]}, got {actual[y][x]}\n"
         raise AssertionError(msg)
-
-
-def test_sheet() -> None:
-    # Setup credentials
-    credential_path_str = os.environ.get("GOOGLE_CRED")
-    assert credential_path_str is not None, "Set GOOGLE_CRED to path to credentials.json to run tests"
-    credential_path = Path(credential_path_str)
-    token_path = Path("token.json")
-    service = setup_api_access(credential_path, token_path)
-
-    # Generate a report to check
-    spreadsheet_id = create_report(
-        benchmark_data=Path("test/data/test_data"),
-        token_path=token_path,
-        credential_path=None,  # token should be valid because we authenticated in setup_api_access
-    )
-    assert spreadsheet_id is not None, "Failed to create spreadsheet"
-
-    check_results_sheet(service, spreadsheet_id)
-
-    check_summary_sheet(service, spreadsheet_id)
-
-    # TODO: delete spreadsheet_id. Requires new scope and google files API. #noqa: TD002, TD003, FIX002
