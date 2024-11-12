@@ -27,13 +27,13 @@ on:
         required: false
         type: boolean
         default: false
-      es_version:
-        description: 'Elasticsearch version'
+      es_versions:
+        description: 'Elasticsearch versions (comma separated)'
         required: false
         type: string
         default: 8.15.0
-      os_version:
-        description: 'OpenSearch version'
+      os_versions:
+        description: 'OpenSearch versions (comma separated)'
         required: false
         type: string
         default: 2.16.0
@@ -47,6 +47,8 @@ env:
   WORKLOADS: ${{ inputs.workloads }}
   WORKLOAD_PARAMS: ${{ inputs.workload_params }}
   CLUSTER_TYPES: ${{ inputs.cluster_types }}
+  OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.18.0' }}
+  ES_VERSIONS: ${{ inputs.es_versions || '8.15.0' }}
 
 jobs:
   generate-matrix:
@@ -57,13 +59,15 @@ jobs:
       - uses: actions/checkout@v4
       - id: set-matrix
         run: |
-          res=$(python3 .github/generate-matrix.py "$WORKLOADS" "$WORKLOAD_PARAMS" "$CLUSTER_TYPES" dev)
+          res=$(python3 .github/generate-matrix.py "$WORKLOADS" "$WORKLOAD_PARAMS" "$CLUSTER_TYPES" "$OS_VERSIONS" "$ES_VERSIONS" dev)
           echo "matrix=$res" >> $GITHUB_OUTPUT
           echo "$res"
         env:
           WORKLOADS: ${{ env.WORKLOADS }}
           WORKLOAD_PARAMS: ${{ env.WORKLOAD_PARAMS }}
           CLUSTER_TYPES: ${{ env.CLUSTER_TYPES }}
+          OS_VERSIONS: ${{ env.OS_VERSIONS }}
+          ES_VERSIONS: ${{ env.ES_VERSIONS }}
 
   ingest-workload:
     needs: generate-matrix
@@ -81,8 +85,8 @@ jobs:
       perform_benchmark: false
       create_snapshot: true
       force_snapshot: ${{ inputs.force_snapshot }}
-      es_version: ${{ inputs.es_version }}
-      os_version: ${{ inputs.os_version }}
+      es_version: ${{ matrix.es_version }}
+      os_version: ${{ matrix.os_version }}
       aws_region: ${{ inputs.aws_region || 'ca-central-1' }}
       # assumes the only possible event is workflow_dispatch
       ci_tag: 'manual'
