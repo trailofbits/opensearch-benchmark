@@ -8,10 +8,19 @@ WORKLOAD_NAME_MAP = {
     "vectorsearch-lucene": "vectorsearch",
 }
 
-DEFAULT_WORKLOAD_PARAMS = {
+DEFAULT_EXTRA_WORKLOAD_PARAMS = {
     "big5": {
         "max_num_segments": 10,
     },
+}
+
+DEFAULT_EXTRA_PARAMS = {
+    "noaa": {
+        "test_procedure": "aggs",
+    }
+}
+
+DEFAULT_OS_VECTORSEARCH_WORKLOAD_PARAMS = {
     "vectorsearch-faiss": {
         "target_index_name": "target_index",
         "target_field_name": "target_field",
@@ -54,10 +63,28 @@ DEFAULT_WORKLOAD_PARAMS = {
     },
 }
 
-DEFAULT_EXTRA_PARAMS = {
-    "noaa": {
-        "test_procedure": "aggs",
-    }
+# TODO support hnsw_ef_search as num_candidates
+# TODO decide whether to pass "docvalue_fields" : ["_id"],
+DEFAULT_ES_VECTORSEARCH_WORKLOAD_PARAMS = {
+    "vectorsearch-lucene": {
+        "target_index_name": "target_index",
+        "target_field_name": "target_field",
+        "target_index_body": "index.json",
+        "target_index_primary_shards": 3,
+        "target_index_dimension": 768,
+        "target_index_space_type": "max_inner_product",
+        "target_index_bulk_size": 100,
+        "target_index_bulk_index_data_set_format": "hdf5",
+        "target_index_bulk_index_data_set_corpus": "cohere-1m",
+        "target_index_bulk_indexing_clients": 10,
+        "target_index_max_num_segments": 1,
+        "hnsw_ef_construction": 256,
+        "query_k": 100,
+        "query_body": {"stored_fields": "_none_"},
+        "query_data_set_format": "hdf5",
+        "query_data_set_corpus": "cohere-1m",
+        "query_count": 10000,
+    },
 }
 
 
@@ -97,17 +124,18 @@ def main() -> None:
 
     for workload_name in workloads:
         for cluster_type in get_available_cluster_types(cluster_types):
-            if (
-                workload_name.startswith("vectorsearch")
-                and cluster_type == "ElasticSearch"
-            ):
-                # Skip vectorsearch workloads on ElasticSearch for now because
-                # they don't work
-                continue
+            params = dict(workload_params)
+            # vectorsearch workloads require entirely different parameters
+            if workload_name.startswith("vectorsearch"):
+                if cluster_type == "ElasticSearch":
+                    if workload_name not in DEFAULT_ES_VECTORSEARCH_WORKLOAD_PARAMS:
+                        # ElasticSearch does not support all engines
+                        continue
+                    params = DEFAULT_ES_VECTORSEARCH_WORKLOAD_PARAMS[workload_name]
+                else:
+                    params = DEFAULT_OS_VECTORSEARCH_WORKLOAD_PARAMS.get(workload_name, {})
 
-            # vectorsearch workload requires completely different workload params
-            params = {} if workload_name.startswith("vectorsearch") else dict(workload_params)
-            params.update(DEFAULT_WORKLOAD_PARAMS.get(workload_name, {}))
+            params.update(DEFAULT_EXTRA_WORKLOAD_PARAMS.get(workload_name))
 
             extra_params = DEFAULT_EXTRA_PARAMS.get(workload_name, {})
             workflow_benchmark_type = (

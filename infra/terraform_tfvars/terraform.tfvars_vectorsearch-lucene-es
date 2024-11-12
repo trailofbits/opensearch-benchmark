@@ -33,9 +33,7 @@ workload_params = <<EOF
 
     "query_k": 100,
     "query_body": {
-         "docvalue_fields" : ["_id"],
-         "stored_fields" : "_none_",
-         "num_candidates": 256
+         "stored_fields" : "_none_"
     },
 
     "query_data_set_format": "hdf5",
