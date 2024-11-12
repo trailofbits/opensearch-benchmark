@@ -1,31 +1,31 @@
 Engine,Version,Workload,Number of Tests,,,,,nyc_taxis,ES v8.15.0,
-OS,2.16.0,nyc_taxis,4.000,,,,,Total Tasks,7.000,
-ES,8.15.0,nyc_taxis,4.000,,,,,Tasks faster than ES,4.000,
-OS,2.16.0,big5,4.000,,,,,Fast Outliers (> 2),3.000,
-ES,8.15.0,big5,4.000,,,,,Slow Outliers (< 0.5),2.000,
-OS,2.16.0,pmc,4.000,,,,,,,
-ES,8.15.0,pmc,4.000,,,,,,Categories: OS v2.16.0 is Faster,
-OS,2.16.0,noaa,4.000,,,,,Category,Count,Total
-ES,8.15.0,noaa,4.000,,,,,Aggregation,2.000,3.000
-,,,,,,,,General Operations,0.000,1.000
-All Categories: OS v2.16.0 is Faster than ES v8.15.0,,,,,,,,Range Queries,0.000,1.000
-Category,Count,Total,Percentage (%),,,,,Sorting,2.000,2.000
-Aggregation,3.000,5.000,60.000,,,,,,,
-Date Histogram,6.000,16.000,37.500,,,,,Total,4.000,7.000
-General Operations,0.000,5.000,0.000,,,,,,,
-Range & Date Histogram,0.000,5.000,0.000,,,,,,Operations: OS v2.16.0 is Faster,
-Range Queries,2.000,12.000,16.667,,,,,Category,Operation,ES/OS
-Sorting,8.000,16.000,50.000,,,,,Aggregation,autohisto_agg,75.755
-Term Aggregations,7.000,13.000,53.846,,,,,Aggregation,date_histogram_agg,1.082
-Text Querying,1.000,6.000,16.667,,,,,Sorting,asc_sort_tip_amount,"2,211.519"
-Total,27.000,78.000,34.615,,,,,Sorting,desc_sort_tip_amount,193.900
+ES,8.15.0,nyc_taxis,4,,,,,Total Tasks,7,
+OS,2.16.0,nyc_taxis,4,,,,,Tasks faster than ES,4,
+ES,8.15.0,big5,4,,,,,Fast Outliers (> 2),3,
+OS,2.16.0,big5,4,,,,,Slow Outliers (< 0.5),2,
+OS,2.16.0,pmc,4,,,,,,,
+ES,8.15.0,pmc,4,,,,,,Categories: OS v2.16.0 is Faster,
+OS,2.16.0,noaa,4,,,,,Category,Count,Total
+ES,8.15.0,noaa,4,,,,,Aggregation,2,3
+,,,,,,,,General Operations,0,1
+All Categories: OS v2.16.0 is Faster than ES v8.15.0,,,,,,,,Range Queries,0,1
+Category,Count,Total,Percentage (%),,,,,Sorting,2,2
+Aggregation,3,5,60,,,,,,,
+Date Histogram,6,16,37.5,,,,,Total,4,7
+General Operations,0,5,0,,,,,,,
+Range & Date Histogram,0,5,0,,,,,,Operations: OS v2.16.0 is Faster,
+Range Queries,2,12,16.66666667,,,,,Category,Operation,ES/OS
+Sorting,8,16,50,,,,,Aggregation,autohisto_agg,75.755
+Term Aggregations,7,13,53.84615385,,,,,Aggregation,date_histogram_agg,1.082
+Text Querying,1,6,16.66666667,,,,,Sorting,asc_sort_tip_amount,"2,211.519"
+Total,27,78,34.61538462,,,,,Sorting,desc_sort_tip_amount,193.900
 ,,,,,,,,,,
 Statistics comparing: OS v2.16.0 and ES v8.15.0,,,,,,,,,,
 ES/OS,Average,Median,Max,Min,Stdev,Variance,,,,
 "When OS is faster
-(OS service_time is smaller)",167.542,1.331,"2,211.519",1.006,496.219,"246,233.503",,,,
+(OS service_time is smaller)",167.542,1.331,"2,211.519",1.006,496.219209,246233.5034,,,,
 "When OS is slower
-(OS service_time is larger)",0.581,0.565,0.998,0.016,0.348,0.121,,,,
+(OS service_time is larger)",0.581,0.565,0.998,0.016,0.3484582582,0.1214231577,,,,
 ,,,,,,,,,Operations: OS v2.16.0 is Slower,
 ,,,,,,,,Category,Operation,ES/OS
 ,,,,,,,,Aggregation,distance_amount_agg,0.229
@@ -38,21 +38,21 @@ ES/OS,Average,Median,Max,Min,Stdev,Variance,,,,
 ,,,,,,,,,,
 ,,,,,,,,,,
 ,,,,,,,,big5,ES v8.15.0,
-,,,,,,,,Total Tasks,41.000,
-,,,,,,,,Tasks faster than ES,15.000,
-,,,,,,,,Fast Outliers (> 2),8.000,
-,,,,,,,,Slow Outliers (< 0.5),9.000,
+,,,,,,,,Total Tasks,41,
+,,,,,,,,Tasks faster than ES,15,
+,,,,,,,,Fast Outliers (> 2),8,
+,,,,,,,,Slow Outliers (< 0.5),9,
 ,,,,,,,,,,
 ,,,,,,,,,Categories: OS v2.16.0 is Faster,
 ,,,,,,,,Category,Count,Total
-,,,,,,,,Date Histogram,3.000,5.000
-,,,,,,,,General Operations,0.000,2.000
-,,,,,,,,Range Queries,2.000,9.000
-,,,,,,,,Sorting,6.000,14.000
-,,,,,,,,Term Aggregations,3.000,7.000
-,,,,,,,,Text Querying,1.000,4.000
+,,,,,,,,Date Histogram,3,5
+,,,,,,,,General Operations,0,2
+,,,,,,,,Range Queries,2,9
+,,,,,,,,Sorting,6,14
+,,,,,,,,Term Aggregations,3,7
+,,,,,,,,Text Querying,1,4
 ,,,,,,,,,,
-,,,,,,,,Total,15.000,41.000
+,,,,,,,,Total,15,41
 ,,,,,,,,,,
 ,,,,,,,,,Operations: OS v2.16.0 is Faster,
 ,,,,,,,,Category,Operation,ES/OS
@@ -145,18 +145,18 @@ ES/OS,Average,Median,Max,Min,Stdev,Variance,,,,
 ,,,,,,,,,,
 ,,,,,,,,,,
 ,,,,,,,,pmc,ES v8.15.0,
-,,,,,,,,Total Tasks,6.000,
-,,,,,,,,Tasks faster than ES,1.000,
-,,,,,,,,Fast Outliers (> 2),0.000,
-,,,,,,,,Slow Outliers (< 0.5),0.000,
+,,,,,,,,Total Tasks,6,
+,,,,,,,,Tasks faster than ES,1,
+,,,,,,,,Fast Outliers (> 2),0,
+,,,,,,,,Slow Outliers (< 0.5),0,
 ,,,,,,,,,,
 ,,,,,,,,,Categories: OS v2.16.0 is Faster,
 ,,,,,,,,Category,Count,Total
-,,,,,,,,Aggregation,1.000,2.000
-,,,,,,,,General Operations,0.000,2.000
-,,,,,,,,Text Querying,0.000,2.000
+,,,,,,,,Aggregation,1,2
+,,,,,,,,General Operations,0,2
+,,,,,,,,Text Querying,0,2
 ,,,,,,,,,,
-,,,,,,,,Total,1.000,6.000
+,,,,,,,,Total,1,6
 ,,,,,,,,,,
 ,,,,,,,,,Operations: OS v2.16.0 is Faster,
 ,,,,,,,,Category,Operation,ES/OS
@@ -179,19 +179,19 @@ ES/OS,Average,Median,Max,Min,Stdev,Variance,,,,
 ,,,,,,,,,,
 ,,,,,,,,,,
 ,,,,,,,,noaa,ES v8.15.0,
-,,,,,,,,Total Tasks,24.000,
-,,,,,,,,Tasks faster than ES,7.000,
-,,,,,,,,Fast Outliers (> 2),0.000,
-,,,,,,,,Slow Outliers (< 0.5),10.000,
+,,,,,,,,Total Tasks,24,
+,,,,,,,,Tasks faster than ES,7,
+,,,,,,,,Fast Outliers (> 2),0,
+,,,,,,,,Slow Outliers (< 0.5),10,
 ,,,,,,,,,,
 ,,,,,,,,,Categories: OS v2.16.0 is Faster,
 ,,,,,,,,Category,Count,Total
-,,,,,,,,Date Histogram,3.000,11.000
-,,,,,,,,Range & Date Histogram,0.000,5.000
-,,,,,,,,Range Queries,0.000,2.000
-,,,,,,,,Term Aggregations,4.000,6.000
+,,,,,,,,Date Histogram,3,11
+,,,,,,,,Range & Date Histogram,0,5
+,,,,,,,,Range Queries,0,2
+,,,,,,,,Term Aggregations,4,6
 ,,,,,,,,,,
-,,,,,,,,Total,7.000,24.000
+,,,,,,,,Total,7,24
 ,,,,,,,,,,
 ,,,,,,,,,Operations: OS v2.16.0 is Faster,
 ,,,,,,,,Category,Operation,ES/OS
