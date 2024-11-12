@@ -123,7 +123,9 @@ def main() -> None:
     workloads = [x.lower() for x in sys.argv[1].split(",")]
     workload_params = json.loads(sys.argv[2])
     cluster_types = sys.argv[3].split(",")
-    benchmark_type = sys.argv[4]
+    os_versions = sys.argv[4].split(",")
+    es_versions = sys.argv[5].split(",")
+    benchmark_type = sys.argv[6]
 
     if not all(
         x in ["opensearch", "elasticsearch"] for x in [x.lower() for x in cluster_types]
@@ -134,6 +136,11 @@ def main() -> None:
     if not all(x in ["dev", "official"] for x in [benchmark_type]):
         print("Invalid benchmark type. Must be one of: dev, official")
         sys.exit(1)
+
+    cluster_versions = {
+        "OpenSearch": ("os_version", os_versions),
+        "ElasticSearch": ("es_version", es_versions),
+    }
 
     includes = []
 
@@ -167,16 +174,19 @@ def main() -> None:
                 "dev" if workload_name.startswith("vectorsearch") else benchmark_type
             )
             workload = WORKLOAD_NAME_MAP.get(workload_name, workload_name)
-            includes.append(
-                {
-                    "name": workload_name,
-                    "cluster_type": cluster_type,
-                    "workload": workload,
-                    "workload_params": str(json.dumps(params)),
-                    "benchmark_type": workflow_benchmark_type,
-                    **extra_params,
-                }
-            )
+            version_key, versions = cluster_versions[cluster_type]
+            for version in versions:
+                includes.append(
+                    {
+                        "name": workload_name,
+                        "cluster_type": cluster_type,
+                        version_key: version,
+                        "workload": workload,
+                        "workload_params": str(json.dumps(params)),
+                        "benchmark_type": workflow_benchmark_type,
+                        **extra_params,
+                    }
+                )
 
     output = {
         "include": includes,
