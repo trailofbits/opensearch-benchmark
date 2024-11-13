@@ -81,6 +81,10 @@ on:
         required: true
       DATASTORE_PASSWORD:
         required: true
+      SLACK_BOT_TOKEN:
+        required: true
+      SLACK_CHANNEL_ID:
+        required: true
 
 env:
   TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
@@ -341,3 +345,32 @@ jobs:
             ec2 delete-key-pair \
             --region ${TF_VAR_aws_region} \
             --key-name gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
+
+  notify_slack:
+    needs: [prepare_workspace, run-osb]
+    runs-on: ubuntu-latest
+    if: ${{ (failure() || cancelled()) && github.ref == 'refs/heads/main' }}
+    steps:
+      - name: Slack Report
+        uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v1.25.0
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          slack-message: |
+            *Failed to run Benchmark Workflow*
+            _Workflow:_ ${{ github.workflow }}
+            _Run ID:_ ${{ github.run_id }}
+            _Run Number:_ ${{ github.run_number }}
+            _Workload:_ ${{ inputs.workload }}
+            _Workload Params:_ ${{ inputs.workload_params }}
+            _Cluster Type:_ ${{ inputs.cluster_type }}
+            _Benchmark Type:_ ${{ inputs.benchmark_type }}
+            _Perform Benchmark:_ ${{ inputs.perform_benchmark }}
+            _Create Snapshot:_ ${{ inputs.create_snapshot }}
+            _Force Snapshot:_ ${{ inputs.force_snapshot }}
+            _Test Procedure:_ ${{ inputs.test_procedure }}
+            _ES Version:_ ${{ inputs.es_version }}
+            _OS Version:_ ${{ inputs.os_version }}
+            _AWS Region:_ ${{ inputs.aws_region }}
+            _CI Tag:_ ${{ inputs.ci_tag }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
