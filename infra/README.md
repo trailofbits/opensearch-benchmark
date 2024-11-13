@@ -103,3 +103,31 @@ This will produce a file named `segment-timestamps.txt` in the current directory
 ## Upload Results to Google Sheets
 
 See the `scripts/report-gen` [README](scripts/report-gen/README.md) for instructions.
+
+## Compile custom OpenSearch and Test
+
+To compile a custom version of OpenSearch (for example, testing how performance changes after modifying its implementation), run `gradlew`.
+
+```shell
+# Clone repository
+git clone git@github.com:opensearch-project/OpenSearch.git
+cd OpenSearch/
+git checkout {version}
+
+# Make changes to the repository
+
+# Build OpenSearch
+./gradlew localDistro
+```
+
+Create a new branch in [this](https://github.com/trailofbits/opensearch-benchmark) repository, and push it to GitHub.
+
+```shell
+cd opensearch-benchmark/
+git checkout my-custom-os
+
+cp -r ../OpenSearch/build/distribution/local/opensearch-{version}-SNAPSHOT infra/dist/
+git add infra/dist
+```
+
+Then, using the Github workflow, run benchmarks.

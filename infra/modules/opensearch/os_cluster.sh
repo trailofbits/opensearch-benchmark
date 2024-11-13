@@ -15,11 +15,17 @@ JVM_CONFIG=$INSTALL_PATH/config/jvm.options
 
 cd /mnt || exit 1
 
-# Download and install OpenSearch then remove installer
-mkdir -p $INSTALL_PATH
-wget $DOWNLOAD_URL
-tar -xvf $INSTALL_FILENAME -C $INSTALL_ROOT
-rm $INSTALL_FILENAME
+# If distribution already exists (e.g., custom build), skip download
+if [ ! -z "$( ls '/mnt/dist/' )" ]; then
+    mv /mnt/dist/* $INSTALL_ROOT
+    rmdir /mnt/dist/
+# Else, download and install OpenSearch then remove installer
+else
+    mkdir -p $INSTALL_PATH
+    wget $DOWNLOAD_URL
+    tar -xvf $INSTALL_FILENAME -C $INSTALL_ROOT
+    rm $INSTALL_FILENAME
+fi
 
 
 # Specify directories for storage and update the configuration to allow incoming connections.
