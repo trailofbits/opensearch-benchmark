@@ -33,7 +33,7 @@ except subprocess.CalledProcessError as e:
     # The previous command might fail if the one of the subdirectories in the s3
     # bucket does not exist. If the bucket can be accessed, we can ignore the
     # error and create a new (the first) snapshot.
-    if e.returncode == 1:
+    if e.returncode in (1, 255):
         cmd = [
             "aws",
             "s3",
