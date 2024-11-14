@@ -13,6 +13,18 @@ logger = logging.getLogger(__name__)
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
 
+def authenticate(credential_path: Path | None, token_path: Path) -> Credentials | None:
+    """Authenticate with Google API.
+
+    If a credentials file is passed, create a new token at the provided path and use it to authenticate.
+    If no credentials file is passed, use the token at the provided path to authenticate.
+    Return None if authorization fails.
+    """
+    if credential_path is not None:
+        authenticate_from_credentials(credential_path, token_path)
+    return authenticate_from_token(token_path)
+
+
 def authenticate_from_credentials(credentials_file_path: Path, token_file_path: Path) -> None:
     """Authenticate a new session using a credentials file and create a token at the given path."""
     flow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(credentials_file_path, SCOPES)
