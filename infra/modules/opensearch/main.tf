@@ -160,8 +160,8 @@ resource "aws_instance" "load-generation" {
   }
 
   provisioner "file" {
-    source      = "${path.module}/../../dist/"
-    destination = "/mnt/dist/"
+    source      = "${path.module}/../../dist"
+    destination = "/mnt"
   }
 
   tags = {

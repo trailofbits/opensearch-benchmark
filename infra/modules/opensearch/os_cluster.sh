@@ -16,9 +16,16 @@ JVM_CONFIG=$INSTALL_PATH/config/jvm.options
 cd /mnt || exit 1
 
 # If distribution already exists (e.g., custom build), skip download
-if [ ! -z "$( ls '/mnt/dist/' )" ]; then
-    mv /mnt/dist/* $INSTALL_ROOT
-    rmdir /mnt/dist/
+if [ -f "/mnt/dist/gid.txt" ]; then
+    python3 -m venv tmp_env
+    source tmp_env/bin/activate
+    pip install --upgrade gdown
+    cat /mnt/dist/gid.txt | xargs -I{} gdown --id {} -O /mnt/dist/snapshot.tar.gz
+    deactivate
+    rm -rf tmp_env
+
+    tar xzvf /mnt/dist/snapshot.tar.gz -C $INSTALL_ROOT
+    rm /mnt/dist/snapshot.tar.gz
 # Else, download and install OpenSearch then remove installer
 else
     mkdir -p $INSTALL_PATH

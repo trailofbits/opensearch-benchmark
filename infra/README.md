@@ -112,12 +112,14 @@ To compile a custom version of OpenSearch (for example, testing how performance 
 # Clone repository
 git clone git@github.com:opensearch-project/OpenSearch.git
 cd OpenSearch/
-git checkout {version}
+git checkout ${version}
 
 # Make changes to the repository
 
 # Build OpenSearch
 ./gradlew localDistro
+
+tar cvzf snapshot.tar.gz -C ./build/distribution/local/ opensearch-${version}-SNAPSHOT/
 ```
 
 Create a new branch in [this](https://github.com/trailofbits/opensearch-benchmark) repository, and push it to GitHub.
@@ -126,8 +128,8 @@ Create a new branch in [this](https://github.com/trailofbits/opensearch-benchmar
 cd opensearch-benchmark/
 git checkout my-custom-os
 
-cp -r ../OpenSearch/build/distribution/local/opensearch-{version}-SNAPSHOT infra/dist/
-git add infra/dist
+# Put Google drive ID to snapshot.tar.gz into infra/dist/gid.txt
+echo ${google_drive_id} > infra/dist/url.txt
 ```
 
-Then, using the Github workflow, run benchmarks.
+Then, using Github Actions, run `Nightly Benchmarks` manually on branch `my-custom-os`.
