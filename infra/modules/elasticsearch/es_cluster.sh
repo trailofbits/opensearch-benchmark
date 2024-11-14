@@ -32,10 +32,16 @@ echo "$ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY" | bin/elasticsearch-keystore add -s -f
 # Start Elasticsearch
 ./bin/elasticsearch -d -p /mnt/pid
 
-# Wait for Elasticsearch to start
+# Wait for Elasticsearch to start (break after 20 tries)
+tries=0
 while ! curl --max-time 5 -ks https://localhost:9200 > /dev/null 2>&1 ; do
     echo "Waiting for Elasticsearch to start"
     sleep 1
+    ((tries++))
+    if [ $tries -eq 20 ]; then
+        echo "Failed to start ElasticSearch"
+        exit 1
+    fi
 done 
 
 # Reset password to a known value

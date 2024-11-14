@@ -59,10 +59,16 @@ SERVER_PID=$!
 echo $SERVER_PID > /mnt/pid
 
 echo "Waiting for server to boot"
-# Wait for OpenSearch to start
+# Wait for OpenSearch to start (break after 20 tries)
+tries=0
 while ! curl --max-time 5 -ks https://localhost:9200 > /dev/null 2>&1 ; do
-    echo "Waiting for OpenSearch to start"
+    echo "Waiting for OpenSearch to start ($tries)"
     sleep 1
+    ((tries++))
+    if [ $tries -eq 20 ]; then
+        echo "Failed to start OpenSearch"
+        exit 1
+    fi
 done 
 
 echo "OpenSearch responds on port 9200, now verify credentials"

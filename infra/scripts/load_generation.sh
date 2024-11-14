@@ -43,11 +43,17 @@ echo "export CLUSTER_INSTANCE_ID=$CLUSTER_INSTANCE_ID" >> ~/.bashrc
 
 pip install opensearch-benchmark
 
-# wait for the cluster to be up
+# wait for the cluster to be up (break after 20 times)
 echo "CLUSTER_HOST: $CLUSTER_HOST"
+tries=0
 while ! curl --max-time 5 -ku "$CLUSTER_USER:$CLUSTER_PASSWORD" "$CLUSTER_HOST"; do
-    echo "Waiting for the cluster to be up"
+    echo "Waiting for the cluster to be up ($tries)"
     sleep 2
+    ((tries++))
+    if [ $tries -eq 20 ]; then
+        echo "Failed to start OpenSearch"
+        exit 1
+    fi
 done
 
 opensearch-benchmark execute-test \
