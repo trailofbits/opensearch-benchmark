@@ -13,19 +13,23 @@ from .common import (
     get_workload_operations,
     get_workloads,
 )
-from .format_color import (
-    format_color_comparison,
-    format_color_rsd,
+from .format.color import (
+    comparison as format_color_comparison,
 )
-from .format_font import (
-    format_font_bold,
+from .format.color import (
+    rsd as format_color_rsd,
 )
-from .format_freeze import (
-    format_freeze_col,
-    format_freeze_row,
+from .format.font import (
+    bold as format_font_bold,
 )
-from .format_number import (
-    format_number_float,
+from .format.freeze import (
+    col as format_freeze_col,
+)
+from .format.freeze import (
+    row as format_freeze_row,
+)
+from .format.number import (
+    format_float as format_number_float,
 )
 
 logger = logging.getLogger(__name__)

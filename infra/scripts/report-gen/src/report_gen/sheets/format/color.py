@@ -46,7 +46,7 @@ def get_light_yellow() -> dict:
     return {"red": 255 / 255, "green": 242 / 255, "blue": 204 / 255}
 
 
-def format_color_comparison(range_dict: dict) -> list[dict]:
+def comparison(range_dict: dict) -> list[dict]:
     """Conditionally formats comparison (ES/OS)."""
     rv: list[dict] = []
 
@@ -123,7 +123,7 @@ def format_color_comparison(range_dict: dict) -> list[dict]:
     return rv
 
 
-def format_color_rsd(range_dict: dict) -> dict:
+def rsd(range_dict: dict) -> dict:
     """Conditionally formats RSD."""
     return {
         "addConditionalFormatRule": {
@@ -139,7 +139,7 @@ def format_color_rsd(range_dict: dict) -> dict:
     }
 
 
-def format_color(range_dict: dict, color: dict) -> dict:
+def color(range_dict: dict, color: dict) -> dict:
     """Color header."""
     return {
         "repeatCell": {
