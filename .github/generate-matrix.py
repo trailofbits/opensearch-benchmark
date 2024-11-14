@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 WORKLOAD_NAME_MAP = {
     "vectorsearch-faiss": "vectorsearch",
     "vectorsearch-lucene": "vectorsearch",
+    "vectorsearch-nmslib": "vectorsearch",
 }
 
 DEFAULT_EXTRA_PARAMS = {
