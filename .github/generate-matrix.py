@@ -147,8 +147,9 @@ def main() -> None:
 
     for workload_name in workloads:
         for cluster_type in get_available_cluster_types(cluster_types):
-            params = dict(workload_params)
+            params = {}
             # vectorsearch workloads require entirely different parameters
+            # this is also why they currently do not accept user-specified parameters
             if workload_name.startswith("vectorsearch"):
                 if cluster_type == "ElasticSearch":
                     if workload_name not in DEFAULT_ES_VECTORSEARCH_WORKLOAD_PARAMS:
@@ -157,14 +158,14 @@ def main() -> None:
                     params = DEFAULT_ES_VECTORSEARCH_WORKLOAD_PARAMS[workload_name]
                 else:
                     params = DEFAULT_OS_VECTORSEARCH_WORKLOAD_PARAMS.get(workload_name, {})
-
-            params.update(DEFAULT_EXTRA_WORKLOAD_PARAMS.get(workload_name))
-
+            else:
+                params.update(DEFAULT_EXTRA_WORKLOAD_PARAMS.get(workload_name, {}))
+                # overwrite defaults with user-specified parameters
+                params.update(dict(workload_params))
             extra_params = DEFAULT_EXTRA_PARAMS.get(workload_name, {})
             workflow_benchmark_type = (
                 "dev" if workload_name.startswith("vectorsearch") else benchmark_type
             )
-
             workload = WORKLOAD_NAME_MAP.get(workload_name, workload_name)
             includes.append(
                 {
