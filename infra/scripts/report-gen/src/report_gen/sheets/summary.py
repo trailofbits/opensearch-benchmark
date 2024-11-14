@@ -14,20 +14,24 @@ from .common import (
     get_workload_operations,
     get_workloads,
 )
-from .format_color import (
-    format_color,
-    format_color_comparison,
+from .format.color import (
+    color as format_color,
+)
+from .format.color import (
+    comparison as format_color_comparison,
+)
+from .format.color import (
     get_light_blue,
     get_light_cyan,
     get_light_orange,
     get_light_purple,
     get_light_yellow,
 )
-from .format_font import (
-    format_font_bold,
+from .format.font import (
+    bold as format_font_bold,
 )
-from .format_merge import (
-    format_merge,
+from .format.merge import (
+    merge as format_merge,
 )
 
 logger = logging.getLogger(__name__)

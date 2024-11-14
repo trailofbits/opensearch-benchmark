@@ -1,7 +1,7 @@
 """Functions for formatting cell fonts."""
 
 
-def format_font_bold(range_dict: dict) -> dict:
+def bold(range_dict: dict) -> dict:
     """Format bolds in a range of cells."""
     return {
         "repeatCell": {

@@ -1,7 +1,7 @@
 """Functions for formatting numbers."""
 
 
-def format_number_float(range_dict: dict) -> dict:
+def format_float(range_dict: dict) -> dict:
     """Format float numbers."""
     return {
         "repeatCell": {
