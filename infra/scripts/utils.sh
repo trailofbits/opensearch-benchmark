@@ -9,6 +9,7 @@ get_doc_count() {
     doc_counts["pmc"]=574199
     doc_counts["noaa"]=33659481
     doc_counts["vectorsearch"]=1000000
+    doc_counts["noaa_semantic_search"]=33659481
 
     # Check if the workload exists in the associative array
     if [[ -v "doc_counts[$workload]" ]]; then
@@ -27,6 +28,7 @@ get_shards_count() {
     shards_count["big5"]=1
     shards_count["pmc"]=5
     shards_count["vectorsearch"]=3
+    shards_count["noaa_semantic_search"]=6
 
     # Check if the workload exists in the associative array
     if [[ -v "shards_count[$workload]" ]]; then
