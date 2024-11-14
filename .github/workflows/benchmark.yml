@@ -104,7 +104,7 @@ env:
 
 jobs:
   prepare_workspace:
-    runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    runs-on: ubuntu-latest
     outputs:
       workspace_name: ${{ steps.workspace.outputs.workspace_name }}
       now: ${{ steps.now.outputs.now }}
@@ -167,7 +167,7 @@ jobs:
 
   ingest-data:
     needs: prepare_workspace
-    runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -223,7 +223,7 @@ jobs:
 
   run-osb:
     needs: [prepare_workspace, ingest-data]
-    runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    runs-on: ubuntu-latest
     if: ${{ inputs.perform_benchmark && needs.ingest-data.result == 'success' }}
     name: run-osb-${{ needs.prepare_workspace.outputs.now_run_group_id }}
     continue-on-error: true
@@ -278,7 +278,7 @@ jobs:
 
   destroy_workspace:
     needs: [prepare_workspace, run-osb, ingest-data]
-    runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    runs-on: ubuntu-latest
     if: ${{ always() }}
     continue-on-error: false
     steps:
