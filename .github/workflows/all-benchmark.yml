@@ -68,13 +68,6 @@ jobs:
           res=$(python3 .github/generate-matrix.py "$WORKLOADS" "$WORKLOAD_PARAMS" "$CLUSTER_TYPES" "$OS_VERSIONS" "$ES_VERSIONS" "$BENCHMARK_TYPE")
           echo "matrix=$res" >> $GITHUB_OUTPUT
           echo "$res"
-        env:
-          WORKLOADS: ${{ env.WORKLOADS }}
-          WORKLOAD_PARAMS: ${{ env.WORKLOAD_PARAMS }}
-          CLUSTER_TYPES: ${{ env.CLUSTER_TYPES }}
-          BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
-          OS_VERSIONS: ${{ env.OS_VERSIONS }}
-          ES_VERSIONS: ${{ env.ES_VERSIONS }}
 
   run-benchmarks:
     needs: generate-matrix
