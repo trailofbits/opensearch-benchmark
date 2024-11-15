@@ -116,3 +116,9 @@ variable "snapshot_version" {
     error_message = "Snapshot version must be one of: latest, new, or a specific version (YYYY-mm-dd_HH-MM-ss)"
   }
 }
+
+variable "osb_version" {
+  description = "OpenSearch Benchmark version"
+  type        = string
+  default     = "1.11.0"
+}

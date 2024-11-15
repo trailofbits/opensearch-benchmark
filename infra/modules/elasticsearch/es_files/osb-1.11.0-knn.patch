@@ -1,8 +1,8 @@
 diff --git osbenchmark/workload/params.py osbenchmark/workload/params.py
-index 92cc61c9..71208b9e 100644
+index 9ba99f71..6ee3077a 100644
 --- osbenchmark/workload/params.py
 +++ osbenchmark/workload/params.py
-@@ -1188,7 +1188,8 @@ class VectorSearchPartitionParamSource(VectorDataSetPartitionParamSource):
+@@ -1183,7 +1183,8 @@ class VectorSearchPartitionParamSource(VectorDataSetPartitionParamSource):
              A dictionary containing the body used for search query
          """
          query = {
@@ -12,7 +12,7 @@ index 92cc61c9..71208b9e 100644
              "k": self.k,
          }
          if efficient_filter:
-@@ -1197,9 +1198,7 @@ class VectorSearchPartitionParamSource(VectorDataSetPartitionParamSource):
+@@ -1192,9 +1193,7 @@ class VectorSearchPartitionParamSource(VectorDataSetPartitionParamSource):
              })
  
          knn_search_query = {

@@ -41,7 +41,8 @@ echo "export CLUSTER_PASSWORD=$CLUSTER_PASSWORD" >> ~/.bashrc
 echo "export AWS_USERID=$AWS_USERID" >> ~/.bashrc
 echo "export CLUSTER_INSTANCE_ID=$CLUSTER_INSTANCE_ID" >> ~/.bashrc
 
-pip install opensearch-benchmark
+# pin OSB version to ensure ES vectorsearch patch works
+pip install "opensearch-benchmark==${osb_version}"
 
 # wait for the cluster to be up (break after 20 times)
 echo "CLUSTER_HOST: $CLUSTER_HOST"

@@ -31,7 +31,7 @@ write_files:
       ${vectorsearch_es_index_8}
     owner: root:root
     permissions: '0644'
-  - path: /es_files/osb-1.10.0-knn.patch
+  - path: /es_files/osb-1.11.0-knn.patch
     encoding: gz+b64
     content: |
       ${osb_knn_patch}
