@@ -12,6 +12,13 @@ DEFAULT_EXTRA_WORKLOAD_PARAMS = {
     "big5": {
         "max_num_segments": 10,
     },
+    "noaa_semantic_search": {
+        "number_of_replicas": 0,
+        "number_of_shards": 6,
+        "max_num_segments": 8,
+        "concurrent_segment_search_enabled": "false",
+        "search_clients": 8
+    }
 }
 
 DEFAULT_EXTRA_PARAMS = {
@@ -167,8 +174,9 @@ def main() -> None:
                     params = DEFAULT_OS_VECTORSEARCH_WORKLOAD_PARAMS.get(workload_name, {})
             else:
                 params.update(DEFAULT_EXTRA_WORKLOAD_PARAMS.get(workload_name, {}))
-                # overwrite defaults with user-specified parameters
-                params.update(dict(workload_params))
+                if workload_name != "noaa_semantic_search":
+                    # overwrite defaults with user-specified parameters
+                    params.update(dict(workload_params))
             extra_params = DEFAULT_EXTRA_PARAMS.get(workload_name, {})
             workflow_benchmark_type = (
                 "dev" if workload_name.startswith("vectorsearch") else benchmark_type
