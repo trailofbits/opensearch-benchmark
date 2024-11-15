@@ -66,8 +66,9 @@ resource "aws_instance" "load-generation" {
       load_script = yamlencode(base64gzip(templatefile(
         "${path.module}/../../scripts/load_generation.sh",
         {
-          workload   = var.workload,
-          aws_userid = replace(data.aws_caller_identity.current.arn, "/.+//", "")
+          workload    = var.workload,
+          aws_userid  = replace(data.aws_caller_identity.current.arn, "/.+//", ""),
+          osb_version = var.osb_version
         }
       ))),
       es_cluster              = aws_instance.target-cluster.public_dns
@@ -77,7 +78,7 @@ resource "aws_instance" "load-generation" {
       workload                = var.workload
       big5_es_index_8         = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.json"))),
       vectorsearch_es_index_8 = yamlencode(base64gzip(file("${path.module}/es_indexes/vectorsearch/es_index_8.json"))),
-      osb_knn_patch           = yamlencode(base64gzip(file("${path.module}/es_files/osb-1.10.0-knn.patch"))),
+      osb_knn_patch           = yamlencode(base64gzip(file("${path.module}/es_files/osb-1.11.0-knn.patch"))),
       benchmark_environment   = var.benchmark_environment
       datastore_host          = var.datastore_host
       datastore_username      = var.datastore_username

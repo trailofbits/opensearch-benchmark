@@ -65,8 +65,9 @@ resource "aws_instance" "load-generation" {
       load_script = yamlencode(base64gzip(templatefile(
         "${path.module}/../../scripts/load_generation.sh",
         {
-          workload   = var.workload,
-          aws_userid = replace(data.aws_caller_identity.current.arn, "/.+//", "")
+          workload    = var.workload,
+          aws_userid  = replace(data.aws_caller_identity.current.arn, "/.+//", ""),
+          osb_version = var.osb_version
         }
       ))),
       os_cluster            = aws_instance.target-cluster.public_dns
