@@ -145,6 +145,12 @@ jobs:
         run: terraform apply -auto-approve
         env:
             TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
+      - name: Try to delete immediately the benchmark environment
+        working-directory: infra
+        if: ${{ failure() }}
+        run: terraform destroy -auto-approve
+        env:
+            TF_VAR_benchmark_environment: gh-nightly-${{ steps.now.outputs.now }}
       - name: List files
         run: ls -lah && ls -lah infra && pwd
       - name: Upload SSH key artifact
