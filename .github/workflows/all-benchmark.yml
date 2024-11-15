@@ -48,11 +48,13 @@ on:
         default: eu-north-1
 
 env:
+  # nightly run default parameters
   WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis,vectorsearch' }}
   WORKLOAD_PARAMS: ${{ inputs.workload_params || '{}' }}
   CLUSTER_TYPES: ${{ inputs.cluster_types || 'OpenSearch,ElasticSearch' }}
   OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.17.0,2.18.0' }}
   ES_VERSIONS: ${{ inputs.es_versions || '8.15.0' }}
+  BENCHMARK_TYPE: ${{ inputs.benchmark_type ||  'official' }}
 
 jobs:
   generate-matrix:
@@ -87,7 +89,7 @@ jobs:
       cluster_type: ${{ matrix.cluster_type}}
       workload: ${{ matrix.workload }}
       workload_params: ${{ matrix.workload_params }}
-      benchmark_type: ${{ matrix.benchmark_type || 'official' }}
+      benchmark_type: ${{ matrix.benchmark_type }}
       perform_benchmark: true
       test_procedure: ${{ matrix.test_procedure }}
       es_version: ${{ matrix.es_version }}
