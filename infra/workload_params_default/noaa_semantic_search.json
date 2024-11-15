@@ -1,0 +1,7 @@
+{
+    "number_of_replicas": 0,
+    "number_of_shards": 6,
+    "max_num_segments": 8,
+    "concurrent_segment_search_enabled": "false",
+    "search_clients": 8
+}

@@ -1,118 +1,23 @@
 """Script to generate the matrix for the GitHub Workflow"""
 
+from pathlib import Path
 import json
 import sys
+import logging
+
+logger = logging.getLogger(__name__)
 
 WORKLOAD_NAME_MAP = {
     "vectorsearch-faiss": "vectorsearch",
     "vectorsearch-lucene": "vectorsearch",
 }
 
-DEFAULT_EXTRA_WORKLOAD_PARAMS = {
-    "big5": {
-        "max_num_segments": 10,
-    },
-    "noaa_semantic_search": {
-        "number_of_replicas": 0,
-        "number_of_shards": 6,
-        "max_num_segments": 8,
-        "concurrent_segment_search_enabled": "false",
-        "search_clients": 8
-    }
-}
-
 DEFAULT_EXTRA_PARAMS = {
     "noaa": {
         "test_procedure": "aggs",
-    }
-}
-
-DEFAULT_OS_VECTORSEARCH_WORKLOAD_PARAMS = {
-    "vectorsearch-faiss": {
-        "target_index_name": "target_index",
-        "target_field_name": "target_field",
-        "target_index_body": "indices/faiss-index.json",
-        "target_index_primary_shards": 3,
-        "target_index_dimension": 768,
-        "target_index_space_type": "innerproduct",
-        "target_index_bulk_size": 100,
-        "target_index_bulk_index_data_set_format": "hdf5",
-        "target_index_bulk_index_data_set_corpus": "cohere-1m",
-        "target_index_bulk_indexing_clients": 10,
-        "target_index_max_num_segments": 1,
-        "hnsw_ef_search": 256,
-        "hnsw_ef_construction": 256,
-        "query_k": 100,
-        "query_body": {"docvalue_fields": ["_id"], "stored_fields": "_none_"},
-        "query_data_set_format": "hdf5",
-        "query_data_set_corpus": "cohere-1m",
-        "query_count": 10000,
     },
-    "vectorsearch-lucene": {
-        "target_index_name": "target_index",
-        "target_field_name": "target_field",
-        "target_index_body": "indices/lucene-index.json",
-        "target_index_primary_shards": 3,
-        "target_index_dimension": 768,
-        "target_index_space_type": "innerproduct",
-        "target_index_bulk_size": 100,
-        "target_index_bulk_index_data_set_format": "hdf5",
-        "target_index_bulk_index_data_set_corpus": "cohere-1m",
-        "target_index_bulk_indexing_clients": 10,
-        "target_index_max_num_segments": 1,
-        "hnsw_ef_search": 256,
-        "hnsw_ef_construction": 256,
-        "query_k": 100,
-        "query_body": {"docvalue_fields": ["_id"], "stored_fields": "_none_"},
-        "query_data_set_format": "hdf5",
-        "query_data_set_corpus": "cohere-1m",
-        "query_count": 10000,
-    },
-    "vectorsearch-nmslib": {
-        "target_index_name": "target_index",
-        "target_field_name": "target_field",
-        "target_index_body": "indices/nmslib-index.json",
-        "target_index_primary_shards": 3,
-        "target_index_dimension": 768,
-        "target_index_space_type": "innerproduct",
-        "target_index_bulk_size": 100,
-        "target_index_bulk_index_data_set_format": "hdf5",
-        "target_index_bulk_index_data_set_corpus": "cohere-1m",
-        "target_index_bulk_indexing_clients": 10,
-        "target_index_max_num_segments": 1,
-        "hnsw_ef_search": 256,
-        "hnsw_ef_construction": 256,
-        "query_k": 100,
-        "query_body": {"docvalue_fields" : ["_id"], "stored_fields" : "_none_"},
-        "query_data_set_format": "hdf5",
-        "query_data_set_corpus":"cohere-1m",
-        "neighbors_data_set_corpus":"cohere-1m",
-        "neighbors_data_set_format":"hdf5",
-        "query_count": 10000,
-    },
-}
-
-# TODO support hnsw_ef_search as num_candidates
-# TODO decide whether to pass "docvalue_fields" : ["_id"],
-DEFAULT_ES_VECTORSEARCH_WORKLOAD_PARAMS = {
-    "vectorsearch-lucene": {
-        "target_index_name": "target_index",
-        "target_field_name": "target_field",
-        "target_index_body": "index.json",
-        "target_index_primary_shards": 3,
-        "target_index_dimension": 768,
-        "target_index_space_type": "max_inner_product",
-        "target_index_bulk_size": 100,
-        "target_index_bulk_index_data_set_format": "hdf5",
-        "target_index_bulk_index_data_set_corpus": "cohere-1m",
-        "target_index_bulk_indexing_clients": 10,
-        "target_index_max_num_segments": 1,
-        "hnsw_ef_construction": 256,
-        "query_k": 100,
-        "query_body": {"stored_fields": "_none_"},
-        "query_data_set_format": "hdf5",
-        "query_data_set_corpus": "cohere-1m",
-        "query_count": 10000,
+    "noaa_semantic_search": {
+        "test_procedure": "hybrid-query-aggs-no-index",
     },
 }
 
@@ -126,9 +31,44 @@ def get_available_cluster_types(cluster_types: list[str]) -> list[str]:
     ]
 
 
+def _cluster_part(cluster_type: str) -> str:
+    return "es" if cluster_type.lower() == "elasticsearch" else "os"
+
+
+def get_workload_params(
+    cluster_type: str, version: str, workload_name: str, overwrite_workload_params: dict
+) -> dict | None:
+    """Generate the workload parameters"""
+    cluster_part = _cluster_part(cluster_type)
+    if f"{workload_name}-{cluster_part}-{version}" in overwrite_workload_params:
+        return overwrite_workload_params.get(f"{workload_name}-{cluster_part}-{version}", {})
+    elif f"{workload_name}-{cluster_part}" in overwrite_workload_params:
+        return overwrite_workload_params.get(f"{workload_name}-{cluster_part}", {})
+    elif workload_name in overwrite_workload_params:
+        return overwrite_workload_params.get(workload_name, {})
+    else:
+        return read_default_workload_params(cluster_type, workload_name)
+
+
+def read_default_workload_params(cluster_type: str, workload_name: str) -> dict | None:
+    """Read the default workload parameters"""
+    # Get the script path (with Path)
+    script_path = Path(__file__).parent.resolve()
+    workload_params_path = script_path / "../infra/workload_params_default/"
+    cluster_part = _cluster_part(cluster_type)
+    if (workload_params_path / f"{workload_name}.json").exists():
+        return json.load(open(workload_params_path / f"{workload_name}.json"))
+    elif (workload_params_path / f"{workload_name}-{cluster_part}.json").exists():
+        return json.load(
+            open(workload_params_path / f"{workload_name}-{cluster_part}.json")
+        )
+    else:
+        return None
+
+
 def main() -> None:
     workloads = [x.lower() for x in sys.argv[1].split(",")]
-    workload_params = json.loads(sys.argv[2])
+    overwrite_workload_params = json.loads(sys.argv[2])
     cluster_types = sys.argv[3].split(",")
     os_versions = sys.argv[4].split(",")
     es_versions = sys.argv[5].split(",")
@@ -161,28 +101,13 @@ def main() -> None:
 
     for workload_name in workloads:
         for cluster_type in get_available_cluster_types(cluster_types):
-            params = {}
-            # vectorsearch workloads require entirely different parameters
-            # this is also why they currently do not accept user-specified parameters
-            if workload_name.startswith("vectorsearch"):
-                if cluster_type == "ElasticSearch":
-                    if workload_name not in DEFAULT_ES_VECTORSEARCH_WORKLOAD_PARAMS:
-                        # ElasticSearch does not support all engines
-                        continue
-                    params = DEFAULT_ES_VECTORSEARCH_WORKLOAD_PARAMS[workload_name]
-                else:
-                    params = DEFAULT_OS_VECTORSEARCH_WORKLOAD_PARAMS.get(workload_name, {})
-            else:
-                params.update(DEFAULT_EXTRA_WORKLOAD_PARAMS.get(workload_name, {}))
-                if workload_name != "noaa_semantic_search":
-                    # overwrite defaults with user-specified parameters
-                    params.update(dict(workload_params))
             extra_params = DEFAULT_EXTRA_PARAMS.get(workload_name, {})
             workflow_benchmark_type = (
                 "dev" if workload_name.startswith("vectorsearch") else benchmark_type
             )
             workload = WORKLOAD_NAME_MAP.get(workload_name, workload_name)
             version_key, versions = cluster_versions[cluster_type]
+
             # We should still set the os_version even for ES because it is used
             # to determine the distribution_version in OSB
             os_version = os_versions[0] if os_versions else "2.16.0"
@@ -190,6 +115,15 @@ def main() -> None:
                 extra_params["os_version"] = os_version
 
             for version in versions:
+                params = get_workload_params(
+                    cluster_type, version, workload_name, overwrite_workload_params
+                )
+                if params is None:
+                    logger.warning(
+                        f"Workload parameters not found for {cluster_type}/{version}/{workload_name}"
+                    )
+                    continue
+
                 includes.append(
                     {
                         "name": workload_name,
