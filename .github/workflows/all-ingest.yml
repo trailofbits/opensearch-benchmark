@@ -13,10 +13,10 @@ on:
         type: string
         default: pmc
       workload_params:
-        description: 'Base Workload parameters'
+        description: 'Overwrite workload parameters (JSON)'
         required: true
         type: string
-        default: '{"number_of_replicas":0,"bulk_indexing_clients":1,"target_throughput":0}'
+        default: '{}'
       cluster_types:
         description: 'Cluster types (comma separated)'
         required: true

@@ -17,10 +17,10 @@ on:
         type: string
         default: pmc
       workload_params:
-        description: 'Workload parameters (JSON)'
+        description: 'Overwrite workload parameters (JSON)'
         required: true
         type: string
-        default: '{"number_of_replicas":0,"bulk_indexing_clients":1,"target_throughput":0}'
+        default: '{}'
       cluster_types:
         description: 'Cluster types (comma separated list, e.g. OpenSearch,ElasticSearch)'
         required: true
@@ -49,9 +49,9 @@ on:
 
 env:
   WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis' }}
-  WORKLOAD_PARAMS: ${{ inputs.workload_params || '{"number_of_replicas":0,"bulk_indexing_clients":1,"target_throughput":0}' }}
+  WORKLOAD_PARAMS: ${{ inputs.workload_params || '{}' }}
   CLUSTER_TYPES: ${{ inputs.cluster_types || 'OpenSearch,ElasticSearch' }}
-  OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.18.0' }}
+  OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.17.0,2.18.0' }}
   ES_VERSIONS: ${{ inputs.es_versions || '8.15.0' }}
 
 jobs:

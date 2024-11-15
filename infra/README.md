@@ -6,15 +6,15 @@
 - Install AWS CLI
 - In the AWS Console, go to "Security Credentials" and create a new "Access Key"
 - Set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
-- Copy `terraform.tfvars.template` to `terraform.tfvars`.
-  - For configurations for each workload, see `terraform_tfvars/` directory
+- Copy `terraform.tfvars.example` to `terraform.tfvars`.
+  - For configurations for each workload, see `workload_params_default/` directory
 - `terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
 - `terraform init`
 - Modify the `terraform.tfvars` file according to your needs
 - Note: The data store credentials and cluster password will be saved to the load generation machine.
 - By default, the load generation IP is added to the [shared prefix list](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#PrefixListDetails:prefixListId=pl-06f77c0b59dbf70fe) (id: `pl-06f77c0b59dbf70fe`). This gives access to the shared data store.
   - The workspace name is used a description for the prefix list entry
-- Run `terraform apply`
+- Run `terraform apply` or `terraform apply -var="workload=pmc" -var="workload_params=$(cat workload_params_default/pmc.json)"` if you want to specify alternative workloads/parameters.
 
 The Terraform script is going to create two separate AWS EC2 instances, one `target-cluster` used to host the product being benchmarked (e.g. OpenSearch) and the other `load-generation` running OpenSearch Benchmarking tool, used to load data and perform queries to the target cluster.
 
