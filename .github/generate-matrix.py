@@ -175,6 +175,12 @@ def main() -> None:
             )
             workload = WORKLOAD_NAME_MAP.get(workload_name, workload_name)
             version_key, versions = cluster_versions[cluster_type]
+            # We should still set the os_version even for ES because it is used
+            # to determine the distribution_version in OSB
+            os_version = os_versions[0] if os_versions else "2.16.0"
+            if version_key != cluster_versions["OpenSearch"][0]:
+                extra_params["os_version"] = os_version
+
             for version in versions:
                 includes.append(
                     {
