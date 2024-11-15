@@ -46,6 +46,11 @@ def get_light_yellow() -> dict:
     return {"red": 255 / 255, "green": 242 / 255, "blue": 204 / 255}
 
 
+def get_light_gray() -> dict:
+    """Return the light gray color."""
+    return {"red": 239 / 255, "green": 239 / 255, "blue": 239 / 255}
+
+
 def comparison(range_dict: dict) -> list[dict]:
     """Conditionally formats comparison (ES/OS)."""
     rv: list[dict] = []
