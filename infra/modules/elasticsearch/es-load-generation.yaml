@@ -14,7 +14,7 @@ write_files:
     content: ${load_script}
     owner: root:root
     permissions: '0755'
-  - path: /fix_index.sh
+  - path: /fix_files.sh
     encoding: gz+b64
     content: ${fix_index_script}
     owner: root:root
@@ -35,6 +35,12 @@ write_files:
     encoding: gz+b64
     content: |
       ${osb_knn_patch}
+    owner: root:root
+    permissions: '0644'
+  - path: /es_files/vectorsearch-task.patch
+    encoding: gz+b64
+    content: |
+      ${vectorsearch_task_patch}
     owner: root:root
     permissions: '0644'
   - path: /id_rsa
@@ -73,7 +79,7 @@ runcmd:
   - [ mv, /id_rsa, /home/ubuntu/.ssh/id_rsa ]
   - [ chown, ubuntu:ubuntu, /home/ubuntu/.ssh/id_rsa ]
   - [ sudo, -u, ubuntu, /load_generation.sh, ${es_cluster}, elastic, ${es_password}, ${distribution_version}, ${es_version}, "ES", ${instance_type}, ${cluster_instance_id}]
-  - [ sudo, -u, ubuntu, /fix_index.sh, https://${es_cluster}:9200, elastic, ${es_password} ]
+  - [ sudo, -u, ubuntu, /fix_files.sh, https://${es_cluster}:9200, elastic, ${es_password} ]
   - [sed, -i, '/^env.name =/c\env.name = ${benchmark_environment}', /mnt/.benchmark/benchmark.ini]
   - [sed, -i, '/^datastore\./s/^/# /',  /mnt/.benchmark/benchmark.ini]
   - |

@@ -36,3 +36,8 @@ echo "Fixing index.json for Workload $WORKLOAD ES version $CURRENT_ES_VERSION"
 OSB_INSTALL_DIR="$(pip list -v | grep opensearch-benchmark | awk '{print $3}')"
 PATCH_FILE="/es_files/osb-1.11.0-knn.patch"
 patch -p0 -d "$OSB_INSTALL_DIR" < "$PATCH_FILE"
+
+# Fix OSB vectorsearch workload to pass extra ES KNN API parameters
+OSB_WORKLOAD_DIR="/mnt/.benchmark/benchmarks/workloads/default"
+PATCH_FILE="/es_files/vectorsearch-task.patch"
+patch -p0 -d "$OSB_WORKLOAD_DIR" < "$PATCH_FILE"
