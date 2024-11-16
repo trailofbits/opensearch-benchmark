@@ -79,13 +79,14 @@ resource "aws_instance" "load-generation" {
       big5_es_index_8         = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.json"))),
       vectorsearch_es_index_8 = yamlencode(base64gzip(file("${path.module}/es_indexes/vectorsearch/es_index_8.json"))),
       osb_knn_patch           = yamlencode(base64gzip(file("${path.module}/es_files/osb-1.11.0-knn.patch"))),
+      vectorsearch_task_patch = yamlencode(base64gzip(file("${path.module}/es_files/vectorsearch-task.patch"))),
       benchmark_environment   = var.benchmark_environment
       datastore_host          = var.datastore_host
       datastore_username      = var.datastore_username
       datastore_password      = var.datastore_password
       instance_type           = var.cluster_instance_type
       cluster_instance_id     = aws_instance.target-cluster.id
-      fix_index_script = yamlencode(base64gzip(templatefile("${path.module}/fix_index.sh",
+      fix_index_script = yamlencode(base64gzip(templatefile("${path.module}/fix_files.sh",
         {
           workload = var.workload,
         }
