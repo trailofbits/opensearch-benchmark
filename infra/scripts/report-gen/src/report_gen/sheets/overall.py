@@ -6,29 +6,29 @@ from dataclasses import dataclass
 from googleapiclient.discovery import Resource
 
 from .common import (
-    get_category_operation_map,
     adjust_sheet_columns,
-    get_sheet_id,
     convert_range_to_dict,
-    get_workload_operations,
+    get_category_operation_map,
+    get_sheet_id,
     get_workload_operation_categories,
+    get_workload_operations,
     get_workloads,
 )
 from .format.color import (
     color as format_color,
-    relative_difference as format_color_relative_difference,
-    comparison as format_color_comparison,
 )
-
-from .format.color import get_light_blue, get_light_yellow, get_light_gray
+from .format.color import get_light_blue, get_light_gray, get_light_yellow
+from .format.color import (
+    relative_difference as format_color_relative_difference,
+)
 from .format.font import (
     bold as format_font_bold,
 )
-from .format.number import (
-    format_float as format_number_float,
-)
 from .format.merge import (
     merge as format_merge,
+)
+from .format.number import (
+    format_float as format_number_float,
 )
 
 logger = logging.getLogger(__name__)

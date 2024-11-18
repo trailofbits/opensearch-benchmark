@@ -14,7 +14,6 @@ from .import_data import ImportData
 from .osversion import OSVersion
 from .result import Result
 from .summary import Summary
-from .osversion import OSVersion
 
 logger = logging.getLogger(__name__)
 
