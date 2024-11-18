@@ -11,9 +11,9 @@ from googleapiclient.discovery import Resource, build
 from .auth import authenticate
 from .common import adjust_sheet_columns, get_category_operation_map, get_sheet_id
 from .import_data import ImportData
+from .osversion import OSVersion
 from .result import Result
 from .summary import Summary
-from .osversion import OSVersion
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,6 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         return None
     logger.info("Summary processed successfully")
 
-    # TODO(Evan)
     # Create OS version sheets for big5
     os_version = OSVersion(service=service, spreadsheet_id=spreadsheet_id)
     if not os_version.get():
