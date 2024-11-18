@@ -2,6 +2,7 @@
 
 import logging
 from dataclasses import dataclass
+from typing import cast
 
 from googleapiclient.discovery import Resource
 
@@ -80,7 +81,7 @@ class OverallSheet:
                 )
                 .execute()
             )
-            return result["updates"]["updatedRange"]
+            return cast(str, result["updates"]["updatedRange"])
 
         def format_row(
             sheet_range: str,
