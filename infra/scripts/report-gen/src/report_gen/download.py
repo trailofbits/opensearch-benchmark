@@ -77,6 +77,12 @@ class BenchmarkResult:
         self.P50 = p50
         self.P90 = p90
 
+    def __eq__(self, other: object) -> bool:
+        """Override default __eq__."""
+        if not isinstance(other, BenchmarkResult):
+            return NotImplemented
+        return self.__dict__ == other.__dict__
+
 
 class VerboseTransport(Transport):
     """Extend the Transport class to log information about the request."""
@@ -308,6 +314,42 @@ def _handle_results_response(
                 p90,
             )
         )
+
+    return results
+
+
+def read_csv_files(folder: Path) -> list[BenchmarkResult]:
+    """Read benchmark results that were previously dumped to folder."""
+    results = []
+    for csv_filepath in folder.glob("*.csv"):
+        with csv_filepath.open() as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                workload_params = {k.removeprefix("workload\\."): row[k] for k in row if k.startswith("workload\\.")}
+                # NOTE(brad): this assumes the date was formatted using default str(datetime)
+                run_group = datetime.strptime(row["user-tags\\.run-group"], "%Y-%m-%d %H:%M:%S")  # noqa:DTZ007
+
+                results.append(
+                    BenchmarkResult(
+                        run_group=run_group,
+                        engine=row["user-tags\\.engine-type"],
+                        environment=row["environment"],
+                        engine_version=row["distribution-version"],
+                        benchmark_source=row["user-tags\\.ci"],
+                        run=row["user-tags\\.run"],
+                        snapshot_bucket=row["user-tags\\.snapshot-s3-bucket"],
+                        snapshot_base_path=row["user-tags\\.snapshot-base-path"],
+                        workload=row["workload"],
+                        test_procedure=row["test-procedure"],
+                        workload_params=workload_params,
+                        shard_count=int(row["user-tags\\.run"]),
+                        replica_count=int(row["user-tags\\.replica-count"]),
+                        operation=row["operation"],
+                        metric_name=row["name"],
+                        p50=row["value\\.50_0"],
+                        p90=row["value\\.90_0"],
+                    )
+                )
 
     return results
 
