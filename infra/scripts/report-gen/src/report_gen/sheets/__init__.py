@@ -70,7 +70,7 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         return None
     logger.info("OS versions processed successfully")
 
-    # TODO(Evan)
+    # noqa: RUF100, FIX002, TODO(Evan)
     # Create Overall Spread sheet for big5
 
     # Output spreadsheet URL for ease

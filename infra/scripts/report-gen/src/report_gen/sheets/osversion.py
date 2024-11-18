@@ -199,7 +199,7 @@ class OSVersion:
             rows = []
             rows.append([f"{category}"])
             rows.extend([[""]] * (len(operations) - 1))
-            request_properties: dict = {
+            request_properties = {
                 "majorDimension": "ROWS",
                 "values": rows,
             }
