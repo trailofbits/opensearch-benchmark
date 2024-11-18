@@ -120,8 +120,8 @@ class OverallSheet:
             [
                 ["Operation", f"ES {es_version} P90 ST"]
                 + [f"OS {v} P90 ST" for v in os_versions]
-                + [f"Relative Difference ES {es_version} vs  OS {v}" for v in os_versions]
-                + [f"Ratio ES {es_version} vs  OS {v}" for v in os_versions]
+                + [f"Relative Difference\nES {es_version} vs OS {v}" for v in os_versions]
+                + [f"Ratio ES {es_version} /\n OS {v}" for v in os_versions]
             ],
         )
         range_dict = convert_range_to_dict(row2_range)
