@@ -144,6 +144,45 @@ def rsd(range_dict: dict) -> dict:
     }
 
 
+def relative_difference(range_dict: dict) -> list[dict]:
+    """Conditionally formats relative difference."""
+    rv: list[dict] = []
+
+    # Value is less than 0
+    rv.append(
+        {
+            "addConditionalFormatRule": {
+                "rule": {
+                    "ranges": [range_dict],
+                    "booleanRule": {
+                        "condition": {"type": "NUMBER_LESS", "values": [{"userEnteredValue": "0"}]},
+                        "format": {"backgroundColor": get_light_red()},
+                    },
+                },
+                "index": 0,
+            }
+        }
+    )
+
+    # Value is greater than 0
+    rv.append(
+        {
+            "addConditionalFormatRule": {
+                "rule": {
+                    "ranges": [range_dict],
+                    "booleanRule": {
+                        "condition": {"type": "NUMBER_GREATER", "values": [{"userEnteredValue": "0"}]},
+                        "format": {"backgroundColor": get_light_green()},
+                    },
+                },
+                "index": 0,
+            }
+        }
+    )
+
+    return rv
+
+
 def color(range_dict: dict, color: dict) -> dict:
     """Color header."""
     return {

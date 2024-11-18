@@ -8,8 +8,13 @@ variable "loadgen_instance_type" {
   type        = string
 }
 
-variable "ami_id" {
+variable "cluster_ami_id" {
   description = "AMI ID to use for the cluster"
+  type        = string
+}
+
+variable "loadgen_ami_id" {
+  description = "AMI ID to use for the load generation machine"
   type        = string
 }
 

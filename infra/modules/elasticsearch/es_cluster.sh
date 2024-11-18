@@ -2,16 +2,17 @@
 
 CLUSTER_PASSWORD=$1
 CLUSTER_VERSION=$2
-ES_SNAPSHOT_AWS_ACCESS_KEY_ID=$3
-ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY=$4
+CLUSTER_ARCH=$3
+ES_SNAPSHOT_AWS_ACCESS_KEY_ID=$4
+ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY=$5
 
 cd /mnt || exit 1
 
 # Install ElasticSearch from .tar.gz
-wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$CLUSTER_VERSION-linux-x86_64.tar.gz
-wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$CLUSTER_VERSION-linux-x86_64.tar.gz.sha512
-shasum -a 512 -c elasticsearch-$CLUSTER_VERSION-linux-x86_64.tar.gz.sha512
-tar -xzf elasticsearch-$CLUSTER_VERSION-linux-x86_64.tar.gz
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$CLUSTER_VERSION-linux-$CLUSTER_ARCH.tar.gz
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$CLUSTER_VERSION-linux-$CLUSTER_ARCH.tar.gz.sha512
+shasum -a 512 -c elasticsearch-$CLUSTER_VERSION-linux-$CLUSTER_ARCH.tar.gz.sha512
+tar -xzf elasticsearch-$CLUSTER_VERSION-linux-$CLUSTER_ARCH.tar.gz
 cd elasticsearch-$CLUSTER_VERSION/ || exit 1
 
 cat <<EOF > config/elasticsearch.yml

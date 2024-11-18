@@ -1,3 +1,11 @@
+locals {
+  cluster_arch_map = {
+    vectorsearch = "aarch64"
+  }
+  default_cluster_arch = "x86_64"
+  cluster_arch = lookup(local.cluster_arch_map, var.workload, local.default_cluster_arch)
+}
+
 terraform {
   required_providers {
     aws = {
@@ -11,7 +19,7 @@ terraform {
 data "aws_caller_identity" "current" {}
 
 resource "aws_instance" "target-cluster" {
-  ami                    = var.ami_id
+  ami                    = var.cluster_ami_id
   instance_type          = var.cluster_instance_type
   key_name               = var.ssh_key_name
   vpc_security_group_ids = var.security_groups
@@ -24,7 +32,8 @@ resource "aws_instance" "target-cluster" {
     {
       es_cluster_script = yamlencode(base64gzip(file("${path.module}/es_cluster.sh"))),
       es_password       = var.password,
-      es_version        = var.es_version
+      es_version        = var.es_version,
+      es_arch           = local.cluster_arch,
 
       es_snapshot_access_key = var.snapshot_user_aws_access_key_id,
       es_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
@@ -41,7 +50,7 @@ resource "aws_instance" "target-cluster" {
 }
 
 resource "aws_instance" "load-generation" {
-  ami                    = var.ami_id
+  ami                    = var.loadgen_ami_id
   instance_type          = var.loadgen_instance_type
   key_name               = var.ssh_key_name
   vpc_security_group_ids = var.security_groups

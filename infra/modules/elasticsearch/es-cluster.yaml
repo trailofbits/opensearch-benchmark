@@ -38,4 +38,4 @@ runcmd:
   - [ sysctl, -p, /etc/sysctl.d/99-custom.conf ]
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
   - [ mv, /ssh_pub_key, /home/ubuntu/.ssh/authorized_keys ]
-  - [ sudo, -u, ubuntu, /es_cluster.sh, ${es_password}, ${es_version}, ${es_snapshot_access_key}, ${es_snapshot_secret_key} ]
+  - [ sudo, -u, ubuntu, /es_cluster.sh, ${es_password}, ${es_version}, ${es_arch}, ${es_snapshot_access_key}, ${es_snapshot_secret_key} ]
