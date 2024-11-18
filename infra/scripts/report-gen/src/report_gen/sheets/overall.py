@@ -196,7 +196,6 @@ class OverallSheet:
         start = 2 + len(os_versions)
         end = start + len(os_versions) - 1
         relative_diff_range = f"{self.sheet_name}!{idx2col(start)}2:{idx2col(end)}{data_row_count + 3}"
-        logger.info(f"relative diff {relative_diff_range}")
         range_dict = convert_range_to_dict(relative_diff_range)
         range_dict["sheetId"] = self.sheet_id
         requests.extend(format_color_relative_difference(range_dict))
@@ -205,7 +204,6 @@ class OverallSheet:
         start = end + 1
         end = start + len(os_versions) - 1
         os_es_range = f"{self.sheet_name}!{idx2col(start)}2:{idx2col(end)}{data_row_count + 3}"
-        logger.info(f"os/es {os_es_range}")
         range_dict = convert_range_to_dict(os_es_range)
         range_dict["sheetId"] = self.sheet_id
         requests.extend(format_color_relative_difference(range_dict))
