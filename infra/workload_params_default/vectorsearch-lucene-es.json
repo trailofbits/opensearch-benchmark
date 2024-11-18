@@ -13,7 +13,6 @@
     "hnsw_ef_construction": 256,
     "query_k": 100,
     "query_body": {
-        "stored_fields": "_none_"
     },
     "query_data_set_format": "hdf5",
     "query_data_set_corpus": "cohere-1m",
