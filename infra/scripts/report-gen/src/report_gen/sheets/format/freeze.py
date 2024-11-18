@@ -1,7 +1,7 @@
 """Functions for freezing rows and columns."""
 
 
-def format_freeze_row(sheet_id: int | None, row_count: int) -> dict | None:
+def row(sheet_id: int | None, row_count: int) -> dict | None:
     """Freeze rows."""
     if sheet_id is None:
         return None
@@ -13,7 +13,7 @@ def format_freeze_row(sheet_id: int | None, row_count: int) -> dict | None:
     }
 
 
-def format_freeze_col(sheet_id: int | None, col_count: int) -> dict | None:
+def col(sheet_id: int | None, col_count: int) -> dict | None:
     """Freeze columns."""
     if sheet_id is None:
         return None

@@ -11,6 +11,7 @@ from googleapiclient.discovery import Resource, build
 from .auth import authenticate
 from .common import adjust_sheet_columns, get_category_operation_map, get_sheet_id
 from .import_data import ImportData
+from .osversion import OSVersion
 from .result import Result
 from .summary import Summary
 
@@ -61,6 +62,16 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         logger.error("Error creating summary sheet")
         return None
     logger.info("Summary processed successfully")
+
+    # Create OS version sheets for big5
+    os_version = OSVersion(service=service, spreadsheet_id=spreadsheet_id)
+    if not os_version.get():
+        logger.error("Error creating OS versions sheet")
+        return None
+    logger.info("OS versions processed successfully")
+
+    # noqa: RUF100, FIX002, TODO(Evan)
+    # Create Overall Spread sheet for big5
 
     # Output spreadsheet URL for ease
     report_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
@@ -119,10 +130,17 @@ def _add_sheet(service: Resource, spreadsheet_id: str, sheet_name: str) -> None:
 
 def _create_spreadsheet(service: Resource, title: str) -> str | None:
     """Create a new spreadsheet with the initial columns."""
-    # Create a new spreadsheet and add the initial columns
-    spreadsheet_id: str | None = _create_blank_spreadsheet(service, title, "Summary", 50, 500)
+    # Create Overall Spread sheet for big5
+    spreadsheet_id: str | None = _create_blank_spreadsheet(service, title, "Overall Spread", 50, 500)
     if spreadsheet_id is None:
         return None
+
+    # Create sheets for OS versions 2.16, 2.17, and 2.18
+    for name in ["OS 2.16.0", "OS 2.17.0", "OS 2.18.0"]:
+        _add_sheet(service, spreadsheet_id, name)
+
+    # Create a new spreadsheet and add the initial columns
+    _add_sheet(service, spreadsheet_id, "Summary")
 
     # Create a new sheet for aggregated results
     _add_sheet(service, spreadsheet_id, "Results")

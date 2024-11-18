@@ -46,7 +46,12 @@ def get_light_yellow() -> dict:
     return {"red": 255 / 255, "green": 242 / 255, "blue": 204 / 255}
 
 
-def format_color_comparison(range_dict: dict) -> list[dict]:
+def get_light_gray() -> dict:
+    """Return the light gray color."""
+    return {"red": 239 / 255, "green": 239 / 255, "blue": 239 / 255}
+
+
+def comparison(range_dict: dict) -> list[dict]:
     """Conditionally formats comparison (ES/OS)."""
     rv: list[dict] = []
 
@@ -123,7 +128,7 @@ def format_color_comparison(range_dict: dict) -> list[dict]:
     return rv
 
 
-def format_color_rsd(range_dict: dict) -> dict:
+def rsd(range_dict: dict) -> dict:
     """Conditionally formats RSD."""
     return {
         "addConditionalFormatRule": {
@@ -139,7 +144,46 @@ def format_color_rsd(range_dict: dict) -> dict:
     }
 
 
-def format_color(range_dict: dict, color: dict) -> dict:
+def relative_difference(range_dict: dict) -> list[dict]:
+    """Conditionally formats relative difference."""
+    rv: list[dict] = []
+
+    # Value is less than 0
+    rv.append(
+        {
+            "addConditionalFormatRule": {
+                "rule": {
+                    "ranges": [range_dict],
+                    "booleanRule": {
+                        "condition": {"type": "NUMBER_LESS", "values": [{"userEnteredValue": "0"}]},
+                        "format": {"backgroundColor": get_light_red()},
+                    },
+                },
+                "index": 0,
+            }
+        }
+    )
+
+    # Value is greater than 0
+    rv.append(
+        {
+            "addConditionalFormatRule": {
+                "rule": {
+                    "ranges": [range_dict],
+                    "booleanRule": {
+                        "condition": {"type": "NUMBER_GREATER", "values": [{"userEnteredValue": "0"}]},
+                        "format": {"backgroundColor": get_light_green()},
+                    },
+                },
+                "index": 0,
+            }
+        }
+    )
+
+    return rv
+
+
+def color(range_dict: dict, color: dict) -> dict:
     """Color header."""
     return {
         "repeatCell": {
