@@ -36,7 +36,7 @@ resource "aws_instance" "target-cluster" {
       os_arch                = local.cluster_arch,
       os_snapshot_access_key = var.snapshot_user_aws_access_key_id,
       os_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
-      authorized_ssh_key     = var.ssh_pub_key,
+      authorized_ssh_key     = yamlencode(base64gzip(var.ssh_pub_key)),
       jvm_options            = yamlencode(base64gzip(file("${path.module}/jvm.options"))),
     }
   )
@@ -85,7 +85,7 @@ resource "aws_instance" "load-generation" {
       instance_type           = var.cluster_instance_type
       cluster_instance_id     = aws_instance.target-cluster.id
       fix_files_script        = yamlencode(base64gzip(file("${path.module}/fix_files.sh")))
-      ssh_private_key         = base64gzip(var.ssh_priv_key)
+      ssh_private_key         = yamlencode(base64gzip(var.ssh_priv_key))
     }
   )
   user_data_replace_on_change = true

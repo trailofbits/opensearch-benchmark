@@ -33,7 +33,8 @@ write_files:
     permissions: '0644'
   - path: /id_rsa
     encoding: gz+b64
-    content: ${ssh_private_key}
+    content: |
+      ${ssh_private_key}
     owner: ubuntu:ubuntu
     permissions: '0600'
 
@@ -48,6 +49,7 @@ mounts:
   - [ /dev/nvme1n1, /mnt, xfs, "defaults", "0", "0" ]
 
 bootcmd:
+  - timeout 30s sh -c 'while [ ! -e /dev/nvme1n1 ]; do sleep 1; done'
   - swapoff -a
 
 byobu_by_default: enable-user
@@ -66,7 +68,7 @@ runcmd:
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
   - [ mv, /id_rsa, /home/ubuntu/.ssh/id_rsa ]
   - [ chown, ubuntu:ubuntu, /home/ubuntu/.ssh/id_rsa ]
-  - [ sudo, -u, ubuntu, /load_generation.sh, ${os_cluster}, admin, ${os_password}, ${distribution_version}, ${os_version}, "OS", ${instance_type}, ${cluster_instance_id}]
+  - [ sudo, -u, ubuntu, /load_generation.sh, "${os_cluster}", "admin", "${os_password}", "${distribution_version}", "${os_version}", "OS", "${instance_type}", "${cluster_instance_id}"]
   - [ sudo, -u, ubuntu, /fix_files.sh ]
   - [sed, -i, '/^env.name =/c\env.name = ${benchmark_environment}', /mnt/.benchmark/benchmark.ini]
   - [sed, -i, '/^datastore\./s/^/# /',  /mnt/.benchmark/benchmark.ini]

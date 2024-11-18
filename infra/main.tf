@@ -57,73 +57,25 @@ resource "aws_key_pair" "ssh_key" {
   public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
-resource "aws_vpc" "vpc" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+data "aws_vpc" "vpc" {
+  id = var.vpc_id
 }
 
-resource "aws_subnet" "subnet" {
-  cidr_block        = cidrsubnet(aws_vpc.vpc.cidr_block, 3, 1)
-  vpc_id            = aws_vpc.vpc.id
-  availability_zone = var.aws_subnet_zone
+data "aws_subnet" "subnet" {
+  id = var.vpc_subnet_id
 }
 
-resource "aws_internet_gateway" "gtw" {
-  vpc_id = aws_vpc.vpc.id
+data "aws_internet_gateway" "gtw" {
+  internet_gateway_id = var.vpc_gateway_id
 }
 
-resource "aws_security_group" "allow_osb" {
-  name        = "${terraform.workspace}-allow-osb"
-  description = "Allow ES/OS/OSB inbound traffic and all outbound traffic"
-  vpc_id      = aws_vpc.vpc.id
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
-  security_group_id = aws_security_group.allow_osb.id
-  cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 22
-  ip_protocol       = "tcp"
-  to_port           = 22
-}
-
-resource "aws_vpc_security_group_ingress_rule" "allow_es_cluster_traffic_9200" {
-  security_group_id = aws_security_group.allow_osb.id
-  cidr_ipv4         = "10.0.0.0/16"
-  from_port         = 9200
-  to_port           = 9200
-  ip_protocol       = "tcp"
-}
-
-resource "aws_vpc_security_group_ingress_rule" "allow_es_cluster_traffic_9300" {
-  security_group_id = aws_security_group.allow_osb.id
-  cidr_ipv4         = "10.0.0.0/16"
-  from_port         = 9300
-  to_port           = 9300
-  ip_protocol       = "tcp"
-}
-
-resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4" {
-  security_group_id = aws_security_group.allow_osb.id
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "-1" # semantically equivalent to all ports
-}
-
-resource "aws_route_table" "route-table-test-env" {
-  vpc_id = aws_vpc.vpc.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.gtw.id
-  }
+data "aws_route_table" "route-table-test-env" {
+  route_table_id = var.vpc_route_table_id
 }
 
 resource "aws_route_table_association" "subnet-association" {
-  subnet_id      = aws_subnet.subnet.id
-  route_table_id = aws_route_table.route-table-test-env.id
+  subnet_id      = data.aws_subnet.subnet.id
+  route_table_id = data.aws_route_table.route-table-test-env.route_table_id
 }
 
 data "aws_ec2_managed_prefix_list" "prefix-list" {
@@ -222,8 +174,8 @@ module "es-cluster" {
   ssh_key_name          = aws_key_pair.ssh_key.key_name
   ssh_priv_key          = tls_private_key.ssh_key.private_key_openssh
   ssh_pub_key           = tls_private_key.ssh_key.public_key_openssh
-  security_groups       = [aws_security_group.allow_osb.id]
-  subnet_id             = aws_subnet.subnet.id
+  security_groups       = [var.security_group_id]
+  subnet_id             = data.aws_subnet.subnet.id
   password              = random_password.cluster-password.result
   prefix_list_id        = data.aws_ec2_managed_prefix_list.prefix-list.id
   benchmark_environment = var.benchmark_environment
@@ -263,8 +215,8 @@ module "os-cluster" {
   ssh_key_name          = aws_key_pair.ssh_key.key_name
   ssh_priv_key          = tls_private_key.ssh_key.private_key_openssh
   ssh_pub_key           = tls_private_key.ssh_key.public_key_openssh
-  security_groups       = [aws_security_group.allow_osb.id]
-  subnet_id             = aws_subnet.subnet.id
+  security_groups       = [var.security_group_id]
+  subnet_id             = data.aws_subnet.subnet.id
   password              = random_password.cluster-password.result
   prefix_list_id        = data.aws_ec2_managed_prefix_list.prefix-list.id
   benchmark_environment = var.benchmark_environment

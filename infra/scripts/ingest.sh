@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 source /mnt/utils.sh
 
 if [ -z "$CLUSTER_HOST" ] || [ -z "$CLUSTER_USER" ] || [ -z "$CLUSTER_PASSWORD" ] || [ -z "$DISTRIBUTION_VERSION" ]; then

@@ -11,7 +11,8 @@ write_files:
     permissions: '0644'
   - path: /es_cluster.sh
     encoding: gz+b64
-    content: ${es_cluster_script}
+    content: |
+      ${es_cluster_script}
     owner: root:root
     permissions: '0755'
   - path: /jvm.options
@@ -21,7 +22,8 @@ write_files:
     owner: root:root
     permissions: '0644'
   - path: /ssh_pub_key
-    content: ${authorized_ssh_key}
+    content: |
+      ${authorized_ssh_key}
     owner: ubuntu:ubuntu
     permissions: '0644'
 
@@ -36,6 +38,7 @@ mounts:
   - [ /dev/nvme1n1, /mnt, xfs, "defaults", "0", "0" ]
 
 bootcmd:
+  - timeout 30s sh -c 'while [ ! -e /dev/nvme1n1 ]; do sleep 1; done'
   - swapoff -a
   - ufw allow 9200/tcp
   - ufw allow 9300/tcp
@@ -45,4 +48,4 @@ runcmd:
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
   - [ mv, /ssh_pub_key, /home/ubuntu/.ssh/authorized_keys ]
   - [ mv, /jvm.options, /mnt/jvm.options ]
-  - [ sudo, -u, ubuntu, /es_cluster.sh, ${es_password}, ${es_version}, ${es_arch}, ${es_snapshot_access_key}, ${es_snapshot_secret_key} ]
+  - [ sudo, -u, ubuntu, /es_cluster.sh, "${es_password}", "${es_version}", "${es_arch}", "${es_snapshot_access_key}", "${es_snapshot_secret_key}" ]
