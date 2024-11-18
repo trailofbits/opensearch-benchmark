@@ -49,7 +49,7 @@ on:
 
 env:
   # nightly run default parameters
-  WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis,vectorsearch' }}
+  WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis,vectorsearch,noaa_semantic_search' }}
   WORKLOAD_PARAMS: ${{ inputs.workload_params || '{}' }}
   CLUSTER_TYPES: ${{ inputs.cluster_types || 'OpenSearch,ElasticSearch' }}
   OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.17.0,2.18.0' }}
