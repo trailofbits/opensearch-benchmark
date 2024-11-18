@@ -16,10 +16,16 @@ from .common import (
 )
 from .format.color import (
     color as format_color,
+    relative_difference as format_color_relative_difference,
+    comparison as format_color_comparison,
 )
+
 from .format.color import get_light_blue, get_light_yellow, get_light_gray
 from .format.font import (
     bold as format_font_bold,
+)
+from .format.number import (
+    format_float as format_number_float,
 )
 from .format.merge import (
     merge as format_merge,
@@ -139,7 +145,69 @@ class OverallSheet:
         # Create header
         requests = self.create_header(os_versions, es_version, workload_str)
 
-        # TODO
+        os_sheets = {v: f"OS {v}" for v in os_versions}
+
+        # Calculating the number of data rows is based on loop to create rows in OsVersion.fill
+        spec = next(spec for spec in get_category_operation_map() if spec["workload"] == workload_str)
+        data_row_count = sum(len(operations) for operations in spec["categories"].values())
+
+        # Grab ES data from any sheet. They should all have the same ES data
+        any_os_sheet = next(iter(os_sheets.values()))
+
+        rows = []
+        # There are two header rows. First data row is row 3
+        for i in range(3, 3 + data_row_count):
+            es_p90 = [f"='{any_os_sheet}'!$B${i}"]
+            os_p90s = [f"='{os_sheets[v]}'!$D${i}" for v in os_versions]
+            relative_diffs = [f"='{os_sheets[v]}'!$F${i}" for v in os_versions]
+            ratios = [f"='{os_sheets[v]}'!$G${i}" for v in os_versions]
+
+            row = es_p90 + os_p90s + relative_diffs + ratios
+            rows.append(row)
+
+        # Update table to Summary sheet
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"{self.sheet_name}!$B3",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        updated_range = result["updates"]["updatedRange"]
+
+        # Format float numbers
+        range_dict = convert_range_to_dict(updated_range)
+        range_dict["sheetId"] = self.sheet_id
+        requests.append(format_number_float(range_dict))
+
+        def idx2col(idx: int) -> str:
+            return chr(ord("A") + idx)
+
+        # Format Relative Difference colors
+        start = 2 + len(os_versions)
+        end = start + len(os_versions) - 1
+        relative_diff_range = f"{self.sheet_name}!{idx2col(start)}2:{idx2col(end)}{data_row_count + 3}"
+        logger.info(f"relative diff {relative_diff_range}")
+        range_dict = convert_range_to_dict(relative_diff_range)
+        range_dict["sheetId"] = self.sheet_id
+        requests.extend(format_color_relative_difference(range_dict))
+
+        # Format ES/OS colors
+        start = end + 1
+        end = start + len(os_versions) - 1
+        os_es_range = f"{self.sheet_name}!{idx2col(start)}2:{idx2col(end)}{data_row_count + 3}"
+        logger.info(f"os/es {os_es_range}")
+        range_dict = convert_range_to_dict(os_es_range)
+        range_dict["sheetId"] = self.sheet_id
+        requests.extend(format_color_relative_difference(range_dict))
 
         return requests
 
@@ -169,6 +237,7 @@ class OverallSheet:
             logger.error(f"Error, no operation categories found for workload {workload_str}")
             return False
 
+        # NOTE(Brad): this is form the sheet name in _create_spreadsheet() in __init__.py
         self.sheet_name = "Overall Spread"
         self.sheet_id, self.sheet = get_sheet_id(self.service, self.spreadsheet_id, self.sheet_name)
         if self.sheet_id is None:
