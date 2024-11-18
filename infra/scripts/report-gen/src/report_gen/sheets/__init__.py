@@ -12,6 +12,7 @@ from .auth import authenticate
 from .common import adjust_sheet_columns, get_category_operation_map, get_sheet_id
 from .import_data import ImportData
 from .osversion import OSVersion
+from .overall import OverallSheet
 from .result import Result
 from .summary import Summary
 
@@ -69,8 +70,6 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         logger.error("Error creating OS versions sheet")
         return None
     logger.info("OS versions processed successfully")
-
-    from .overall import OverallSheet
 
     overall_sheet = OverallSheet(service=service, spreadsheet_id=spreadsheet_id)
     if not overall_sheet.get():
