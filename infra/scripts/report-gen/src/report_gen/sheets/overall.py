@@ -18,6 +18,9 @@ from .common import (
 from .format.color import (
     color as format_color,
 )
+from .format.color import (
+    comparison as format_color_comparison,
+)
 from .format.color import get_light_blue, get_light_gray, get_light_yellow
 from .format.color import (
     relative_difference as format_color_relative_difference,
@@ -206,7 +209,7 @@ class OverallSheet:
         os_es_range = f"{self.sheet_name}!{idx2col(start)}2:{idx2col(end)}{data_row_count + 3}"
         range_dict = convert_range_to_dict(os_es_range)
         range_dict["sheetId"] = self.sheet_id
-        requests.extend(format_color_relative_difference(range_dict))
+        requests.extend(format_color_comparison(range_dict))
 
         return requests
 
