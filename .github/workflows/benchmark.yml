@@ -66,6 +66,11 @@ on:
         description: 'Tag describing CI run'
         required: true
         type: string
+      snapshot_version:
+        description: 'Snapshot version (`new` or `latest`)'
+        required: false
+        type: string
+        default: 'latest'
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -102,6 +107,7 @@ env:
   TF_VAR_es_version: ${{ inputs.es_version }}
   TF_VAR_os_version: ${{ inputs.os_version }}
   TF_VAR_distribution_version: ${{ inputs.os_version }}
+  TF_VAR_snapshot_version: ${{ inputs.snapshot_version }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   SSH_OPTIONS: -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10

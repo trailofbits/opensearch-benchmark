@@ -32,6 +32,11 @@ on:
         required: false
         type: string
         default: 8.15.0
+      snapshot_version:
+        description: 'Snapshot version (`new` or `latest`)'
+        required: true
+        type: string
+        default: 'latest'
       os_versions:
         description: 'OpenSearch versions (comma separated)'
         required: false
@@ -88,6 +93,7 @@ jobs:
       es_version: ${{ matrix.es_version }}
       os_version: ${{ matrix.os_version }}
       aws_region: ${{ inputs.aws_region || 'ca-central-1' }}
+      snapshot_version: ${{ inputs.snapshot_version }}
       # assumes the only possible event is workflow_dispatch
       ci_tag: 'manual'
     secrets:
