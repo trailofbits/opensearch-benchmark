@@ -146,7 +146,7 @@ def get_category_operation_map() -> list[dict]:
         {
             "workload": "noaa_semantic_search",
             "categories": {
-               "Aggregation": [
+                "Aggregation": [
                     "aggs-query-date-histo-geohash-grid-hybrid",
                     "aggs-query-date-histo-geohash-grid-hybrid-one-subquery",
                     "aggs-query-date-histo-geohash-grid-hybrid-one-subquery-large-subset",
@@ -163,13 +163,13 @@ def get_category_operation_map() -> list[dict]:
                     "aggs-query-term-min-hybrid-one-subquery",
                     "aggs-query-term-min-hybrid-one-subquery-large-subset",
                     "aggs-query-term-min-hybrid-one-subquery-medium-subset",
-               ],
-               "Hybrid Query": [
+                ],
+                "Hybrid Query": [
                     "hybrid-query-only-range",
                     "hybrid-query-only-range-large-subset",
                     "hybrid-query-only-range-medium-subset",
                     "hybrid-query-only-term-range-date",
-               ],
+                ],
             },
         },
     ]
