@@ -50,7 +50,7 @@ while ! curl --max-time 5 -ku "$CLUSTER_USER:$CLUSTER_PASSWORD" "$CLUSTER_HOST";
     echo "Waiting for the cluster to be up ($tries)"
     sleep 2
     ((tries++))
-    if [ $tries -eq 20 ]; then
+    if [ $tries -eq 50 ]; then
         echo "Failed to start OpenSearch"
         exit 1
     fi
