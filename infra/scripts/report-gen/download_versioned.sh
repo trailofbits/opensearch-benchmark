@@ -13,7 +13,7 @@ fi
 start="$1"
 end="$2"
 
-folder="download_versioned"
+folder="download_versioned_${start}_${end}"
 mkdir -p $folder
 make run ARGS=" download \
     --host opense-clust-AEqAZh9qc4u7-dcbe5cce2775e15e.elb.us-east-1.amazonaws.com \
