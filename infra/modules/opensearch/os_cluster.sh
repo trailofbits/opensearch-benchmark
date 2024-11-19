@@ -33,6 +33,8 @@ path.logs: /mnt/logs
 s3.client.default.region: us-east-1
 EOF
 
+cp /mnt/jvm.options $JVM_CONFIG
+
 sudo mkdir /mnt/backup && sudo chmod ugo+rwx /mnt/backup
 sudo mkdir /mnt/data && sudo chmod ugo+rwx /mnt/data
 sudo mkdir /mnt/logs && sudo chmod ugo+rwx /mnt/logs
