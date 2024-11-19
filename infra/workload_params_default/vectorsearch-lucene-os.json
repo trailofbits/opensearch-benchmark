@@ -5,6 +5,7 @@
     "target_index_primary_shards": 3,
     "target_index_dimension": 768,
     "target_index_space_type": "innerproduct",
+    "id_field_name": "id",
     "target_index_bulk_size": 100,
     "target_index_bulk_index_data_set_format": "hdf5",
     "target_index_bulk_index_data_set_corpus": "cohere-1m",
@@ -14,7 +15,9 @@
     "hnsw_ef_construction": 256,
     "query_k": 100,
     "query_body": {
-    },
+        "docvalue_fields" : ["id"],
+        "stored_fields" : "_none_"
+   },
     "query_data_set_format": "hdf5",
     "query_data_set_corpus": "cohere-1m",
     "query_count": 10000
