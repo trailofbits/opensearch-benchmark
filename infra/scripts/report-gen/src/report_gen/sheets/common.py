@@ -143,6 +143,35 @@ def get_category_operation_map() -> list[dict]:
                 ],
             },
         },
+        {
+            "workload": "noaa_semantic_search",
+            "categories": {
+                "Aggregation": [
+                    "aggs-query-date-histo-geohash-grid-hybrid",
+                    "aggs-query-date-histo-geohash-grid-hybrid-one-subquery",
+                    "aggs-query-date-histo-geohash-grid-hybrid-one-subquery-large-subset",
+                    "aggs-query-date-histo-geohash-grid-hybrid-one-subquery-medium-subset",
+                    "aggs-query-min-avg-sum-hybrid",
+                    "aggs-query-min-avg-sum-hybrid-one-subquery",
+                    "aggs-query-min-avg-sum-hybrid-one-subquery-large-subset",
+                    "aggs-query-min-avg-sum-hybrid-one-subquery-medium-subset",
+                    "aggs-query-range-numeric-significant-terms-hybrid",
+                    "aggs-query-range-numeric-significant-terms-hybrid-one-subquery",
+                    "aggs-query-range-numeric-significant-terms-hybrid-one-subquery-large-subset",
+                    "aggs-query-range-numeric-significant-terms-hybrid-one-subquery-medium-subset",
+                    "aggs-query-term-min-hybrid",
+                    "aggs-query-term-min-hybrid-one-subquery",
+                    "aggs-query-term-min-hybrid-one-subquery-large-subset",
+                    "aggs-query-term-min-hybrid-one-subquery-medium-subset",
+                ],
+                "Hybrid Query": [
+                    "hybrid-query-only-range",
+                    "hybrid-query-only-range-large-subset",
+                    "hybrid-query-only-range-medium-subset",
+                    "hybrid-query-only-term-range-date",
+                ],
+            },
+        },
     ]
     return spec_list
 

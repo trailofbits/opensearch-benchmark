@@ -12,6 +12,7 @@ from .auth import authenticate
 from .common import adjust_sheet_columns, get_category_operation_map, get_sheet_id
 from .import_data import ImportData
 from .osversion import OSVersion
+from .overall import OverallSheet
 from .result import Result
 from .summary import Summary
 
@@ -70,8 +71,11 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         return None
     logger.info("OS versions processed successfully")
 
-    # noqa: RUF100, FIX002, TODO(Evan)
-    # Create Overall Spread sheet for big5
+    overall_sheet = OverallSheet(service=service, spreadsheet_id=spreadsheet_id)
+    if not overall_sheet.get():
+        logger.error("Error creating Overall sheet")
+        return None
+    logger.info("Overall processed successfully")
 
     # Output spreadsheet URL for ease
     report_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
