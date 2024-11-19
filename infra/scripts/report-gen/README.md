@@ -31,10 +31,12 @@ Check your Google Drive home folder for the generated spreadsheet, or click the 
 
 ## Generate ES Version Report
 
-```shell
-./download_versioned.sh 2024-10-21 2024-10-29
+Assuming ES versioned runs are executed manually via the CI.
 
-./create_report.sh download_versioned_2024-10-21_2024-10-29/ /path/to/credentials.json
+```shell
+./download_manual.sh 2024-10-21 2024-10-29
+
+./create_report.sh download_manual_2024-10-21_2024-10-29/ /path/to/credentials.json
 ```
 
 
