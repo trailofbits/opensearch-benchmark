@@ -107,9 +107,6 @@ def main() -> None:
             if cluster_type == "ElasticSearch" and workload_name in OS_ONLY_WORKLOADS:
                 continue
             extra_params = DEFAULT_EXTRA_PARAMS.get(workload_name, {})
-            workflow_benchmark_type = (
-                "dev" if workload_name.startswith("vectorsearch") else benchmark_type
-            )
             workload = WORKLOAD_NAME_MAP.get(workload_name, workload_name)
             version_key, versions = cluster_versions[cluster_type]
 
@@ -136,7 +133,7 @@ def main() -> None:
                         version_key: version,
                         "workload": workload,
                         "workload_params": str(json.dumps(params)),
-                        "benchmark_type": workflow_benchmark_type,
+                        "benchmark_type": benchmark_type,
                         **extra_params,
                     }
                 )
