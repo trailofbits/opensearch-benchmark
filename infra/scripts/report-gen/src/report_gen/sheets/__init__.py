@@ -64,6 +64,10 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         return None
     logger.info("Summary processed successfully")
 
+    # Create a pause here because of the default limit of 60 requests per minute
+    logger.info("Pausing for 60 seconds because of Google API rate limiting.")
+    time.sleep(60)
+
     # Create OS version sheets for big5
     os_version = OSVersion(service=service, spreadsheet_id=spreadsheet_id)
     if not os_version.get():
@@ -71,6 +75,11 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         return None
     logger.info("OS versions processed successfully")
 
+    # Create a pause here because of the default limit of 60 requests per minute
+    logger.info("Pausing for 60 seconds because of Google API rate limiting.")
+    time.sleep(60)
+
+    # Create Overall sheet for big5
     overall_sheet = OverallSheet(service=service, spreadsheet_id=spreadsheet_id)
     if not overall_sheet.get():
         logger.error("Error creating Overall sheet")
