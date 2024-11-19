@@ -52,7 +52,7 @@ on:
         description: 'Elasticsearch version'
         required: false
         type: string
-        default: 8.15.0
+        default: 8.15.4
       os_version:
         description: 'OpenSearch version'
         required: false
