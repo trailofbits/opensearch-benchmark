@@ -37,7 +37,8 @@ resource "aws_instance" "target-cluster" {
 
       es_snapshot_access_key = var.snapshot_user_aws_access_key_id,
       es_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
-      authorized_ssh_key     = var.ssh_pub_key
+      authorized_ssh_key     = var.ssh_pub_key,
+      jvm_options            = yamlencode(base64gzip(file("${path.module}/jvm.options"))),
     }
   )
   user_data_replace_on_change = true
