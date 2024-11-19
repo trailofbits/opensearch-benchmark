@@ -172,6 +172,14 @@ def get_category_operation_map() -> list[dict]:
                 ],
             },
         },
+        {
+            "workload": "vectorsearch",
+            "categories": {
+                "ML": [
+                    "prod-queries",
+                ],
+            },
+        },
     ]
     return spec_list
 
