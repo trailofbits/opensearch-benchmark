@@ -22,6 +22,7 @@ DEFAULT_EXTRA_PARAMS = {
     },
 }
 
+OS_ONLY_WORKLOADS = {"vectorsearch-faiss", "vectorsearch-nmslib"}
 
 def get_available_cluster_types(cluster_types: list[str]) -> list[str]:
     """Get the cluster types"""
@@ -102,6 +103,9 @@ def main() -> None:
 
     for workload_name in workloads:
         for cluster_type in get_available_cluster_types(cluster_types):
+            # skip OS-only workloads for ES
+            if cluster_type == "ElasticSearch" and workload_name in OS_ONLY_WORKLOADS:
+                continue
             extra_params = DEFAULT_EXTRA_PARAMS.get(workload_name, {})
             workflow_benchmark_type = (
                 "dev" if workload_name.startswith("vectorsearch") else benchmark_type
