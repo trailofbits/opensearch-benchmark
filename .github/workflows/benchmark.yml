@@ -243,7 +243,7 @@ jobs:
         if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
-              -ttt ubuntu@$(terraform output -raw load-generation-ip) -- \
+              -tt ubuntu@$(terraform output -raw load-generation-ip) -- \
               "set -x; bash -ixc 'bash -ix /mnt/restore_snapshot.sh;'"
 
       - name: Ingest data / Create snapshot
@@ -251,8 +251,8 @@ jobs:
         if: ${{ inputs.create_snapshot || failure() }}
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
-              -ttt ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240  CI_TAG=$CI_TAG bash -ix /mnt/ingest.sh;\""
+              -tt ubuntu@$(terraform output -raw load-generation-ip) -- \
+              "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240 CI_TAG=$CI_TAG bash -ix /mnt/ingest.sh;\""
         env:
             FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
             CI_TAG: ${{ inputs.ci_tag }}
@@ -322,7 +322,7 @@ jobs:
         if: ${{ inputs.perform_benchmark }}
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
-              -ttt ubuntu@$(terraform output -raw load-generation-ip) -- \
+              -tt ubuntu@$(terraform output -raw load-generation-ip) -- \
               "EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -i /mnt/benchmark.sh $BENCHMARK_TYPE"
         env:
             BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
