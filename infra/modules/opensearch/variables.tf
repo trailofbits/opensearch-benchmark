@@ -21,7 +21,7 @@ variable "loadgen_ami_id" {
 variable "os_version" {
   description = "Version of OpenSearch to deploy"
   type        = string
-  default     = "2.16.0"
+  default     = "2.18.0"
 }
 
 variable "distribution_version" {

@@ -115,7 +115,7 @@ def main() -> None:
 
             # We should still set the os_version even for ES because it is used
             # to determine the distribution_version in OSB
-            os_version = os_versions[0] if os_versions else "2.16.0"
+            os_version = os_versions[0] if os_versions else "2.18.0"
             if version_key != cluster_versions["OpenSearch"][0]:
                 extra_params["os_version"] = os_version
 

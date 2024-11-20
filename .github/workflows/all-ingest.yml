@@ -41,7 +41,7 @@ on:
         description: 'OpenSearch versions (comma separated)'
         required: false
         type: string
-        default: 2.16.0
+        default: 2.18.0
       aws_region:
         description: 'AWS region'
         required: false
