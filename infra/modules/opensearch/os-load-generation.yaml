@@ -14,6 +14,18 @@ write_files:
     content: ${load_script}
     owner: root:root
     permissions: '0755'
+  - path: /os_files/osb-1.11.0-knn.patch
+    encoding: gz+b64
+    content: |
+      ${osb_knn_patch}
+    owner: root:root
+    permissions: '0644'
+  - path: /os_files/vectorsearch-task.patch
+    encoding: gz+b64
+    content: |
+      ${vectorsearch_task_patch}
+    owner: root:root
+    permissions: '0644'
   - path: /id_rsa
     encoding: gz+b64
     content: ${ssh_private_key}
@@ -50,6 +62,7 @@ runcmd:
   - [ mv, /id_rsa, /home/ubuntu/.ssh/id_rsa ]
   - [ chown, ubuntu:ubuntu, /home/ubuntu/.ssh/id_rsa ]
   - [ sudo, -u, ubuntu, /load_generation.sh, ${os_cluster}, admin, ${os_password}, ${distribution_version}, ${os_version}, "OS", ${instance_type}, ${cluster_instance_id}]
+  - [ sudo, -u, ubuntu, /fix_files.sh ]
   - [sed, -i, '/^env.name =/c\env.name = ${benchmark_environment}', /mnt/.benchmark/benchmark.ini]
   - [sed, -i, '/^datastore\./s/^/# /',  /mnt/.benchmark/benchmark.ini]
   - |

@@ -70,18 +70,20 @@ resource "aws_instance" "load-generation" {
           osb_version = var.osb_version
         }
       ))),
-      os_cluster            = aws_instance.target-cluster.public_dns
-      os_password           = var.password,
-      distribution_version  = var.distribution_version,
-      os_version            = var.os_version,
-      workload              = var.workload
-      benchmark_environment = var.benchmark_environment
-      datastore_host        = var.datastore_host
-      datastore_username    = var.datastore_username
-      datastore_password    = var.datastore_password
-      instance_type         = var.cluster_instance_type
-      cluster_instance_id   = aws_instance.target-cluster.id
-      ssh_private_key       = base64gzip(var.ssh_priv_key)
+      os_cluster              = aws_instance.target-cluster.public_dns
+      os_password             = var.password,
+      distribution_version    = var.distribution_version,
+      os_version              = var.os_version,
+      workload                = var.workload,
+      osb_knn_patch           = yamlencode(base64gzip(file("${path.module}/os_files/osb-1.11.0-knn.patch"))),
+      vectorsearch_task_patch = yamlencode(base64gzip(file("${path.module}/../common_files/vectorsearch-task.patch"))),
+      benchmark_environment   = var.benchmark_environment
+      datastore_host          = var.datastore_host
+      datastore_username      = var.datastore_username
+      datastore_password      = var.datastore_password
+      instance_type           = var.cluster_instance_type
+      cluster_instance_id     = aws_instance.target-cluster.id
+      ssh_private_key         = base64gzip(var.ssh_priv_key)
     }
   )
   user_data_replace_on_change = true
