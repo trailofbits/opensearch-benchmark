@@ -1,7 +1,6 @@
 """Class for creating OS Overall Spread sheet."""
 
 import logging
-import time
 from dataclasses import dataclass
 from typing import cast
 
@@ -247,13 +246,7 @@ class OverallSheet:
             logger.error(f"Error, sheet {self.sheet_name} not found.")
             return False
 
-        # Pause to avoid rate limiting
-        time.sleep(60)
-
         requests = self.fill(os_versions, es_version, workload_str)
-
-        # Pause to avoid rate limiting
-        time.sleep(60)
 
         self.format(requests)
         adjust_sheet_columns(self.service, self.spreadsheet_id, self.sheet_id, self.sheet)

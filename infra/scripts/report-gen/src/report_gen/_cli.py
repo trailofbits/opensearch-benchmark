@@ -51,6 +51,7 @@ def build_download_args(download_parser: argparse.ArgumentParser) -> None:
         "--run-type",
         help="Which benchmark data run type (normally dev or official) to download " "(default: %(default)s)",
         type=str,
+        choices=["official", "dev"],
         default="official",
     )
     download_parser.add_argument(
