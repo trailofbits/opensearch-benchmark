@@ -185,6 +185,7 @@ jobs:
   ingest-data:
     needs: prepare_workspace
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -256,14 +257,11 @@ jobs:
             FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
             CI_TAG: ${{ inputs.ci_tag }}
 
-      
-
   run-osb:
     needs: [prepare_workspace, ingest-data]
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
     if: ${{ inputs.perform_benchmark && needs.ingest-data.result == 'success' }}
     name: run-osb-${{ needs.prepare_workspace.outputs.now_run_group_id }}
-    continue-on-error: true
     # Almost 17h; the longest benchmark (big5 on OS) should take ~15h
     timeout-minutes: 1000
 
