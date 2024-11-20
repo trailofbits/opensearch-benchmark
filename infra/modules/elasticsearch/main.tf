@@ -3,7 +3,7 @@ locals {
     vectorsearch = "aarch64"
   }
   default_cluster_arch = "x86_64"
-  cluster_arch = lookup(local.cluster_arch_map, var.workload, local.default_cluster_arch)
+  cluster_arch         = lookup(local.cluster_arch_map, var.workload, local.default_cluster_arch)
 }
 
 terraform {
@@ -79,7 +79,7 @@ resource "aws_instance" "load-generation" {
       big5_es_index_8         = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_8.json"))),
       vectorsearch_es_index_8 = yamlencode(base64gzip(file("${path.module}/es_indexes/vectorsearch/es_index_8.json"))),
       osb_knn_patch           = yamlencode(base64gzip(file("${path.module}/es_files/osb-1.11.0-knn.patch"))),
-      vectorsearch_task_patch = yamlencode(base64gzip(file("${path.module}/es_files/vectorsearch-task.patch"))),
+      vectorsearch_task_patch = yamlencode(base64gzip(file("${path.module}/../common_files/vectorsearch-task.patch"))),
       benchmark_environment   = var.benchmark_environment
       datastore_host          = var.datastore_host
       datastore_username      = var.datastore_username
