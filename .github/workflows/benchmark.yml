@@ -323,7 +323,7 @@ jobs:
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -ttt ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -ix /mnt/benchmark.sh $BENCHMARK_TYPE;\""
+              "EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -i /mnt/benchmark.sh $BENCHMARK_TYPE"
         env:
             BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
             RUN_GROUP_ID: ${{ needs.prepare_workspace.outputs.now_run_group_id }}
