@@ -3,7 +3,7 @@ locals {
     vectorsearch = "aarch64"
   }
   default_cluster_arch = "x86_64"
-  cluster_arch = lookup(local.cluster_arch_map, var.workload, local.default_cluster_arch)
+  cluster_arch         = lookup(local.cluster_arch_map, var.workload, local.default_cluster_arch)
 }
 
 terraform {

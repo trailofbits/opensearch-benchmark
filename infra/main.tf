@@ -205,8 +205,8 @@ locals {
   }
   default_cluster_ami = data.aws_ami.ubuntu_ami_amd64.id
   default_loadgen_ami = data.aws_ami.ubuntu_ami_amd64.id
-  cluster_ami_id = lookup(local.workload_cluster_ami_map, var.workload, local.default_cluster_ami)
-  loadgen_ami_id = lookup(local.workload_loadgen_ami_map, var.workload, local.default_loadgen_ami)
+  cluster_ami_id      = lookup(local.workload_cluster_ami_map, var.workload, local.default_cluster_ami)
+  loadgen_ami_id      = lookup(local.workload_loadgen_ami_map, var.workload, local.default_loadgen_ami)
 }
 
 module "es-cluster" {
