@@ -185,6 +185,7 @@ jobs:
   ingest-data:
     needs: prepare_workspace
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -237,9 +238,17 @@ jobs:
         working-directory: infra
         run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
 
+      - name: Restore snapshot
+        working-directory: infra
+        if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
+        run: |
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              -t ubuntu@$(terraform output -raw load-generation-ip) -- \
+              "set -x; bash -ixc 'bash -x /mnt/restore_snapshot.sh;'"
+
       - name: Ingest data / Create snapshot
         working-directory: infra
-        if: ${{ inputs.create_snapshot }}
+        if: ${{ inputs.create_snapshot || failure() }}
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
@@ -248,21 +257,11 @@ jobs:
             FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
             CI_TAG: ${{ inputs.ci_tag }}
 
-      - name: Restore snapshot
-        working-directory: infra
-        if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
-        run: |
-            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
-              -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc 'bash -x /mnt/restore_snapshot.sh;'"
-      
-
   run-osb:
     needs: [prepare_workspace, ingest-data]
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
     if: ${{ inputs.perform_benchmark && needs.ingest-data.result == 'success' }}
     name: run-osb-${{ needs.prepare_workspace.outputs.now_run_group_id }}
-    continue-on-error: true
     # Almost 17h; the longest benchmark (big5 on OS) should take ~15h
     timeout-minutes: 1000
 
