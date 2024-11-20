@@ -83,6 +83,7 @@ resource "aws_instance" "load-generation" {
       datastore_password      = var.datastore_password
       instance_type           = var.cluster_instance_type
       cluster_instance_id     = aws_instance.target-cluster.id
+      fix_files_script        = yamlencode(base64gzip(file("${path.module}/fix_files.sh")))
       ssh_private_key         = base64gzip(var.ssh_priv_key)
     }
   )
