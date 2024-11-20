@@ -135,3 +135,8 @@ variable "snapshot_version" {
     error_message = "Snapshot version must be: YYYY-mm-dd_HH-MM-ss"
   }
 }
+
+variable "placement_group_id" {
+  description = "ID of the placement group to use for the cluster"
+  type        = string
+}
