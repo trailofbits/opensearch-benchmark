@@ -239,7 +239,6 @@ jobs:
 
       - name: Restore snapshot
         working-directory: infra
-        continue-on-error: true
         if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
