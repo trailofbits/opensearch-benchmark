@@ -244,7 +244,7 @@ jobs:
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -ttt ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc 'bash -x /mnt/restore_snapshot.sh;'"
+              "set -x; bash -ixc 'bash -ix /mnt/restore_snapshot.sh;'"
 
       - name: Ingest data / Create snapshot
         working-directory: infra
@@ -252,7 +252,7 @@ jobs:
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -ttt ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240  CI_TAG=$CI_TAG bash -x /mnt/ingest.sh;\""
+              "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240  CI_TAG=$CI_TAG bash -ix /mnt/ingest.sh;\""
         env:
             FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
             CI_TAG: ${{ inputs.ci_tag }}
@@ -318,13 +318,12 @@ jobs:
         run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
 
       - name: Run benchmark
-        continue-on-error: true
         working-directory: infra
         if: ${{ inputs.perform_benchmark }}
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -ttt ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -x /mnt/benchmark.sh $BENCHMARK_TYPE;\""
+              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -ix /mnt/benchmark.sh $BENCHMARK_TYPE;\""
         env:
             BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
             RUN_GROUP_ID: ${{ needs.prepare_workspace.outputs.now_run_group_id }}
