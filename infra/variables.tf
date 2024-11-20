@@ -33,13 +33,13 @@ variable "es_version" {
 variable "os_version" {
   description = "Version of OpenSearch to deploy"
   type        = string
-  default     = "2.16.0"
+  default     = "2.18.0"
 }
 
 variable "distribution_version" {
   description = "OSB distribution-version to use"
   type        = string
-  default     = "2.16.0"
+  default     = "2.18.0"
 }
 
 variable "s3_bucket_name" {
