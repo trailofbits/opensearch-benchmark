@@ -100,7 +100,7 @@ do
         TEST_EXECUTION_ID="cluster-$RUN_GROUP_ID-$i"
         RESULTS_FILE="$EXECUTION_DIR/$TEST_EXECUTION_ID"
         USER_TAGS="$GROUP_USER_TAGS,run:$i"
-        benchmark_single \
+        if ! benchmark_single \
             "$WORKLOAD" \
             "$CLUSTER_HOST" \
             "$WORKLOAD_PARAMS" \
@@ -110,7 +110,10 @@ do
             "$TEST_PROCEDURE" \
             "$DISTRIBUTION_VERSION" \
             "$USER_TAGS" \
-            "$INCLUDE_TASKS"
+            "$INCLUDE_TASKS" ; then
+            echo "Failed to run benchmark($i)"
+            exit 1
+        fi
 done
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"

@@ -166,6 +166,7 @@ benchmark_single() {
         --test-execution-id="$test_execution_id" \
         --test-procedure="$test_procedure" \
         --distribution-version="$distribution_version" \
+        --on-error="abort" \
         --user-tag="$user_tags" \
         --telemetry="node-stats"
 }
