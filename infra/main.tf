@@ -126,6 +126,11 @@ resource "aws_route_table_association" "subnet-association" {
   route_table_id = aws_route_table.route-table-test-env.id
 }
 
+resource "aws_placement_group" "placement-group" {
+  name     = "${terraform.workspace}-pg"
+  strategy = "cluster"
+}
+
 data "aws_ec2_managed_prefix_list" "prefix-list" {
   provider = aws.prefix_list_region
   id       = var.prefix_list_id
@@ -205,8 +210,8 @@ locals {
   }
   default_cluster_ami = data.aws_ami.ubuntu_ami_amd64.id
   default_loadgen_ami = data.aws_ami.ubuntu_ami_amd64.id
-  cluster_ami_id = lookup(local.workload_cluster_ami_map, var.workload, local.default_cluster_ami)
-  loadgen_ami_id = lookup(local.workload_loadgen_ami_map, var.workload, local.default_loadgen_ami)
+  cluster_ami_id      = lookup(local.workload_cluster_ami_map, var.workload, local.default_cluster_ami)
+  loadgen_ami_id      = lookup(local.workload_loadgen_ami_map, var.workload, local.default_loadgen_ami)
 }
 
 module "es-cluster" {
@@ -231,6 +236,7 @@ module "es-cluster" {
   datastore_username    = var.datastore_username
   datastore_password    = var.datastore_password
   workload              = var.workload
+  placement_group_id    = aws_placement_group.placement-group.id
 
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_version                    = data.external.latest_snapshot_version.result.latest_version
@@ -271,6 +277,7 @@ module "os-cluster" {
   datastore_username    = var.datastore_username
   datastore_password    = var.datastore_password
   workload              = var.workload
+  placement_group_id    = aws_placement_group.placement-group.id
 
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_version                    = data.external.latest_snapshot_version.result.latest_version
