@@ -86,7 +86,7 @@ resource "aws_instance" "load-generation" {
       datastore_password      = var.datastore_password
       instance_type           = var.cluster_instance_type
       cluster_instance_id     = aws_instance.target-cluster.id
-      fix_index_script = yamlencode(base64gzip(templatefile("${path.module}/fix_files.sh",
+      fix_files_script = yamlencode(base64gzip(templatefile("${path.module}/fix_files.sh",
         {
           workload = var.workload,
         }

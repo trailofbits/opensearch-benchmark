@@ -14,6 +14,11 @@ write_files:
     content: ${load_script}
     owner: root:root
     permissions: '0755'
+  - path: /fix_files.sh
+    encoding: gz+b64
+    content: ${fix_files_script}
+    owner: root:root
+    permissions: '0755'
   - path: /os_files/osb-1.11.0-knn.patch
     encoding: gz+b64
     content: |
