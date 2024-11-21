@@ -8,7 +8,7 @@ get_doc_count() {
     doc_counts["nyc_taxis"]=165346691 # NOTE: should be 165346692 but there's an issue with one document
     doc_counts["pmc"]=574199
     doc_counts["noaa"]=33659481
-    doc_counts["vectorsearch"]=1000000
+    doc_counts["vectorsearch"]=10000000
     doc_counts["noaa_semantic_search"]=33659481
 
     # Check if the workload exists in the associative array
@@ -27,7 +27,7 @@ get_shards_count() {
     declare -A shards_count
     shards_count["big5"]=1
     shards_count["pmc"]=5
-    shards_count["vectorsearch"]=3
+    shards_count["vectorsearch"]=12
     shards_count["noaa_semantic_search"]=6
 
     # Check if the workload exists in the associative array
