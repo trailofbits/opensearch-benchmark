@@ -23,7 +23,6 @@ resource "aws_instance" "target-cluster" {
   instance_type          = var.cluster_instance_type
   key_name               = var.ssh_key_name
   vpc_security_group_ids = var.security_groups
-  placement_group        = var.placement_group_id
 
   associate_public_ip_address = true
 
@@ -54,7 +53,6 @@ resource "aws_instance" "load-generation" {
   instance_type          = var.loadgen_instance_type
   key_name               = var.ssh_key_name
   vpc_security_group_ids = var.security_groups
-  placement_group        = var.placement_group_id
 
   # Temporarily assign public IP before EIP so that provisioner can connect to instance
   # NOTE: self.public_ip will be outdated after the aws_eip_association
