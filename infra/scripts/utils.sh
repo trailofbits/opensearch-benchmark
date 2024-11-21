@@ -153,6 +153,7 @@ benchmark_single() {
     distribution_version=$8
     user_tags=$9
     include_tasks=${10}
+    telemetry_devices=${11}
 
     opensearch-benchmark execute-test \
         --pipeline=benchmark-only \
@@ -167,7 +168,7 @@ benchmark_single() {
         --test-procedure="$test_procedure" \
         --distribution-version="$distribution_version" \
         --user-tag="$user_tags" \
-        --telemetry="node-stats"
+        --telemetry="$telemetry_devices"
 }
 
 ci_tag_value() {
