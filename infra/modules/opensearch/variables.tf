@@ -140,3 +140,8 @@ variable "osb_version" {
   description = "OpenSearch Benchmark version"
   type        = string
 }
+
+variable "placement_group_id" {
+  description = "ID of the placement group to use for the cluster"
+  type        = string
+}
