@@ -27,7 +27,7 @@ get_shards_count() {
     declare -A shards_count
     shards_count["big5"]=1
     shards_count["pmc"]=5
-    shards_count["vectorsearch"]=12
+    shards_count["vectorsearch"]=6
     shards_count["noaa_semantic_search"]=6
 
     # Check if the workload exists in the associative array
