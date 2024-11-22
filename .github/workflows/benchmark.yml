@@ -185,7 +185,6 @@ jobs:
   ingest-data:
     needs: prepare_workspace
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -240,7 +239,9 @@ jobs:
 
       - name: Restore snapshot
         working-directory: infra
+        id: restoresnapshot
         if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
+        continue-on-error: true
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
@@ -248,7 +249,7 @@ jobs:
 
       - name: Ingest data / Create snapshot
         working-directory: infra
-        if: ${{ inputs.create_snapshot || failure() }}
+        if: ${{ inputs.create_snapshot || steps.restoresnapshot.outcome == 'failure' }}
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -t ubuntu@$(terraform output -raw load-generation-ip) -- \
