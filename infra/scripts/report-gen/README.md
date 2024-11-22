@@ -39,7 +39,6 @@ Assuming ES versioned runs are executed manually via the CI.
 ./create_report.sh download_manual_2024-10-21_2024-10-29/ /path/to/credentials.json
 ```
 
-
 ## Tests
 
 Running `make test` will run a snapshot test by creating a new spreadsheet from a fixed dataset (`test/data/test_data`) and comparing the generated spreadsheet to previously generated sheets (`test/data/results.csv` and `test/data/summary.csv`).

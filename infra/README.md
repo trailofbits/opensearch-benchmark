@@ -129,7 +129,20 @@ cd opensearch-benchmark/
 git checkout my-custom-os
 
 # Put Google drive ID to snapshot.tar.gz into infra/dist/gid.txt
-echo ${google_drive_id} > infra/dist/url.txt
+echo ${google_drive_id} > infra/dist/gid.txt
 ```
 
-Then, using Github Actions, run `Nightly Benchmarks` manually on branch `my-custom-os`.
+Use Github Actions:
+
+- Run `Nightly Benchmarks` manually on branch `my-custom-os`
+- Benchmark type: `dev`
+- OpenSearch versions: `<whatever version you modified>`
+- AWS region: `<different region>`
+
+Use `download_dev.sh` in the report generator to download the results.
+
+Of the reports downloaded, check for the timestamp mentioned in `Nightly Benchmarks` as `run-osb-<timestamp>`.
+
+Remove all other reports except for the custom run.
+
+Use `create_report.sh` in the report generator on the reports folder.
