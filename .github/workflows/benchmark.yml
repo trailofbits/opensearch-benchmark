@@ -186,7 +186,8 @@ jobs:
     needs: prepare_workspace
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
     continue-on-error: true
-    timeout-minutes: 1000
+    # slowest vectorsearch cohere-10m ingests took >1000 minutes
+    timeout-minutes: 1200
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
