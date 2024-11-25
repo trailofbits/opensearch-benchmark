@@ -23,9 +23,18 @@ path.data: /mnt/data
 path.logs: /mnt/logs
 EOF
 
+JVM_CONFIG=config/jvm.options
+cp /mnt/jvm.options $JVM_CONFIG
+
 sudo mkdir /mnt/backup && sudo chmod ugo+rwx /mnt/backup
 sudo mkdir /mnt/data && sudo chmod ugo+rwx /mnt/data
 sudo mkdir /mnt/logs && sudo chmod ugo+rwx /mnt/logs
+
+# Fix the JVM size
+GB=$(echo "$(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / (1024*1024*2)" | bc)
+sed -i "s/-Xms1g/-Xms${GB}g/" $JVM_CONFIG
+sed -i "s/-Xmx1g/-Xmx${GB}g/" $JVM_CONFIG
+
 
 echo "$ES_SNAPSHOT_AWS_ACCESS_KEY_ID" | ./bin/elasticsearch-keystore add -s -f -x s3.client.default.access_key
 echo "$ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY" | bin/elasticsearch-keystore add -s -f -x s3.client.default.secret_key
