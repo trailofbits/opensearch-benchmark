@@ -149,7 +149,7 @@ def _create_spreadsheet(service: Resource, title: str) -> str | None:
         return None
 
     # Create sheets for OS versions 2.16, 2.17, and 2.18
-    for name in ["OS 2.16.0", "OS 2.17.0", "OS 2.18.0"]:
+    for name in ["OS 2.16.0", "OS 2.17.1", "OS 2.18.0"]:
         _add_sheet(service, spreadsheet_id, name)
 
     # Create a new spreadsheet and add the initial columns

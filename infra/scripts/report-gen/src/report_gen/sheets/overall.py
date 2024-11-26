@@ -100,9 +100,9 @@ class OverallSheet:
             updated_range = sheet_exec(sheet_range, [[row_value] + [""] * (width - 1)])
             return self.format_headers_merge([updated_range], color)
 
-        # first column is labels, 2nd is ES, then 1 col for each OS version
+        # first column is categories, 2nd is operations, 3rd is ES, then 1 col for each OS version
         results_col = "A"
-        results_width = 2 + len(os_versions)
+        results_width = 3 + len(os_versions)
 
         # one columns for each OS version
         rel_col = chr(ord(results_col) + results_width)
@@ -121,7 +121,7 @@ class OverallSheet:
         row2_range = sheet_exec(
             "A2",
             [
-                ["Operation", f"ES {es_version} P90 ST"]
+                ["Category", "Operation", f"ES {es_version} P90 ST"]
                 + [f"OS {v} P90 ST" for v in os_versions]
                 + [f"Relative Difference\nES {es_version} vs OS {v}" for v in os_versions]
                 + [f"Ratio ES {es_version} /\n OS {v}" for v in os_versions]
@@ -161,12 +161,13 @@ class OverallSheet:
         rows = []
         # There are two header rows. First data row is row 3
         for i in range(3, 3 + data_row_count):
-            es_p90 = [f"='{any_os_sheet}'!$B${i}"]
-            os_p90s = [f"='{os_sheets[v]}'!$D${i}" for v in os_versions]
-            relative_diffs = [f"='{os_sheets[v]}'!$F${i}" for v in os_versions]
-            ratios = [f"='{os_sheets[v]}'!$G${i}" for v in os_versions]
+            operation = [f"='{any_os_sheet}'!$B${i}"]
+            es_p90 = [f"='{any_os_sheet}'!$C${i}"]
+            os_p90s = [f"='{os_sheets[v]}'!$E${i}" for v in os_versions]
+            relative_diffs = [f"='{os_sheets[v]}'!$G${i}" for v in os_versions]
+            ratios = [f"='{os_sheets[v]}'!$H${i}" for v in os_versions]
 
-            row = es_p90 + os_p90s + relative_diffs + ratios
+            row = operation + es_p90 + os_p90s + relative_diffs + ratios
             rows.append(row)
 
         # Update table to Summary sheet
@@ -196,7 +197,7 @@ class OverallSheet:
             return chr(ord("A") + idx)
 
         # Format Relative Difference colors
-        start = 2 + len(os_versions)
+        start = 3 + len(os_versions)
         end = start + len(os_versions) - 1
         relative_diff_range = f"{self.sheet_name}!{idx2col(start)}2:{idx2col(end)}{data_row_count + 3}"
         range_dict = convert_range_to_dict(relative_diff_range)
@@ -216,9 +217,9 @@ class OverallSheet:
     def get(self) -> bool:
         """Retrieve data to fill in OS Version sheets."""
         workload_str = "big5"
-        es_version = "8.15.0"
+        es_version = "8.15.4"
         # NOTE(Evan): These correspond to the OS version sheet names in _create_spreadsheet() in __init__.py
-        os_versions = ["2.16.0", "2.17.0", "2.18.0"]
+        os_versions = ["2.16.0", "2.17.1", "2.18.0"]
 
         # Retrieve workload to process and compare
         workloads: dict[str, dict[str, list[str]]] = get_workloads(self.service, self.spreadsheet_id)
