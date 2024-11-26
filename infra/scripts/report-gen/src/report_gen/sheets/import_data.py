@@ -18,6 +18,28 @@ class ImportData:
     spreadsheet_id: str
     folder: Path
 
+    @staticmethod
+    def workload_subtype(processed_row: list[str]) -> str:
+        """Get a subtype for a workload
+
+        This is relevant for workloads which have multiple configurations (vectorsearch).
+        """
+        engine_type = processed_row[2]
+        workload =  processed_row[4]
+        subtype = ""
+        if workload == "vectorsearch":
+            target_index_body = processed_row[17]
+            vector_index_body_lookup = {
+                "indices/faiss-index.json": "faiss",
+                "indices/nmslib-index.json": "nmslib",
+                "indices/lucene-index.json": "lucene",
+            }
+            if engine_type == "ES":
+                subtype = "lucene"
+            else:
+                subtype = vector_index_body_lookup.get(target_index_body, "unknown")
+        return subtype
+
     def read_rows(self, csv_path: Path) -> list[list[str]]:
         """Read CSV data."""
         row_list: list[list[str]]
@@ -46,6 +68,8 @@ class ImportData:
             "workload\\.max_num_segments",
             "user-tags\\.shard-count",
             "user-tags\\.replica-count",
+            "workload\\.target_index_body",
+            "workload_subtype",
         ]
 
         processed_row_list: list[list[str]] = [output_column_order]
@@ -60,6 +84,8 @@ class ImportData:
                 column_value: str = "(null)" if source_column_index is None else row[source_column_index]
                 processed_row.append(column_value)
 
+            workload_subtype = ImportData.workload_subtype(processed_row)
+            processed_row[18] = workload_subtype
             processed_row_list.append(processed_row)
 
         return processed_row_list
