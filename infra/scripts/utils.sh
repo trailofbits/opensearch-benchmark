@@ -72,7 +72,7 @@ check_value_range () {
 check_doc_count () {
     local doc_count=$1
     local workload=$2
-    read -r min_doc_count max_doc_count <<< $(get_doc_count $workload)
+    read -r min_doc_count max_doc_count <<< "$(get_doc_count $workload)"
     if [[ -z "$max_doc_count" ]]; then
         expected_doc_count="$min_doc_count"
         check_value "document count" "${DOC_COUNT:-$expected_doc_count}" "$doc_count"
