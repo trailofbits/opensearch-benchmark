@@ -6,7 +6,7 @@ def format_float(range_dict: dict) -> dict:
     return {
         "repeatCell": {
             "range": range_dict,
-            "cell": {"userEnteredFormat": {"numberFormat": {"type": "NUMBER", "pattern": "#,##0.000"}}},
+            "cell": {"userEnteredFormat": {"numberFormat": {"type": "NUMBER", "pattern": "#,##0.###"}}},
             "fields": "userEnteredFormat.numberFormat",
         }
     }

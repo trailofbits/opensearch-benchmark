@@ -18,6 +18,30 @@ class ImportData:
     spreadsheet_id: str
     folder: Path
 
+    @staticmethod
+    def workload_subtype(processed_row: list[str]) -> str:
+        """Get a subtype for a workload.
+
+        This is relevant for workloads which have multiple configurations (vectorsearch).
+        """
+        engine_type = processed_row[2]
+        workload = processed_row[4]
+        if workload != "vectorsearch":
+            return ""
+
+        query_data_set_corpus = processed_row[18]
+        target_index_body = processed_row[19]
+        vector_index_body_lookup = {
+            "indices/faiss-index.json": "faiss",
+            "indices/nmslib-index.json": "nmslib",
+            "indices/lucene-index.json": "lucene",
+        }
+        if engine_type == "ES":
+            subtype_dataset = "lucene"
+        else:
+            subtype_dataset = vector_index_body_lookup.get(target_index_body, "unknown")
+        return f"{subtype_dataset}-{query_data_set_corpus}"
+
     def read_rows(self, csv_path: Path) -> list[list[str]]:
         """Read CSV data."""
         row_list: list[list[str]]
@@ -34,6 +58,7 @@ class ImportData:
             "user-tags\\.engine-type",
             "distribution-version",
             "workload",
+            "workload_subtype",
             "test-procedure",
             "user-tags\\.run",
             "operation",
@@ -46,6 +71,8 @@ class ImportData:
             "workload\\.max_num_segments",
             "user-tags\\.shard-count",
             "user-tags\\.replica-count",
+            "workload\\.query_data_set_corpus",
+            "workload\\.target_index_body",
         ]
 
         processed_row_list: list[list[str]] = [output_column_order]
@@ -60,6 +87,8 @@ class ImportData:
                 column_value: str = "(null)" if source_column_index is None else row[source_column_index]
                 processed_row.append(column_value)
 
+            workload_subtype = ImportData.workload_subtype(processed_row)
+            processed_row[5] = workload_subtype
             processed_row_list.append(processed_row)
 
         return processed_row_list
