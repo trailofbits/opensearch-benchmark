@@ -38,6 +38,8 @@ resource "aws_instance" "target-cluster-additional-nodes" {
   key_name               = var.ssh_key_name
   vpc_security_group_ids = var.security_groups
 
+  associate_public_ip_address = true
+
   subnet_id = var.subnet_id
 
   private_ip = each.key
