@@ -54,6 +54,11 @@ variable "subnet_id" {
   type        = string
 }
 
+variable "subnet_cidr_block" {
+  description = "Subnet CIDR Block"
+  type        = string
+}
+
 variable "tags" {
   description = "List of Tags to apply to resources"
   type        = any

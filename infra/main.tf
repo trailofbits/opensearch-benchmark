@@ -224,6 +224,7 @@ module "es-cluster" {
   ssh_pub_key           = tls_private_key.ssh_key.public_key_openssh
   security_groups       = [aws_security_group.allow_osb.id]
   subnet_id             = aws_subnet.subnet.id
+  subnet_cidr_block     = aws_subnet.subnet.cidr_block
   password              = random_password.cluster-password.result
   prefix_list_id        = data.aws_ec2_managed_prefix_list.prefix-list.id
   benchmark_environment = var.benchmark_environment
@@ -265,6 +266,7 @@ module "os-cluster" {
   ssh_pub_key           = tls_private_key.ssh_key.public_key_openssh
   security_groups       = [aws_security_group.allow_osb.id]
   subnet_id             = aws_subnet.subnet.id
+  subnet_cidr_block     = aws_subnet.subnet.cidr_block
   password              = random_password.cluster-password.result
   prefix_list_id        = data.aws_ec2_managed_prefix_list.prefix-list.id
   benchmark_environment = var.benchmark_environment

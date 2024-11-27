@@ -5,6 +5,8 @@ CLUSTER_VERSION=$2
 CLUSTER_ARCH=$3
 OS_SNAPSHOT_AWS_ACCESS_KEY_ID=$4
 OS_SNAPSHOT_AWS_SECRET_ACCESS_KEY=$5
+CLUSTER_IPS=$6
+NODE_NAME=$7
 
 INSTALL_ROOT=/mnt/opensearch
 INSTALL_PATH=$INSTALL_ROOT/opensearch-$CLUSTER_VERSION
@@ -25,12 +27,14 @@ rm $INSTALL_FILENAME
 # Specify directories for storage and update the configuration to allow incoming connections.
 # Also a config that is needed to make the s3 client successfully locate the snapshot bucket
 cat <<EOF > $CONFIG_FILE
-discovery.type: single-node
 network.host: 0.0.0.0
+node.name: $NODE_NAME
 path.repo: ["/mnt/backup"]
+cluster.initial_cluster_manager_nodes: main-node
 path.data: /mnt/data
 path.logs: /mnt/logs
 s3.client.default.region: us-east-1
+discovery.seed_hosts: [$CLUSTER_IPS]
 EOF
 
 cp /mnt/jvm.options $JVM_CONFIG
