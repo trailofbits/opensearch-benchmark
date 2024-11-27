@@ -18,6 +18,16 @@ terraform {
 
 data "aws_caller_identity" "current" {}
 
+locals {
+  # start at 4 because first 4 addresses are reserved for AWS
+  load_generation_private_ip = cidrhost(var.subnet_cidr_block, 4)
+  cluster_node_private_ips = [
+    cidrhost(var.subnet_cidr_block, 5),
+    cidrhost(var.subnet_cidr_block, 6),
+    cidrhost(var.subnet_cidr_block, 7)
+  ]
+}
+
 resource "aws_instance" "target-cluster" {
   ami                    = var.cluster_ami_id
   instance_type          = var.cluster_instance_type

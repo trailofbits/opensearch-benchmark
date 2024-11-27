@@ -18,15 +18,29 @@ terraform {
 
 data "aws_caller_identity" "current" {}
 
-resource "aws_instance" "target-cluster" {
+locals {
+  # start at 4 because first 4 addresses are reserved for AWS
+  load_generation_private_ip = cidrhost(var.subnet_cidr_block, 4)
+  cluster_node_private_ips = [
+    cidrhost(var.subnet_cidr_block, 5),
+    cidrhost(var.subnet_cidr_block, 6),
+    cidrhost(var.subnet_cidr_block, 7)
+  ]
+  main_cluster_node_private_ip        = local.cluster_node_private_ips[0]
+  additional_cluster_node_private_ips = slice(local.cluster_node_private_ips, 1, 3)
+}
+
+
+resource "aws_instance" "target-cluster-additional-nodes" {
+  for_each               = toset(local.additional_cluster_node_private_ips)
   ami                    = var.cluster_ami_id
   instance_type          = var.cluster_instance_type
   key_name               = var.ssh_key_name
   vpc_security_group_ids = var.security_groups
 
-  associate_public_ip_address = true
-
   subnet_id = var.subnet_id
+
+  private_ip = each.key
 
   user_data = templatefile("${path.module}/os-cluster.yaml",
     {
@@ -38,6 +52,8 @@ resource "aws_instance" "target-cluster" {
       os_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
       authorized_ssh_key     = var.ssh_pub_key,
       jvm_options            = yamlencode(base64gzip(file("${path.module}/jvm.options"))),
+      cluster_ips            = join(",", local.cluster_node_private_ips)
+      node_name              = format("node-%s", each.key)
     }
   )
   user_data_replace_on_change = true
@@ -47,6 +63,42 @@ resource "aws_instance" "target-cluster" {
   }
 
   tags = var.tags
+}
+
+resource "aws_instance" "target-cluster-main-node" {
+  ami                    = var.cluster_ami_id
+  instance_type          = var.cluster_instance_type
+  key_name               = var.ssh_key_name
+  vpc_security_group_ids = var.security_groups
+
+  associate_public_ip_address = true
+
+  subnet_id = var.subnet_id
+
+  private_ip = local.main_cluster_node_private_ip
+
+  user_data = templatefile("${path.module}/os-cluster.yaml",
+    {
+      os_cluster_script      = yamlencode(base64gzip(file("${path.module}/os_cluster.sh"))),
+      os_password            = var.password,
+      os_version             = var.os_version,
+      os_arch                = local.cluster_arch,
+      os_snapshot_access_key = var.snapshot_user_aws_access_key_id,
+      os_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
+      authorized_ssh_key     = var.ssh_pub_key,
+      jvm_options            = yamlencode(base64gzip(file("${path.module}/jvm.options"))),
+      cluster_ips            = join(",", local.cluster_node_private_ips)
+      node_name              = "main-node"
+    }
+  )
+  user_data_replace_on_change = true
+
+  private_dns_name_options {
+    hostname_type = "resource-name"
+  }
+
+  tags       = var.tags
+  depends_on = [aws_instance.target-cluster-additional-nodes]
 }
 
 resource "aws_instance" "load-generation" {
@@ -61,6 +113,8 @@ resource "aws_instance" "load-generation" {
 
   subnet_id = var.subnet_id
 
+  private_ip = local.load_generation_private_ip
+
   user_data = templatefile("${path.module}/os-load-generation.yaml",
     {
       load_script = yamlencode(base64gzip(templatefile(
@@ -71,7 +125,7 @@ resource "aws_instance" "load-generation" {
           osb_version = var.osb_version
         }
       ))),
-      os_cluster              = aws_instance.target-cluster.public_dns
+      os_cluster              = aws_instance.target-cluster-main-node.public_dns
       os_password             = var.password,
       distribution_version    = var.distribution_version,
       os_version              = var.os_version,
@@ -83,7 +137,7 @@ resource "aws_instance" "load-generation" {
       datastore_username      = var.datastore_username
       datastore_password      = var.datastore_password
       instance_type           = var.cluster_instance_type
-      cluster_instance_id     = aws_instance.target-cluster.id
+      cluster_instance_id     = aws_instance.target-cluster-main-node.id
       fix_files_script        = yamlencode(base64gzip(file("${path.module}/fix_files.sh")))
       ssh_private_key         = base64gzip(var.ssh_priv_key)
     }
@@ -166,7 +220,7 @@ resource "aws_instance" "load-generation" {
 
   # Ensure the load-generation instance is created after the target-cluster
   # instance so we can connect to it
-  depends_on = [aws_instance.target-cluster]
+  depends_on = [aws_instance.target-cluster-main-node]
 }
 
 resource "aws_ec2_managed_prefix_list_entry" "prefix-list-entry-load-gen" {
