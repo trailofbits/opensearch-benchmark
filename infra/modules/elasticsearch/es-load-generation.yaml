@@ -46,7 +46,7 @@ write_files:
   - path: /id_rsa
     encoding: gz+b64
     content: ${ssh_private_key}
-    owner: ubuntu:ubuntu
+    owner: root:root
     permissions: '0600'
 
 fs_setup:
