@@ -27,7 +27,8 @@ locals {
     cidrhost(var.subnet_cidr_block, 7)
   ]
   main_cluster_node_private_ip        = local.cluster_node_private_ips[0]
-  additional_cluster_node_private_ips = slice(local.cluster_node_private_ips, 1, 3)
+  additional_nodes_idx = var.workload == "vectorsearch" ? 1 : 3
+  additional_cluster_node_private_ips = slice(local.cluster_node_private_ips, local.additional_nodes_idx, 3)
 }
 
 resource "tls_private_key" "cert-key" {
