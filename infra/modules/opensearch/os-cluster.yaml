@@ -1,7 +1,7 @@
 #cloud-config
 
-hostname: os-cluster
-fqdn: os-cluster
+hostname: ${node_name}
+fqdn: ${node_name}
 
 write_files:
   - path: /etc/sysctl.d/99-custom.conf

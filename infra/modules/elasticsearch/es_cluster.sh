@@ -5,6 +5,8 @@ CLUSTER_VERSION=$2
 CLUSTER_ARCH=$3
 ES_SNAPSHOT_AWS_ACCESS_KEY_ID=$4
 ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY=$5
+CLUSTER_IPS=$6
+NODE_NAME=$7
 
 cd /mnt || exit 1
 
@@ -16,11 +18,24 @@ tar -xzf elasticsearch-$CLUSTER_VERSION-linux-$CLUSTER_ARCH.tar.gz
 cd elasticsearch-$CLUSTER_VERSION/ || exit 1
 
 cat <<EOF > config/elasticsearch.yml
-discovery.type: single-node
 network.host: 0.0.0.0
+node.name: $NODE_NAME
 path.repo: ["/mnt/backup"]
+cluster.initial_master_nodes: main-node
 path.data: /mnt/data
 path.logs: /mnt/logs
+discovery.seed_hosts: [$CLUSTER_IPS]
+
+xpack.security.enabled: true
+xpack.security.enrollment.enabled: true
+
+xpack.security.http.ssl.enabled: true
+xpack.security.http.ssl.key: es-cert.key
+xpack.security.http.ssl.certificate: es-cert.crt
+
+xpack.security.transport.ssl.enabled: true
+xpack.security.transport.ssl.key: es-cert.key
+xpack.security.transport.ssl.certificate: es-cert.crt
 EOF
 
 JVM_CONFIG=config/jvm.options
@@ -35,7 +50,11 @@ GB=$(echo "$(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / (1024*1024*
 sed -i "s/-Xms1g/-Xms${GB}g/" $JVM_CONFIG
 sed -i "s/-Xmx1g/-Xmx${GB}g/" $JVM_CONFIG
 
+# Setup SSL Transport across cluster nodes
+mv /es-cert.crt config/
+mv /es-cert.key config/
 
+# Setup S3 snapshot repository
 echo "$ES_SNAPSHOT_AWS_ACCESS_KEY_ID" | ./bin/elasticsearch-keystore add -s -f -x s3.client.default.access_key
 echo "$ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY" | bin/elasticsearch-keystore add -s -f -x s3.client.default.secret_key
 
