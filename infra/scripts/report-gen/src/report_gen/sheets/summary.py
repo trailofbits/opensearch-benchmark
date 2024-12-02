@@ -36,6 +36,9 @@ from .format.merge import (
 from .format.number import (
     format_float as format_number_float,
 )
+from .format.number import (
+    format_integer as format_number_integer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -527,7 +530,7 @@ class Summary:
 
         return rows_added, requests
 
-    def create_all_categories_table(
+    def create_all_categories_table(  # noqa: PLR0915
         self, workloads: dict[str, dict[str, list[str]]], offset: int
     ) -> tuple[int, list[dict]]:
         """Create a table summarizing all categories."""
@@ -594,6 +597,7 @@ class Summary:
         requests = self.format_headers_merge([updated_range])
 
         # Add data
+        offset_tmp = offset + 1  # Save offset for percentage calculation
         rows: list[list[str]] = []
         rows.append(["Category", "Count", "Total", "Percentage (%)"])
         for category in sorted(all_categories):
@@ -603,7 +607,6 @@ class Summary:
                 f'=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-1)), Results!$D$2:$D,">1")'
             )
             row.append(f"=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-2)))")
-            row.append("=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))")
             rows.append(row)
 
         size = len(all_categories)
@@ -612,7 +615,6 @@ class Summary:
                 "Total",
                 f'=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&":"&ADDRESS(ROW()-1,COLUMN()) ))',
                 f'=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&":"&ADDRESS(ROW()-1,COLUMN()) ))',
-                "=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))",
             ]
         )
 
@@ -634,6 +636,42 @@ class Summary:
         )
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
+        updated_range = result["updates"]["updatedRange"]
+
+        # Format numbers in table
+        range_dict = convert_range_to_dict(updated_range)
+        range_dict["sheetId"] = self.sheet_id
+        requests.append(format_number_integer(range_dict))
+
+        # Add data
+        rows: list[list[str]] = []
+        for _ in all_categories:
+            row = []
+            row.append("=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))")
+            rows.append(row)
+
+        rows.append(
+            [
+                "=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))",
+            ]
+        )
+
+        # Update table to Summary sheet
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"{self.sheet_name}!$D{offset_tmp}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
         updated_range = result["updates"]["updatedRange"]
 
         # Format numbers in table
