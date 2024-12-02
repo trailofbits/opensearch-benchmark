@@ -205,7 +205,7 @@ class Result:
                     .execute()
                 )
                 subtypes_array: list[list[str]] = result.get("values", [])
-                subtypes = set({x[0] for x in subtypes_array if x})
+                subtypes = sorted(set({x[0] for x in subtypes_array if x}))
                 logger.info(f"Subtypes: {subtypes}")
                 for os_workload_subtype in subtypes:
                     row = self.get_workload_operations(
