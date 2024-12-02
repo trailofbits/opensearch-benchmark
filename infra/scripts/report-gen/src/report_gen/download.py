@@ -29,6 +29,7 @@ FIELDS_SORT_PRIORITY = [
     "SnapshotBucket",
     "SnapshotBasePath",
     "Workload",
+    "WorkloadSubType",
     "TestProcedure",
     "WorkloadParams",
     "Run",
@@ -50,6 +51,7 @@ class BenchmarkResult:
         snapshot_bucket: str,
         snapshot_base_path: str,
         workload: str,
+        workload_subtype: str,
         test_procedure: str,
         workload_params: dict[str, str],
         shard_count: int,
@@ -68,6 +70,7 @@ class BenchmarkResult:
         self.SnapshotBucket = snapshot_bucket
         self.SnapshotBasePath = snapshot_base_path
         self.Workload = workload
+        self.WorkloadSubType = workload_subtype
         self.TestProcedure = test_procedure
         self.WorkloadParams = workload_params
         self.ShardCount = shard_count
@@ -267,6 +270,7 @@ def _handle_results_response(
         metric_value = source["value"]
         test_procedure = source["test_procedure"]
         workload_params_dict = source["workload-params"]
+        workload_subtype = workload_params_dict.get("query_data_set_corpus", "")
         p50 = metric_value["50_0"]
         p90 = metric_value["90_0"]
         user_tags = source["user-tags"]
@@ -298,6 +302,7 @@ def _handle_results_response(
                 snapshot_bucket,
                 snapshot_base_path,
                 workload,
+                workload_subtype,
                 test_procedure,
                 workload_params_dict,
                 shard_count,
@@ -354,6 +359,7 @@ def dump_csv_files(results: list[BenchmarkResult], folder: Path) -> None:
     current_engine: str | None = None
     current_engine_version: str | None = None
     current_workload: str | None = None
+    current_workload_subtype: str | None = None
     current_test_procedure: str | None = None
     csv_file: TextIOWrapper | None = None
     csv_writer: _csv._writer | None = None
@@ -364,6 +370,7 @@ def dump_csv_files(results: list[BenchmarkResult], folder: Path) -> None:
         new_engine = result.Engine
         new_engine_version = result.EngineVersion
         new_workload = result.Workload
+        new_workload_subtype = result.WorkloadSubType
         new_test_procedure = result.TestProcedure
 
         # Every time any of these columns changes values, we open a new file.
@@ -374,19 +381,21 @@ def dump_csv_files(results: list[BenchmarkResult], folder: Path) -> None:
             or current_engine != new_engine
             or current_engine_version != new_engine_version
             or current_workload != new_workload
+            or current_workload_subtype != new_workload_subtype
             or current_test_procedure != new_test_procedure
         ):
             current_run_group = new_run_group
             current_engine = new_engine
             current_engine_version = new_engine_version
             current_workload = new_workload
+            current_workload_subtype = new_workload_subtype
             current_test_procedure = new_test_procedure
 
             if csv_file is not None:
                 csv_file.close()
             csv_file_path = (
                 folder / f"{current_run_group.strftime("%Y-%m-%dT%H%M%SZ")}-{current_engine}"
-                f"-{current_engine_version}-{current_workload}-{current_test_procedure}.csv"
+                f"-{current_engine_version}-{current_workload}-{current_workload_subtype}-{current_test_procedure}.csv"
             )
             csv_file = csv_file_path.open("w", newline="")
             csv_writer = csv.writer(csv_file, delimiter=",", quotechar='"')
