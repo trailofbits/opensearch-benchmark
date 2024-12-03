@@ -46,6 +46,20 @@ on:
         required: false
         type: string
         default: eu-north-1
+      snapshot_version:
+        description: 'Snapshot version (`new` or `latest`)'
+        required: false
+        type: string
+        default: 'latest'
+      include_tasks:
+        description: 'Comma-separated list of tasks to include'
+        required: false
+        type: string
+        default: ''
+      vpc:
+        description: 'AWS VPC options: vpc_id,vpc_subnet_id,vpc_gateway_id,vpc_route_table_id,security_group_id'
+        required: true
+        type: string
 
 env:
   # nightly run default parameters
@@ -57,6 +71,33 @@ env:
   BENCHMARK_TYPE: ${{ inputs.benchmark_type ||  'official' }}
 
 jobs:
+  # Because the number of inputs is limited to 10
+  # https://docs.github.com/en/enterprise-cloud@latest/actions/writing-workflows/workflow-syntax-for-github-actions#onworkflow_dispatchinputs
+  split-inputs:
+    runs-on: ubuntu-latest
+    outputs:
+      vpc_id: ${{ steps.split.outputs.vpc_id }}
+      vpc_subnet_id: ${{ steps.split.outputs.vpc_subnet_id }}
+      vpc_gateway_id: ${{ steps.split.outputs.vpc_gateway_id }}
+      vpc_route_table_id: ${{ steps.split.outputs.vpc_route_table_id }}
+      security_group_id: ${{ steps.split.outputs.security_group_id }}
+    steps:
+      - name: Split combined input
+        id: split
+        run: |
+          # Read the combined input
+          combined="${{ github.event.inputs.vpc }}"
+          
+          # Split the input into variables
+          IFS=',' read -r vpc_id vpc_subnet_id vpc_gateway_id vpc_route_table_id security_group_id <<< "$combined"
+
+          # Set them as outputs
+          echo "vpc_id=$vpc_id" >> $GITHUB_OUTPUT
+          echo "vpc_subnet_id=$vpc_subnet_id" >> $GITHUB_OUTPUT
+          echo "vpc_gateway_id=$vpc_gateway_id" >> $GITHUB_OUTPUT
+          echo "vpc_route_table_id=$vpc_route_table_id" >> $GITHUB_OUTPUT
+          echo "security_group_id=$security_group_id" >> $GITHUB_OUTPUT
+
   generate-matrix:
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
     outputs:
@@ -70,7 +111,9 @@ jobs:
           echo "$res"
 
   run-benchmarks:
-    needs: generate-matrix
+    needs: 
+      - generate-matrix
+      - split-inputs
     strategy:
       fail-fast: false
       max-parallel: 12
@@ -90,6 +133,13 @@ jobs:
       aws_region: ${{ inputs.aws_region || 'ca-central-1' }}
       # assumes the possible events are schedule or workflow_dispatch
       ci_tag: ${{ github.event_name == 'schedule' && 'scheduled' || 'manual' }}
+      snapshot_version: ${{ inputs.snapshot_version }}
+      include_tasks: ${{ inputs.include_tasks }}
+      vpc_id: ${{ needs.split-inputs.outputs.vpc_id }}
+      vpc_subnet_id: ${{ needs.split-inputs.outputs.vpc_subnet_id }}
+      vpc_gateway_id: ${{ needs.split-inputs.outputs.vpc_gateway_id }}
+      vpc_route_table_id: ${{ needs.split-inputs.outputs.vpc_route_table_id }}
+      security_group_id: ${{ needs.split-inputs.outputs.security_group_id }}
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}

@@ -71,6 +71,31 @@ on:
         required: false
         type: string
         default: 'latest'
+      include_tasks:
+        description: 'Comma-separated list of tasks to include'
+        required: false
+        type: string
+        default: ''
+      vpc_id:
+        description: 'AWS VPC id'
+        required: true
+        type: string
+      vpc_subnet_id:
+        description: 'AWS VPC subnet id'
+        required: true
+        type: string
+      vpc_gateway_id:
+        description: 'AWS VPC gateway id'
+        required: true
+        type: string
+      vpc_route_table_id:
+        description: 'AWS VPC route table id'
+        required: true
+        type: string
+      security_group_id:
+        description: 'AWS Security group id'
+        required: true
+        type: string
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -108,6 +133,11 @@ env:
   TF_VAR_os_version: ${{ inputs.os_version }}
   TF_VAR_distribution_version: ${{ inputs.os_version }}
   TF_VAR_snapshot_version: ${{ inputs.snapshot_version }}
+  TF_VAR_vpc_id: ${{ inputs.vpc_id }}
+  TF_VAR_vpc_subnet_id: ${{ inputs.vpc_subnet_id }}
+  TF_VAR_vpc_gateway_id: ${{ inputs.vpc_gateway_id }}
+  TF_VAR_vpc_route_table_id: ${{ inputs.vpc_route_table_id }}
+  TF_VAR_security_group_id: ${{ inputs.security_group_id }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   SSH_OPTIONS: -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10
@@ -326,11 +356,12 @@ jobs:
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
               -tt ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -i /mnt/benchmark.sh $BENCHMARK_TYPE"
+              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -x /mnt/benchmark.sh $BENCHMARK_TYPE;\""
         env:
             BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
             RUN_GROUP_ID: ${{ needs.prepare_workspace.outputs.now_run_group_id }}
             CI_TAG: ${{ inputs.ci_tag }}
+            INCLUDE_TASKS: ${{ inputs.include_tasks }}
 
   destroy_workspace:
     needs: [prepare_workspace, run-osb, ingest-data]

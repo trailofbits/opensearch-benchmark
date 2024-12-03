@@ -68,11 +68,7 @@ if input_map["snapshot_version"] == "latest":
 elif input_map["snapshot_version"] == "new":
     latest_version = new_snapshot_version()
 else:
-    subdirs = [x for x in subdirs if x == input_map["snapshot_version"]]
     latest_version = input_map["snapshot_version"]
-    if len(subdirs) != 1:
-        print(f"Snapshot version {latest_version} not found", file=sys.stderr)
-        sys.exit(1)
 
 output = {"latest_version": latest_version}
 print(f"Latest version: {latest_version}", file=sys.stderr)

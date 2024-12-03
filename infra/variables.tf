@@ -111,14 +111,40 @@ variable "snapshot_version" {
   description = "Version of the snapshot to deploy (latest, new, or a specific version)"
   type        = string
   default     = "latest"
-  validation {
-    condition     = can(regex("^(latest|new)$", var.snapshot_version)) || can(regex("^\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}$", var.snapshot_version))
-    error_message = "Snapshot version must be one of: latest, new, or a specific version (YYYY-mm-dd_HH-MM-ss)"
-  }
+# TODO(Evan): Address this after finishing parallel tests
+# validation {
+#   condition     = can(regex("^(latest|new)$", var.snapshot_version)) || can(regex("^\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}$", var.snapshot_version))
+#   error_message = "Snapshot version must be one of: latest, new, or a specific version (YYYY-mm-dd_HH-MM-ss)"
+# }
 }
 
 variable "osb_version" {
   description = "OpenSearch Benchmark version"
   type        = string
   default     = "1.11.0"
+}
+
+variable "vpc_id" {
+  description = "VPC id to use"
+  type        = string
+}
+
+variable "vpc_subnet_id" {
+  description = "VPC subnet id to use"
+  type        = string
+}
+
+variable "vpc_gateway_id" {
+  description = "VPC gateway id"
+  type        = string
+}
+
+variable "vpc_route_table_id" {
+  description = "VPC route table id"
+  type        = string
+}
+
+variable "security_group_id" {
+  description = "Security group id"
+  type        = string
 }

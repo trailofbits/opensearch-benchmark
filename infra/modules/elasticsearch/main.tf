@@ -92,7 +92,7 @@ resource "aws_instance" "load-generation" {
           workload = var.workload,
         }
       ))),
-      ssh_private_key = base64gzip(var.ssh_priv_key)
+      ssh_private_key = yamlencode(base64gzip(var.ssh_priv_key))
     }
   )
   user_data_replace_on_change = true

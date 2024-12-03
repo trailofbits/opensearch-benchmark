@@ -2,13 +2,14 @@
 
 source /mnt/utils.sh
 
-if [ $# -ne 1 ]; then
-    echo "Usage: bash benchmark.sh <run-type>"
+if [ $# -lt 1 ]; then
+    echo "Usage: bash benchmark.sh <run-type> [include-tasks]"
     echo "  where <run-type> is 'official' or 'dev'"
     exit 1
 fi
 
 RUN_TYPE=$1
+INCLUDE_TASKS="$2"
 
 if [ "$RUN_TYPE" != "official" ] && [ "$RUN_TYPE" != "dev" ]; then
     echo "Error: <run-type> must be 'official' or 'dev'"
@@ -86,10 +87,12 @@ set -x
 EXECUTION_DIR="/mnt/test_executions"
 mkdir -p "$EXECUTION_DIR"
 
-INCLUDE_TASKS="type:search,prod-queries"
-if [ "$ENGINE_TYPE" == "OS" ]; then
-    # ElasticSearch doesn't support the warmup-indices operation
-    INCLUDE_TASKS+=",warmup-indices"
+if [ -z "$INCLUDE_TASKS" ]; then
+    INCLUDE_TASKS="type:search,prod-queries"
+    if [ "$ENGINE_TYPE" == "OS" ]; then
+        # ElasticSearch doesn't support the warmup-indices operation
+        INCLUDE_TASKS+=",warmup-indices"
+    fi
 fi
 
 # Queries only
