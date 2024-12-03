@@ -7,6 +7,7 @@ ES_SNAPSHOT_AWS_ACCESS_KEY_ID=$4
 ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY=$5
 CLUSTER_IPS=$6
 NODE_NAME=$7
+NODES_TYPE=$8
 
 cd /mnt || exit 1
 
@@ -16,15 +17,14 @@ wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-$CLUSTER
 shasum -a 512 -c elasticsearch-$CLUSTER_VERSION-linux-$CLUSTER_ARCH.tar.gz.sha512
 tar -xzf elasticsearch-$CLUSTER_VERSION-linux-$CLUSTER_ARCH.tar.gz
 cd elasticsearch-$CLUSTER_VERSION/ || exit 1
+CONFIG_FILE="config/elasticsearch.yml"
 
-cat <<EOF > config/elasticsearch.yml
+cat <<EOF > $CONFIG_FILE
 network.host: 0.0.0.0
 node.name: $NODE_NAME
 path.repo: ["/mnt/backup"]
-cluster.initial_master_nodes: main-node
 path.data: /mnt/data
 path.logs: /mnt/logs
-discovery.seed_hosts: [$CLUSTER_IPS]
 
 xpack.security.enabled: true
 xpack.security.enrollment.enabled: true
@@ -37,6 +37,17 @@ xpack.security.transport.ssl.enabled: true
 xpack.security.transport.ssl.key: es-cert.key
 xpack.security.transport.ssl.certificate: es-cert.crt
 EOF
+
+if [[ "$NODES_TYPE" == "multi" ]]; then
+    # multi-node settings
+    cat <<EOF >> $CONFIG_FILE
+cluster.initial_master_nodes: main-node
+discovery.seed_hosts: [$CLUSTER_IPS]
+EOF
+else
+    # single node settings
+    echo "discovery.type: single-node" >> $CONFIG_FILE
+fi
 
 JVM_CONFIG=config/jvm.options
 cp /mnt/jvm.options $JVM_CONFIG

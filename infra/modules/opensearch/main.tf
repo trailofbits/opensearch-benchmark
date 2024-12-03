@@ -27,7 +27,8 @@ locals {
     cidrhost(var.subnet_cidr_block, 7)
   ]
   main_cluster_node_private_ip        = local.cluster_node_private_ips[0]
-  additional_nodes_idx = var.workload == "vectorsearch" ? 1 : 3
+  nodes_type                          = var.workload == "vectorsearch" ? "multi" : "single"
+  additional_nodes_idx                = var.workload == "vectorsearch" ? 1 : 3
   additional_cluster_node_private_ips = slice(local.cluster_node_private_ips, local.additional_nodes_idx, 3)
 }
 
@@ -55,8 +56,9 @@ resource "aws_instance" "target-cluster-additional-nodes" {
       os_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
       authorized_ssh_key     = var.ssh_pub_key,
       jvm_options            = yamlencode(base64gzip(file("${path.module}/jvm.options"))),
-      cluster_ips            = join(",", local.cluster_node_private_ips)
-      node_name              = format("node-%s", each.key)
+      cluster_ips            = join(",", local.cluster_node_private_ips),
+      node_name              = format("node-%s", each.key),
+      nodes_type             = local.nodes_type,
     }
   )
   user_data_replace_on_change = true
@@ -90,8 +92,9 @@ resource "aws_instance" "target-cluster-main-node" {
       os_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
       authorized_ssh_key     = var.ssh_pub_key,
       jvm_options            = yamlencode(base64gzip(file("${path.module}/jvm.options"))),
-      cluster_ips            = join(",", local.cluster_node_private_ips)
-      node_name              = "main-node"
+      cluster_ips            = join(",", local.cluster_node_private_ips),
+      node_name              = "main-node",
+      nodes_type             = local.nodes_type,
     }
   )
   user_data_replace_on_change = true

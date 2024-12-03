@@ -7,6 +7,7 @@ OS_SNAPSHOT_AWS_ACCESS_KEY_ID=$4
 OS_SNAPSHOT_AWS_SECRET_ACCESS_KEY=$5
 CLUSTER_IPS=$6
 NODE_NAME=$7
+NODES_TYPE=$8
 
 INSTALL_ROOT=/mnt/opensearch
 INSTALL_PATH=$INSTALL_ROOT/opensearch-$CLUSTER_VERSION
@@ -30,12 +31,21 @@ cat <<EOF > $CONFIG_FILE
 network.host: 0.0.0.0
 node.name: $NODE_NAME
 path.repo: ["/mnt/backup"]
-cluster.initial_cluster_manager_nodes: main-node
 path.data: /mnt/data
 path.logs: /mnt/logs
 s3.client.default.region: us-east-1
+EOF
+
+if [[ "$NODES_TYPE" == "multi" ]]; then
+    # multi-node settings
+    cat <<EOF >> $CONFIG_FILE
+cluster.initial_cluster_manager_nodes: main-node
 discovery.seed_hosts: [$CLUSTER_IPS]
 EOF
+else
+    # single node settings
+    echo "discovery.type: single-node" >> $CONFIG_FILE
+fi
 
 cp /mnt/jvm.options $JVM_CONFIG
 
