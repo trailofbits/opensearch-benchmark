@@ -53,14 +53,6 @@ param_aws=(
 
 for ((i=start; i<=end; i++)); do
     terraform workspace select -or-create=true "${prefix}-${i}"
-    terraform destroy -auto-approve \
-            "${param_aws[@]}" \
-            &> "destroy_${prefix}-${i}.log" &
-    sleep 30
-done
-
-for ((i=start; i<=end; i++)); do
-    terraform workspace select -or-create=true "${prefix}-${i}"
     terraform init
 
     param_cluster=(

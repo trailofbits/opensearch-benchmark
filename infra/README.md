@@ -109,3 +109,10 @@ See the `scripts/report-gen` [README](scripts/report-gen/README.md) for instruct
 ```shell
 ./scripts/parallel.sh
 ```
+
+Wait until benchmarks are finished.
+
+```shell
+./scripts/destroy.sh
+```
+
