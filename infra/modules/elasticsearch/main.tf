@@ -27,7 +27,8 @@ locals {
     cidrhost(var.subnet_cidr_block, 7)
   ]
   main_cluster_node_private_ip        = local.cluster_node_private_ips[0]
-  additional_nodes_idx = var.workload == "vectorsearch" ? 1 : 3
+  nodes_type                          = var.workload == "vectorsearch" ? "multi" : "single"
+  additional_nodes_idx                = var.workload == "vectorsearch" ? 1 : 3
   additional_cluster_node_private_ips = slice(local.cluster_node_private_ips, local.additional_nodes_idx, 3)
 }
 
@@ -40,11 +41,11 @@ resource "tls_self_signed_cert" "cert" {
   private_key_pem = tls_private_key.cert-key.private_key_pem
 
   ip_addresses = local.cluster_node_private_ips
-  dns_names = concat([for ip in local.cluster_node_private_ips : format("node-%s", ip)], ["main-node"])
+  dns_names    = concat([for ip in local.cluster_node_private_ips : format("node-%s", ip)], ["main-node"])
 
   subject {
-    common_name = "target-cluster"
-    country = "US"
+    common_name  = "target-cluster"
+    country      = "US"
     organization = "Target Cluster Org"
   }
 
@@ -71,7 +72,7 @@ resource "aws_instance" "target-cluster-additional-nodes" {
 
   associate_public_ip_address = true
 
-  subnet_id = var.subnet_id
+  subnet_id  = var.subnet_id
   private_ip = each.key
 
   user_data = templatefile("${path.module}/es-cluster.yaml",
@@ -87,8 +88,9 @@ resource "aws_instance" "target-cluster-additional-nodes" {
       jvm_options            = yamlencode(base64gzip(file("${path.module}/jvm.options"))),
       cluster_ips            = join(",", local.cluster_node_private_ips),
       node_name              = format("node-%s", each.key),
-      crt = yamlencode(base64gzip(tls_self_signed_cert.cert.cert_pem)),
-      crt_key = yamlencode(base64gzip(tls_private_key.cert-key.private_key_pem)),
+      crt                    = yamlencode(base64gzip(tls_self_signed_cert.cert.cert_pem)),
+      crt_key                = yamlencode(base64gzip(tls_private_key.cert-key.private_key_pem)),
+      nodes_type             = local.nodes_type,
     }
   )
   user_data_replace_on_change = true
@@ -125,8 +127,9 @@ resource "aws_instance" "target-cluster-main-node" {
       jvm_options            = yamlencode(base64gzip(file("${path.module}/jvm.options"))),
       cluster_ips            = join(",", local.cluster_node_private_ips),
       node_name              = "main-node",
-      crt = yamlencode(base64gzip(tls_self_signed_cert.cert.cert_pem)),
-      crt_key = yamlencode(base64gzip(tls_private_key.cert-key.private_key_pem)),
+      crt                    = yamlencode(base64gzip(tls_self_signed_cert.cert.cert_pem)),
+      crt_key                = yamlencode(base64gzip(tls_private_key.cert-key.private_key_pem)),
+      nodes_type             = local.nodes_type,
     }
   )
   user_data_replace_on_change = true

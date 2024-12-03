@@ -68,4 +68,4 @@ runcmd:
   - [ chown, ubuntu:ubuntu, /mnt/jvm.options ]
   - [ chown, ubuntu:ubuntu, /es-cert.key ]
   - [ chown, ubuntu:ubuntu, /es-cert.crt ]
-  - [ sudo, -u, ubuntu, /es_cluster.sh, "${es_password}", "${es_version}", "${es_arch}", "${es_snapshot_access_key}", "${es_snapshot_secret_key}", "${cluster_ips}", "${node_name}" ]
+  - [ sudo, -u, ubuntu, /es_cluster.sh, "${es_password}", "${es_version}", "${es_arch}", "${es_snapshot_access_key}", "${es_snapshot_secret_key}", "${cluster_ips}", "${node_name}", "${nodes_type}" ]
