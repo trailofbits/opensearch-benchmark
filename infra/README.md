@@ -106,4 +106,30 @@ This will produce a file named `segment-timestamps.txt` in the current directory
 
 ## Upload Results to Google Sheets
 
-See the `scripts/report-gen` [README](scripts/report-gen/README.md) for instructions.
+### Setup
+Install python >= 3.13 and [uv](https://docs.astral.sh/uv/).
+
+You will also need a Google API credentials file. Follow the steps below:
+  1. [Create a project](https://developers.google.com/workspace/guides/create-project)
+  2. [Enable APIs](https://developers.google.com/workspace/guides/enable-apis). Search for and enable the Google Sheets API
+  3.  [Configure OAuth Consent](https://developers.google.com/workspace/guides/configure-oauth-consent). Select "Internal" for the user type.
+  4. [Create OAth client ID credentials](https://developers.google.com/workspace/guides/create-credentials#oauth-client-id).
+  5. Download the created credentials file.
+
+Lastly you will need the URL and password for the shared data store.
+
+### Generate Report
+
+The script `./scripts/generate_report.sh` will create and upload a google sheet report.
+
+It expects the data store URL and password to be in the `DS_URL` and `DS_PASSWORD` environment variables. It takes a date range as input in the form `YYY-MM-DD YYYY-MM-DD` and a path to the google credentials file.
+
+```shell
+export DS_URL=<datastore url>
+export DS_PASSWORD=<datastore password>
+./scripts/generate_report.sh 2024-10-10 2024-11-10 /path/to/credentials.json
+```
+
+The above will generate a report with results from October 10th 2024 to November 10th 2024 and print the url for the generated google sheet.
+
+See the `scripts/report-gen` [README](scripts/report-gen/README.md) for more detail.
