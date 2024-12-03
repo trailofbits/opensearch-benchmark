@@ -51,7 +51,7 @@ class Result:
         range_dict: dict = {}
 
         # Bold first row
-        range_dict = convert_range_to_dict(f"{self.sheet_name}!A1:T1")
+        range_dict = convert_range_to_dict(f"{self.sheet_name}!A1:V1")
         range_dict["sheetId"] = self.sheet_id
         requests.append(format_font_bold(range_dict))
 
@@ -66,7 +66,7 @@ class Result:
             requests.append(r)
 
         # Format numbers
-        for cells in ["D2:D", "G2:L", "O2:T"]:
+        for cells in ["D2:D", "H2:M", "Q2:V"]:
             range_dict = convert_range_to_dict(f"{self.sheet_name}!{cells}")
             range_dict["sheetId"] = self.sheet_id
             requests.append(format_number_float(range_dict))
@@ -78,7 +78,7 @@ class Result:
             requests.extend(format_color_comparison(range_dict))
 
         # Format RSD colors
-        for cells in ["K2:L", "S2:T"]:
+        for cells in ["L2:M", "U2:V"]:
             range_dict = convert_range_to_dict(f"{self.sheet_name}!{cells}")
             range_dict["sheetId"] = self.sheet_id
             requests.append(format_color_rsd(range_dict))
@@ -86,8 +86,15 @@ class Result:
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
 
-    def get_workload_operations(
-        self, index: int, workload: str, os: str, es: str, operations: list[str]
+    def get_workload_operations(  # noqa: PLR0913
+        self,
+        index: int,
+        workload: str,
+        os: str,
+        os_workload_subtype: str,
+        es: str,
+        es_workload_subtype: str,
+        operations: list[str],
     ) -> list[list[str]]:
         """Retrieve workload operation results for one OS/ES engine combination."""
         rows: list[list[str]] = []
@@ -99,30 +106,38 @@ class Result:
             # Match workload name, non-zeroth run, operation name, and service_time
             base = (
                 f"{raw_sheet}!$E$2:$E=$A{index},"
-                f"{raw_sheet}!$G$2:$G<>0,"
-                f"{raw_sheet}!$H$2:$H=$C{index},"
-                f'{raw_sheet}!$I$2:$I="service_time"'
+                f"{raw_sheet}!$H$2:$H<>0,"
+                f"{raw_sheet}!$I$2:$I=$C{index},"
+                f'{raw_sheet}!$J$2:$J="service_time"'
             )
 
             # Match above, plus OS engine and version
-            os_stat = f'{raw_sheet}!$C$2:$C="OS",' f'{raw_sheet}!$D$2:$D="{os}",' + base
+            os_stat = (
+                f'{raw_sheet}!$C$2:$C="OS",'
+                f'{raw_sheet}!$D$2:$D="{os}",'
+                f'{raw_sheet}!$F$2:$F="{os_workload_subtype}",' + base
+            )
 
             # Match above, plus ES engine and version
-            es_stat = f'{raw_sheet}!$C$2:$C="ES",' f'{raw_sheet}!$D$2:$D="{es}",' + base
+            es_stat = (
+                f'{raw_sheet}!$C$2:$C="ES",'
+                f'{raw_sheet}!$D$2:$D="{es}",'
+                f'{raw_sheet}!$F$2:$F="{es_workload_subtype}",' + base
+            )
 
-            cell_os_p50_stdev = f"G{index}"
-            cell_os_p90_stdev = f"H{index}"
-            cell_os_p50_avg = f"I{index}"
-            cell_os_p90_avg = f"J{index}"
-            cell_os_p50_rsd = f"K{index}"  # noqa: F841
-            cell_os_p90_rsd = f"L{index}"  # noqa: F841
+            cell_os_p50_stdev = f"H{index}"
+            cell_os_p90_stdev = f"I{index}"
+            cell_os_p50_avg = f"J{index}"
+            cell_os_p90_avg = f"K{index}"
+            cell_os_p50_rsd = f"L{index}"  # noqa: F841
+            cell_os_p90_rsd = f"M{index}"  # noqa: F841
 
-            cell_es_p50_stdev = f"O{index}"
-            cell_es_p90_stdev = f"P{index}"
-            cell_es_p50_avg = f"Q{index}"
-            cell_es_p90_avg = f"R{index}"
-            cell_es_p50_rsd = f"S{index}"  # noqa: F841
-            cell_es_p90_rsd = f"T{index}"  # noqa: F841
+            cell_es_p50_stdev = f"Q{index}"
+            cell_es_p90_stdev = f"R{index}"
+            cell_es_p50_avg = f"S{index}"
+            cell_es_p90_avg = f"T{index}"
+            cell_es_p50_rsd = f"U{index}"  # noqa: F841
+            cell_es_p90_rsd = f"V{index}"  # noqa: F841
 
             category = f"=VLOOKUP(C{index}, FILTER(Categories!$B$2:$C, Categories!$A2:$A = $A{index}), 2, FALSE)"
 
@@ -133,18 +148,20 @@ class Result:
                 f"={cell_es_p90_avg}/{cell_os_p90_avg}",  # ES/OS comparison column
                 "",  # Blank column
                 os,  # OS version column
-                f"=STDEV.S(FILTER({raw_sheet}!$J$2:$J, {os_stat}))",  # p50 stdev
-                f"=STDEV.S(FILTER({raw_sheet}!$K$2:$K, {os_stat}))",  # p90 stdev
-                f"=AVERAGE(FILTER({raw_sheet}!$J$2:$J, {os_stat}))",  # p50 avg
-                f"=AVERAGE(FILTER({raw_sheet}!$K$2:$K, {os_stat}))",  # p90 avg
+                os_workload_subtype,  # OS workload subtype column
+                f"=STDEV.S(FILTER({raw_sheet}!$K$2:$K, {os_stat}))",  # p50 stdev
+                f"=STDEV.S(FILTER({raw_sheet}!$L$2:$L, {os_stat}))",  # p90 stdev
+                f"=AVERAGE(FILTER({raw_sheet}!$K$2:$K, {os_stat}))",  # p50 avg
+                f"=AVERAGE(FILTER({raw_sheet}!$L$2:$L, {os_stat}))",  # p90 avg
                 f"={cell_os_p50_stdev}/{cell_os_p50_avg}",  # p50 rsd
                 f"={cell_os_p90_stdev}/{cell_os_p90_avg}",  # p50 rsd
                 "",  # Blank column
                 es,  # ES version column
-                f"=STDEV.S(FILTER({raw_sheet}!$J$2:$J, {es_stat}))",  # p50 stdev
-                f"=STDEV.S(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p90 stdev
-                f"=AVERAGE(FILTER({raw_sheet}!$J$2:$J, {es_stat}))",  # p50 avg
-                f"=AVERAGE(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p90 avg
+                es_workload_subtype,  # ES workload subtype column
+                f"=STDEV.S(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p50 stdev
+                f"=STDEV.S(FILTER({raw_sheet}!$L$2:$L, {es_stat}))",  # p90 stdev
+                f"=AVERAGE(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p50 avg
+                f"=AVERAGE(FILTER({raw_sheet}!$L$2:$L, {es_stat}))",  # p90 avg
                 f"={cell_es_p50_stdev}/{cell_es_p50_avg}",  # p50 rsd
                 f"={cell_es_p90_stdev}/{cell_es_p90_avg}",  # p50 rsd
             ]
@@ -170,13 +187,46 @@ class Result:
             return 0
 
         rows_added: int = 0
+        rows: list[list[str]] = []
 
         # For each combination of OS/ES engines
         for os, es in product(engines["OS"], engines["ES"]):
             logger.info(f"\tComparing OS {os} versus ES {es}")
 
-            # Retrieve operation comparison
-            rows = self.get_workload_operations(offset, workload, os, es, operations)
+            # TODO(Evan): Don't hardcode this in the future.  # noqa: TD003 FIX002
+            if workload == "vectorsearch":
+                es_workload_subtype = "lucene-cohere-"
+
+                # Retrieve operation comparison
+                result: dict = (
+                    self.service.spreadsheets()
+                    .values()
+                    .get(spreadsheetId=self.spreadsheet_id, range="raw!F2:F")
+                    .execute()
+                )
+                subtypes_array: list[list[str]] = result.get("values", [])
+                subtypes = sorted(set({x[0] for x in subtypes_array if x}))
+                logger.info(f"Subtypes: {subtypes}")
+                for os_workload_subtype in subtypes:
+                    # Get size to compare
+                    size: str = ""
+                    if "-1m" in os_workload_subtype:
+                        size = "1m"
+                    elif "-10m" in os_workload_subtype:
+                        size = "10m"
+                    else:
+                        size = "1m"
+
+                    row = self.get_workload_operations(
+                        offset, workload, os, os_workload_subtype, es, es_workload_subtype + size, operations
+                    )
+                    offset += len(row)
+                    rows_added += len(row)
+                    rows.extend(row)
+            else:
+                rows = self.get_workload_operations(offset, workload, os, "", es, "", operations)
+                offset += len(rows)
+                rows_added += len(rows)
 
             # Append table to Result sheet
             request_properties: dict = {
@@ -190,8 +240,7 @@ class Result:
                 body=request_properties,
             ).execute()
 
-            offset += len(rows)
-            rows_added += len(rows)
+            rows = []
 
         return rows_added
 

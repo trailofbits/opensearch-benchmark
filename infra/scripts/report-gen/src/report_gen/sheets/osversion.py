@@ -264,7 +264,7 @@ class OSVersion:
         base = (
             f'{results_sheet}!$A$2:$A="{workload_str}",'
             f'{results_sheet}!$F$2:$F="{os_version}",'
-            f'{results_sheet}!$N$2:$N="{es_version}",'
+            f'{results_sheet}!$O$2:$O="{es_version}",'
         )
 
         def get_base_operation(results_sheet: str, category_cell: str, operation_cell: str) -> str:
@@ -284,10 +284,10 @@ class OSVersion:
                 operation_cell = f"$B{operation_index}"
                 base_operation = get_base_operation(results_sheet, category_cell, operation_cell)
 
-                es_st_value = f"=FILTER({results_sheet}!$R$2:$R,{base_operation})"
-                es_rsd_value = f"=FILTER({results_sheet}!$T$2:$T,{base_operation})"
-                os_st_value = f"=FILTER({results_sheet}!$J$2:$J,{base_operation})"
-                os_rsd_value = f"=FILTER({results_sheet}!$L$2:$L,{base_operation})"
+                es_st_value = f"=FILTER({results_sheet}!$T$2:$T,{base_operation})"
+                es_rsd_value = f"=FILTER({results_sheet}!$V$2:$V,{base_operation})"
+                os_st_value = f"=FILTER({results_sheet}!$K$2:$K,{base_operation})"
+                os_rsd_value = f"=FILTER({results_sheet}!$M$2:$M,{base_operation})"
 
                 es_st_cell = f"$C{operation_index}"
                 os_st_cell = f"$E{operation_index}"
