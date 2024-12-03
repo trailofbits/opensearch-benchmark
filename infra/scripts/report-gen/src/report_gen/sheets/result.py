@@ -195,7 +195,7 @@ class Result:
 
             # TODO(Evan): Don't hardcode this in the future.  # noqa: TD003 FIX002
             if workload == "vectorsearch":
-                es_workload_subtype = "lucene-cohere-1m"
+                es_workload_subtype = "lucene-cohere-"
 
                 # Retrieve operation comparison
                 result: dict = (
@@ -208,8 +208,17 @@ class Result:
                 subtypes = sorted(set({x[0] for x in subtypes_array if x}))
                 logger.info(f"Subtypes: {subtypes}")
                 for os_workload_subtype in subtypes:
+                    # Get size to compare
+                    size: str = ""
+                    if "-1m" in os_workload_subtype:
+                        size = "1m"
+                    elif "-10m" in os_workload_subtype:
+                        size = "10m"
+                    else:
+                        size = "1m"
+
                     row = self.get_workload_operations(
-                        offset, workload, os, os_workload_subtype, es, es_workload_subtype, operations
+                        offset, workload, os, os_workload_subtype, es, es_workload_subtype + size, operations
                     )
                     offset += len(row)
                     rows_added += len(row)
