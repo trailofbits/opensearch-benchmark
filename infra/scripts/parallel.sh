@@ -12,6 +12,14 @@ if [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
     echo "AWS_SECRET_ACCESS_KEY is not set"
     exit 1
 fi
+if [ -z "$AWS_SNAPSHOT_ACCESS_KEY_ID" ]; then
+    echo "AWS_SNAPSHOT_ACCESS_KEY_ID is not set"
+    exit 1
+fi
+if [ -z "$AWS_SECRET_SNAPSHOT_ACCESS_KEY" ]; then
+    echo "AWS_SECRET_SNAPSHOT_ACCESS_KEY is not set"
+    exit 1
+fi
 
 if [ $# -ne 3 ]; then
     echo "Usage: $0 <OpenSearch|ElasticSearch> <version> <number_of_tests>"
@@ -58,8 +66,8 @@ for ((i=start; i<=end; i++)); do
     param_cluster=(
         "${param_aws[@]}"
         -var="target_cluster_type=${type}"
-        -var="snapshot_user_aws_access_key_id=AKIAYZZGTDYZ2YAJK6OE"
-        -var="snapshot_user_aws_secret_access_key=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"
+        -var="snapshot_user_aws_access_key_id=${AWS_SNAPSHOT_ACCESS_KEY_ID}"
+        -var="snapshot_user_aws_secret_access_key=${AWS_SECRET_SNAPSHOT_ACCESS_KEY}"
         -var="snapshot_version=${prefix}-${i}"
         -var="benchmark_environment=${prefix}-${i}"
         -var="datastore_host=opense-clust-AEqAZh9qc4u7-dcbe5cce2775e15e.elb.us-east-1.amazonaws.com"
@@ -103,7 +111,6 @@ for ((i=start; i<=end; i++)); do
         -o IdentitiesOnly=yes \
         -i "$key" \
         "$conn" -tt -- \
-        "bash -ixc \"FORCE_INGESTION=true EXTRA_CLIENT_OPTIONS=timeout:240 CI_TAG=dev bash -ix /mnt/ingest.sh && EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=benchmark-$today-$workload CI_TAG=dev bash -x /mnt/benchmark.sh dev '$tasks'\"" \
+        "bash -ixc \"FORCE_INGESTION=true EXTRA_CLIENT_OPTIONS=timeout:240 CI_TAG=dev bash -ix /mnt/ingest.sh && EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$prefix-$i CI_TAG=dev bash -x /mnt/benchmark.sh dev '$tasks'\"" \
         &> "ssh_out_$prefix-$i.log" &
 done
-
