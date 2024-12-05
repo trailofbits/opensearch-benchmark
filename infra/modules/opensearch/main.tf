@@ -220,6 +220,11 @@ resource "aws_instance" "load-generation" {
     destination = "/mnt/workload_params.json"
   }
 
+  provisioner "file" {
+    source      = "${path.module}/../../dist"
+    destination = "/mnt"
+  }
+
   tags = {
     Name = "load-generation"
   }

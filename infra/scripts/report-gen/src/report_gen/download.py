@@ -289,7 +289,12 @@ def _handle_results_response(
             benchmark_source = ""
 
         # Parse into a proper date for sorting purposes
-        run_group_date = datetime.strptime(run_group_str, "%Y_%m_%d_%H_%M_%S")  # noqa: DTZ007
+        try:
+            run_group_date = datetime.strptime(run_group_str, "%Y_%m_%d_%H_%M_%S")  # noqa: DTZ007
+        except ValueError as e:
+            msg = f"Error parsing date string: {e}"
+            logger.exception(msg)
+            continue
 
         results.append(
             BenchmarkResult(
