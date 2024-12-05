@@ -39,6 +39,13 @@ Assuming ES versioned runs are executed manually via the CI.
 ./create_report.sh download_manual_2024-10-21_2024-10-29/ /path/to/credentials.json
 ```
 
+## Compare results week-to-week
+
+**NOTE**: This output is used for debugging. It will output a lot of information, so it's best to redirect to a file.
+
+```shell
+./diff_report.sh download_nightly_2024-11-11_2024-11-26/ download_nightly_2024-11-18_2024-12-03/
+```
 
 ## Tests
 
