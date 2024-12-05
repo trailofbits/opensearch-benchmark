@@ -42,6 +42,14 @@ class ImportData:
             subtype_dataset = vector_index_body_lookup.get(target_index_body, "unknown")
         return f"{subtype_dataset}-{query_data_set_corpus}"
 
+    def ignore(self, row: list[str]) -> bool:
+        """Ignore select workload results."""
+        engine_type = row[2]
+        workload = row[4]
+
+        # NOTE: Because ES doesn't support noaa-semantic-search
+        return engine_type == "ES" and workload == "noaa_semantic_search"
+
     def read_rows(self, csv_path: Path) -> list[list[str]]:
         """Read CSV data."""
         row_list: list[list[str]]
@@ -86,6 +94,10 @@ class ImportData:
                 source_column_index: int | None = input_columns.get(column_name)
                 column_value: str = "(null)" if source_column_index is None else row[source_column_index]
                 processed_row.append(column_value)
+
+            # Ignore some results. For example, ES does not support noaa-semantic-search
+            if self.ignore(processed_row):
+                continue
 
             workload_subtype = ImportData.workload_subtype(processed_row)
             processed_row[5] = workload_subtype

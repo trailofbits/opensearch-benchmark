@@ -156,15 +156,24 @@ class Result:
                 f"={cell_os_p50_stdev}/{cell_os_p50_avg}",  # p50 rsd
                 f"={cell_os_p90_stdev}/{cell_os_p90_avg}",  # p50 rsd
                 "",  # Blank column
-                es,  # ES version column
-                es_workload_subtype,  # ES workload subtype column
-                f"=STDEV.S(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p50 stdev
-                f"=STDEV.S(FILTER({raw_sheet}!$L$2:$L, {es_stat}))",  # p90 stdev
-                f"=AVERAGE(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p50 avg
-                f"=AVERAGE(FILTER({raw_sheet}!$L$2:$L, {es_stat}))",  # p90 avg
-                f"={cell_es_p50_stdev}/{cell_es_p50_avg}",  # p50 rsd
-                f"={cell_es_p90_stdev}/{cell_es_p90_avg}",  # p50 rsd
             ]
+
+            if es:
+                row.extend(
+                    [
+                        es,  # ES version column
+                        es_workload_subtype,  # ES workload subtype column
+                        f"=STDEV.S(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p50 stdev
+                        f"=STDEV.S(FILTER({raw_sheet}!$L$2:$L, {es_stat}))",  # p90 stdev
+                        f"=AVERAGE(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p50 avg
+                        f"=AVERAGE(FILTER({raw_sheet}!$L$2:$L, {es_stat}))",  # p90 avg
+                        f"={cell_es_p50_stdev}/{cell_es_p50_avg}",  # p50 rsd
+                        f"={cell_es_p90_stdev}/{cell_es_p90_avg}",  # p50 rsd
+                    ]
+                )
+            # If no ES runs, leave cells blank
+            else:
+                row.extend([""] * 8)
 
             rows.append(row)
             index += 1
@@ -182,9 +191,9 @@ class Result:
         if "OS" not in engines:
             logger.error("Error, no OS engines found")
             return 0
+        # If no ES results are considered, still output OS results
         if "ES" not in engines:
-            logger.error("Error, no ES engines found")
-            return 0
+            engines["ES"] = [""]
 
         rows_added: int = 0
         rows: list[list[str]] = []
@@ -193,7 +202,7 @@ class Result:
         for os, es in product(engines["OS"], engines["ES"]):
             logger.info(f"\tComparing OS {os} versus ES {es}")
 
-            # TODO(Evan): Don't hardcode this in the future.  # noqa: TD003 FIX002
+            # NOTE: Consider not hardcoding this in the future
             if workload == "vectorsearch":
                 es_workload_subtype = "lucene-cohere-"
 
@@ -259,7 +268,7 @@ class Result:
         offset: int = 2
 
         # For each workload, process engine results
-        for workload, engines in workloads.items():
+        for workload, engines in sorted(workloads.items()):
             logger.info(f"Processing {workload}")
 
             # Retrieve operations for this workload

@@ -429,8 +429,11 @@ class Summary:
 
         # Find versions to compare
         for engines in workloads.values():
+            if "OS" not in engines or "ES" not in engines:
+                continue
             os_version = engines["OS"][-1]
             es_version = engines["ES"][-1]
+            break
 
         # Add space
         rows.append([""])
@@ -539,6 +542,8 @@ class Summary:
 
         # Find versions to compare
         for engines in workloads.values():
+            if "OS" not in engines or "ES" not in engines:
+                continue
             os_version = engines["OS"][-1]
             es_version = engines["ES"][-1]
             break
@@ -546,6 +551,9 @@ class Summary:
         # Find category counts and totals for each workload
         all_categories: set[str] = set()
         for workload in workloads:
+            # NOTE: Because ES does not support noaa-semantic-search, we skip this
+            if workload == "noaa_semantic_search":
+                continue
             categories = get_workload_operation_categories(workload)
             all_categories.update(categories)
 
@@ -875,7 +883,7 @@ class Summary:
 
         index = 2
         workload_ranges: list[str] = []
-        for workload, engines in workloads.items():
+        for workload, engines in sorted(workloads.items()):
             rows = []
             row, index = self.get_workload_engines(workload, engines, index)
             rows.extend(row)
@@ -929,7 +937,7 @@ class Summary:
 
         # For each workload, summarize results
         workload_offset = 1
-        for workload, engines in workloads.items():
+        for workload, engines in sorted(workloads.items()):
             logger.info(f"Summarizing {workload}")
             o, r = self.create_summary_tables(workload, engines, workload_offset)
             workload_offset += o
