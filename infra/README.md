@@ -113,6 +113,5 @@ See the `scripts/report-gen` [README](scripts/report-gen/README.md) for instruct
 Wait until benchmarks are finished.
 
 ```shell
-./scripts/destroy.sh
+./scripts/parallel_destroy.sh
 ```
-
