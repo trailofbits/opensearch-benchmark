@@ -53,8 +53,17 @@ param_aws=(
 
 for ((i=start; i<=end; i++)); do
     terraform workspace select -or-create=true "${prefix}-${i}"
+    param_cluster=(
+        "${param_aws[@]}"
+        -var="snapshot_user_aws_access_key_id=${AWS_SNAPSHOT_ACCESS_KEY_ID}"
+        -var="snapshot_user_aws_secret_access_key=${AWS_SECRET_SNAPSHOT_ACCESS_KEY}"
+        -var="benchmark_environment=${prefix}-${i}"
+        -var="datastore_host=opense-clust-AEqAZh9qc4u7-dcbe5cce2775e15e.elb.us-east-1.amazonaws.com"
+        -var="datastore_username=admin"
+        -var="datastore_password=${DS_PASSWORD}"
+    )
     terraform destroy -auto-approve \
-            "${param_aws[@]}" \
+            "${param_cluster[@]}" \
             &> "destroy_${prefix}-${i}.log" &
     sleep 30
 done
