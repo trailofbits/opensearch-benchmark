@@ -13,18 +13,18 @@ If you see `Authentication has failed`, just delete `token.json` and run the scr
 
 ## Generate Nightly Report
 
-Use `download_nightly.sh` to download nightly benchmark data.
+Use `download.sh` to download nightly benchmark data.
 
 ```shell
-./download_nightly.sh 2024-10-21 2024-10-29
+./download.sh --source nightly 2024-10-10 2024-10-24
 ```
 
 Results will be downloaded to a directory named `download_nightly-{start_date}-{end_date}`.
 
-From then on, use `create_report.sh` to create a google spreadsheet report from the generated data.
+Use `create_report.sh` to create a google spreadsheet report from the downloaded data.
 
 ```shell
-./create_report.sh download_nightly_2024-10-21_2024-10-29/ /path/to/credentials.json
+./create_report.sh download_nightly_2024-10-10_2024-10-24/ /path/to/credentials.json
 ```
 
 Check your Google Drive home folder for the generated spreadsheet, or click the link outputted to the command line.
@@ -34,7 +34,7 @@ Check your Google Drive home folder for the generated spreadsheet, or click the 
 Assuming ES versioned runs are executed manually via the CI.
 
 ```shell
-./download_manual.sh 2024-10-21 2024-10-29
+./download.sh --source manual 2024-10-21 2024-10-29
 
 ./create_report.sh download_manual_2024-10-21_2024-10-29/ /path/to/credentials.json
 ```

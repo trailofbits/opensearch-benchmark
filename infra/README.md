@@ -118,18 +118,38 @@ You will also need a Google API credentials file. Follow the steps below:
 
 Lastly you will need the URL and password for the shared data store.
 
-### Generate Report
+### Download Data
 
-The script `./scripts/generate_report.sh` will download all results from scheduled CI runs, create and upload a google sheet report.
+The `./scripts/report-gen/download.sh` script can be used to download data.
 
-It expects the data store URL and password to be in the `DS_URL` and `DS_PASSWORD` environment variables. It takes a date range as input in the form `YYY-MM-DD YYYY-MM-DD` and a path to the google credentials file.
+For example to download CI nightly runs from from 12/01/2024 00:00 to 12/08/2024 00:00
 
 ```shell
 export DS_URL=<datastore url>
 export DS_PASSWORD=<datastore password>
-./scripts/generate_report.sh 2024-10-10 2024-11-10 /path/to/credentials.json
+./scripts/report-gen/download.sh --source nightly 2024-12-01 2024-12-08
 ```
 
-The above will generate a report with results from October 10th 2024 to November 10th 2024 and print the url for the generated google sheet.
+Results will be downloaded to a directory named `download_{source}-{start_date}-{end_date}`.
+
+The script expects the data store URL and password to be in the `DS_URL` and `DS_PASSWORD` environment variables. It takes a source as a flag and a date range as input in the form `YYYY-MM-DD YYYY-MM-DD`
+
+Valid sources are `nightly`, `manual` and `dev`. The type of data downloaded is shown below.
+
+| tag | run type | ci |
+| -   | -        | -  |
+| `nightly` | official | scheduled |
+| `manual` | official | manual |
+| `dev` | dev | manual |
+
+### Generate Report
+
+The script `./scripts/report-gen/create_report.sh` will create and upload a google sheet report.
+
+```shell
+./create_report.sh download_nightly_2024-12-01-2024-12-08/ /path/to/credentials.json
+```
+
+Check your Google Drive home folder for the generated spreadsheet, or click the link outputted to the command line.
 
 See the `scripts/report-gen` [README](scripts/report-gen/README.md) for more detail.
