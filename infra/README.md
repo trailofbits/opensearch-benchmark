@@ -1,24 +1,27 @@
-# OpenSearch benchmarking infrastructure
+# OpenSearch Benchmarking Infrastructure
 
-## Create your own environment for benchmarking
-
-- Install `terraform`.
+## Setup
+- Install `terraform`
 - Install AWS CLI
 - In the AWS Console, go to "Security Credentials" and create a new "Access Key"
 - Set the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 - Copy `terraform.tfvars.example` to `terraform.tfvars`.
-  - For configurations for each workload, see `workload_params_default/` directory
+  - To configure a specific workload:
+    - Set `workload` to the workload's name
+    - Set `workload_params` to the contents of the workload's configuration file in the `workload_params_default/` directory.
 - `terraform workspace new <unique-name>` (e.g. `terraform workspace new rschirone`)
 - `terraform init`
 - Modify the `terraform.tfvars` file according to your needs
 - Note: The data store credentials and cluster password will be saved to the load generation machine.
 - By default, the load generation IP is added to the [shared prefix list](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#PrefixListDetails:prefixListId=pl-06f77c0b59dbf70fe) (id: `pl-06f77c0b59dbf70fe`). This gives access to the shared data store.
-  - The workspace name is used a description for the prefix list entry
+  - If you are using a different prefix list, set `prefix_list_id` to the prefix list's ID.
+  - The workspace name is used as a description for the prefix list entry
 - Run `terraform apply` or `terraform apply -var="workload=pmc" -var="workload_params=$(cat workload_params_default/pmc.json)"` if you want to specify alternative workloads/parameters.
+  - You can also run `terraform apply -var-file=my-terraform.tfvars` if you have a different `tfvars` file.
 
-The Terraform script is going to create two separate AWS EC2 instances, one `target-cluster` used to host the product being benchmarked (e.g. OpenSearch) and the other `load-generation` running OpenSearch Benchmarking tool, used to load data and perform queries to the target cluster.
+The Terraform script is going to create several AWS EC2 instances. A `target-cluster` instance is used to host the product being benchmarked (e.g. OpenSearch). There may be additional cluster instances if the workload uses a multi-node deployment. A `load-generation` instance runs the OpenSearch Benchmark tool used to load data and perform queries to the target cluster.
 
-Use `terraform output` to get the IPs/hostnames of the two instances.
+Use `terraform output` to get the IPs/hostnames of the instances.
 
 Use `terraform output cluster-password` to get the password for the cluster.
 
@@ -58,8 +61,9 @@ bash /mnt/restore_snapshot.sh
 ```
 
 ## Benchmark the queries
+This will run the workload specified in the `terraform.tfvars` several times to perform a full benchmark "test".
 
-- Pass `official` or `dev` to tag the run results
+Pass `official` or `dev` to tag the run results
 
 ```shell
 bash /mnt/benchmark.sh [official|dev]
