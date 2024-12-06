@@ -2,6 +2,8 @@
 You can run benchmarks automatically with Github Actions.
 
 ## Setup
+The workflows expect certain resources to already exist. See "Resource Setup" in [infra/README.md](infra/README.md) for more.
+
 You will need to set the following Github Secrets:
 - `SNAPSHOT_AWS_ACCESS_KEY_ID`: AWS Access Key for accessing the Snapshot S3 Bucket
 - `SNAPSHOT_AWS_SECRET_ACCESS_KEY`: AWS Secret Access Key for accessing the Snapshot S3 Bucket
