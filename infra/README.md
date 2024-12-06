@@ -120,7 +120,7 @@ Lastly you will need the URL and password for the shared data store.
 
 ### Generate Report
 
-The script `./scripts/generate_report.sh` will create and upload a google sheet report.
+The script `./scripts/generate_report.sh` will download all results from scheduled CI runs, create and upload a google sheet report.
 
 It expects the data store URL and password to be in the `DS_URL` and `DS_PASSWORD` environment variables. It takes a date range as input in the form `YYY-MM-DD YYYY-MM-DD` and a path to the google credentials file.
 
