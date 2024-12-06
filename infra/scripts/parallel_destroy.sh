@@ -66,4 +66,6 @@ for ((i=start; i<=end; i++)); do
             "${param_cluster[@]}" \
             &> "destroy_${prefix}-${i}.log" &
     sleep 30
+    terraform workspace select default
+    terraform workspace delete "${prefix}-${i}"
 done
