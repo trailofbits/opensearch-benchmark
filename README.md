@@ -36,7 +36,7 @@ To run a benchmark manually, see: [infra/README.md](infra/README.md)
 # Benchmark with Github Actions
 You can also run benchmarks with Github Actions. Actions automate all steps of a manual benchmark. Actions are configured to run nightly benchmarks.
 
-To configure and run Github actions, see [.github/README.md](.github/README.md)
+To configure and run Github actions, see [README-actions.md](README-actions.md)
 
 # View and Report Results
 The results are stored in an OpenSearch data store automatically by OpenSearch Benchmark. There is information about how OpenSearch Benchmark configures the data store [here](https://opensearch.org/docs/latest/benchmark/reference/metrics/index/#opensearch).
