@@ -15,6 +15,7 @@ You will need to set the following Github Secrets:
 - `SLACK_BOT_TOKEN`: Slack Bot Token to alert on failed nightly runs
 - `SLACK_CHANNEL_ID`: Slack Channel ID to alert on failed nightly runs
 
+The workflows use [self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners). This is because some workflows are long-running and have jobs which exceed the 6 hour timeout of Github-hosted runners.
 
 ## Run Benchmarks
 There are two workflows for benchmarking:
