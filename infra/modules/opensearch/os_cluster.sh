@@ -85,8 +85,8 @@ echo "Waiting for server to boot"
 tries=0
 while ! curl --max-time 5 -ks https://localhost:9200 > /dev/null 2>&1 ; do
     echo "Waiting for OpenSearch to start ($tries)"
-    sleep 1
     ((tries++))
+    sleep $tries
     if [ $tries -eq 20 ]; then
         echo "Failed to start OpenSearch"
         exit 1
@@ -96,4 +96,15 @@ done
 echo "OpenSearch responds on port 9200, now verify credentials"
 curl -X GET https://localhost:9200 -u "admin:$CLUSTER_PASSWORD" --insecure || (echo "Failed to query server" && false)
 echo
+
+echo "Setting concurrent_segment_search.mode to all..."
+curl -ku "admin:$CLUSTER_PASSWORD" -XPUT "https://localhost:9200/_cluster/settings" -H 'Content-Type: application/json' -d'
+{
+   "persistent":{
+      "search.concurrent_segment_search.mode": "all"
+   }
+}
+'
+echo "Set concurrent_segment_search.mode to all"
+
 echo "Server up and running (pid $SERVER_PID)"
