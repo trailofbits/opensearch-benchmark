@@ -93,6 +93,9 @@ if [ "$ENGINE_TYPE" == "OS" ]; then
 fi
 
 # Queries only
+NODE_STATS_DIR="/mnt/node-stats"
+mkdir -p "$NODE_STATS_DIR"
+curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_nodes/stats/_all" > "$NODE_STATS_DIR/node-stats-initial.json"
 echo "Running Queries Only"
 for i in $(seq 0 4)
 do
@@ -114,6 +117,7 @@ do
             echo "Failed to run benchmark($i)"
             exit 1
         fi
+        curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_nodes/stats/_all" > "$NODE_STATS_DIR/node-stats-$i.json"
 done
 
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
