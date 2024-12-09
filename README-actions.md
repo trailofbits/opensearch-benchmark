@@ -12,8 +12,8 @@ You will need to set the following Github Secrets:
 - `DATASTORE_PASSWORD`: Data store password
 - `AWS_ACCESS_KEY_ID`: AWS Access Key to give Terraform permission to provision infrastructure
 - `AWS_SECRET_ACCESS_KEY`: AWS Secret Access Key to give Terraform permission to provision infrastructure
-- `SLACK_BOT_TOKEN`: Slack Bot Token to alert on failed nightly runs
-- `SLACK_CHANNEL_ID`: Slack Channel ID to alert on failed nightly runs
+- (optional) `SLACK_BOT_TOKEN`: Slack Bot Token to alert on failed nightly runs
+- (optional) `SLACK_CHANNEL_ID`: Slack Channel ID to alert on failed nightly runs
 
 You will need to set the following Github Variables:
 - `DATASTORE_HOST`: Host of data store that benchmark results are uploaded to
