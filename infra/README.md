@@ -176,3 +176,9 @@ See the `scripts/report-gen` [README](scripts/report-gen/README.md) for instruct
 Comprehensive metadata is saved with the results in the data store. The metadata includes custom tags, built-in fields, and profiling information.
 
 The metadata scheme is explained here: [results_metadata.md](results_metadata.md)
+
+## Identify AWS Resources in Use
+
+```shell
+./scripts/resources.sh
+```
