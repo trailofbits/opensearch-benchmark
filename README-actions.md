@@ -15,8 +15,6 @@ You will need to set the following Github Secrets:
 - `SLACK_BOT_TOKEN`: Slack Bot Token to alert on failed nightly runs
 - `SLACK_CHANNEL_ID`: Slack Channel ID to alert on failed nightly runs
 
-You will need to set the following Github Variables:
-- `DATASTORE_HOST`: Host of data store that benchmark results are uploaded to
 
 ## Run Benchmarks
 There are two workflows for benchmarking:
