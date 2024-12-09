@@ -422,7 +422,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-    if: ${{ env.SLACK_BOT_TOKEN && (failure() || cancelled()) && github.ref == 'refs/heads/main' }}
+    if: ${{ env.SLACK_BOT_TOKEN != '' && (failure() || cancelled()) && github.ref == 'refs/heads/main' }}
     steps:
       - name: Slack Report
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v1.25.0
