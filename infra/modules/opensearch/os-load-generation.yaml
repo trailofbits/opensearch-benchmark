@@ -48,6 +48,7 @@ mounts:
   - [ /dev/nvme1n1, /mnt, xfs, "defaults", "0", "0" ]
 
 bootcmd:
+  - timeout 30s sh -c 'while [ ! -e /dev/nvme1n1 ]; do sleep 1; done'
   - swapoff -a
 
 byobu_by_default: enable-user
