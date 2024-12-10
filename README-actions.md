@@ -15,8 +15,7 @@ You will need to set the following Github Secrets:
 - (optional) `SLACK_BOT_TOKEN`: Slack Bot Token to alert on failed nightly runs
 - (optional) `SLACK_CHANNEL_ID`: Slack Channel ID to alert on failed nightly runs
 
-You will need to set the following Github Variables:
-- `DATASTORE_HOST`: Host of data store that benchmark results are uploaded to
+The workflows use [self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/about-self-hosted-runners). This is because some workflows are long-running and have jobs which exceed the 6 hour timeout of Github-hosted runners.
 
 ## Run Benchmarks
 There are two workflows for benchmarking:

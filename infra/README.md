@@ -43,9 +43,49 @@ The prefix list used by the current data store is: [shared prefix list](https://
   - If you are using a different prefix list, set `prefix_list_id` to the prefix list's ID.
   - The workspace name is used as a description for the prefix list entry
 #### Snapshot S3 Bucket
-If you want to use snapshotting, create an AWS S3 bucket.
+If you want to use snapshots for OS and ES, create an AWS S3 bucket.
 
-Specify the S3 Bucket name in the `terraform.tfvars` variable: `s3_bucket_name`.
+Create an AWS S3 bucket with default settings. Then, create a `snapshot-user` to access the bucket.
+
+Next, give the user access to the bucket by creating the following IAM policy and associating it with the user:
+```
+{
+	"Statement": [
+		{
+			"Action": [
+				"s3:ListBucket",
+				"s3:GetBucketLocation",
+				"s3:ListBucketMultipartUploads",
+				"s3:ListBucketVersions"
+			],
+			"Effect": "Allow",
+			"Resource": [
+				"arn:aws:s3:::snapshots-osb",
+			]
+		},
+		{
+			"Action": [
+				"s3:GetObject",
+				"s3:PutObject",
+				"s3:DeleteObject",
+				"s3:AbortMultipartUpload",
+				"s3:ListMultipartUploadParts"
+			],
+			"Effect": "Allow",
+			"Resource": [
+				"arn:aws:s3:::snapshots-osb/*",
+			]
+		}
+	],
+	"Version": "2012-10-17"
+}
+```
+Note: In this example policy, the bucket is named `snapshots-osb`.
+
+Specify the following `terraform.tfvars` variables:
+- `s3_bucket_name`:  S3 Bucket name
+- `snapshot_user_aws_access_key_id`: `snapshot-user`'s access id
+- `snapshot_user_aws_secret_access_key`: `snapshot-user`'s secret key
 
 Here is some additional information on Snapshot Buckets for [ElasticSearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/repository-s3.html) and [OpenSearch](https://opensearch.org/docs/latest/tuning-your-cluster/availability-and-recovery/snapshots/index/).
 
@@ -136,3 +176,9 @@ See the `scripts/report-gen` [README](scripts/report-gen/README.md) for instruct
 Comprehensive metadata is saved with the results in the data store. The metadata includes custom tags, built-in fields, and profiling information.
 
 The metadata scheme is explained here: [results_metadata.md](results_metadata.md)
+
+## Identify AWS Resources in Use
+
+```shell
+./scripts/resources.sh
+```

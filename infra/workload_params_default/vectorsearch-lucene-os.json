@@ -6,7 +6,6 @@
     "target_index_replica_shards": 1,
     "target_index_dimension": 768,
     "target_index_space_type": "innerproduct",
-    "id_field_name": "id",
     "target_index_bulk_size": 100,
     "target_index_bulk_index_data_set_format": "hdf5",
     "target_index_bulk_index_data_set_corpus": "cohere-10m",
@@ -15,7 +14,7 @@
     "hnsw_ef_construction": 256,
     "query_k": 100,
     "query_body": {
-        "docvalue_fields" : ["id"],
+        "docvalue_fields" : ["_id"],
         "stored_fields" : "_none_"
    },
     "query_data_set_format": "hdf5",

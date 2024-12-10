@@ -389,6 +389,40 @@ jobs:
         working-directory: infra
         run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
 
+      - name: Download target-cluster log (OS)
+        if: inputs.cluster_type == 'OpenSearch'
+        working-directory: infra
+        continue-on-error: true
+        run: |
+            scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              ubuntu@$(terraform output -raw target-cluster-ip):/mnt/opensearch.log ./target-cluster.log
+      - name: Download target-cluster log (ES)
+        if: inputs.cluster_type == 'ElasticSearch'
+        working-directory: infra
+        continue-on-error: true
+        run: |
+            mkdir target-cluster.log
+            scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              -r ubuntu@$(terraform output -raw target-cluster-ip):/mnt/logs ./target-cluster.log/
+      - name: Download osb log
+        working-directory: infra
+        continue-on-error: true
+        run: |
+            scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              ubuntu@$(terraform output -raw load-generation-ip):/mnt/.benchmark/logs/benchmark.log ./osb.log
+      - name: Upload target-cluster log
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: target-cluster-${{ needs.prepare_workspace.outputs.workspace_name }}.log
+          path: ${{ github.workspace }}/infra/target-cluster.log
+      - name: Upload osb log
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: osb-${{ needs.prepare_workspace.outputs.workspace_name }}.log
+          path: ${{ github.workspace }}/infra/osb.log
+
       - name: Destroy benchmark environment
         working-directory: infra
         run: terraform destroy -auto-approve
