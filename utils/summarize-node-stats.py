@@ -19,12 +19,15 @@ def get_node_stats(json_path: Path) -> dict:
         request_cache = node_stats['indices']['request_cache']
         query_cache = node_stats['indices']['query_cache']
         io_stats = node_stats['fs']['io_stats']['total']
+        flush = node_stats['indices']['flush']
         for k, v in request_cache.items():
             node_stats_values[f"request_cache.{k}"] = v
         for k, v in query_cache.items():
             node_stats_values[f"query_cache.{k}"] = v
         for k, v in io_stats.items():
             node_stats_values[f"io_stats.{k}"] = v
+        for k, v in flush.items():
+            node_stats_values[f"flush.{k}"] = v
         node_stats_summary[node_name] = node_stats_values
     return node_stats_summary
 
