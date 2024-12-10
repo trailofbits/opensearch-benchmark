@@ -87,9 +87,9 @@ on:
       DATASTORE_PASSWORD:
         required: true
       SLACK_BOT_TOKEN:
-        required: true
+        required: false
       SLACK_CHANNEL_ID:
-        required: true
+        required: false
 
 env:
   TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
@@ -454,7 +454,9 @@ jobs:
   notify_slack:
     needs: [prepare_workspace, run-osb]
     runs-on: ubuntu-latest
-    if: ${{ (failure() || cancelled()) && github.ref == 'refs/heads/main' }}
+    env:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+    if: ${{ env.SLACK_BOT_TOKEN != '' && (failure() || cancelled()) && github.ref == 'refs/heads/main' }}
     steps:
       - name: Slack Report
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v1.25.0
@@ -477,5 +479,4 @@ jobs:
             _OS Version:_ ${{ inputs.os_version }}
             _AWS Region:_ ${{ inputs.aws_region }}
             _CI Tag:_ ${{ inputs.ci_tag }}
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        
