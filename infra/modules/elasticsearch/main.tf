@@ -195,6 +195,7 @@ resource "aws_instance" "load-generation" {
           osb_version = var.osb_version
         }
       ))),
+      utils_script            = yamlencode(base64gzip(file("${path.module}/../../scripts/utils.sh"))),
       es_cluster              = aws_instance.target-cluster-main-node.public_dns
       es_password             = var.password,
       distribution_version    = var.distribution_version,
@@ -265,11 +266,6 @@ resource "aws_instance" "load-generation" {
       }
     )
     destination = "/mnt/benchmark.sh"
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/../../scripts/utils.sh"
-    destination = "/mnt/utils.sh"
   }
 
   provisioner "file" {
