@@ -56,7 +56,7 @@ resource "aws_instance" "target-cluster-additional-nodes" {
       os_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
       authorized_ssh_key     = var.ssh_pub_key,
       jvm_options            = yamlencode(base64gzip(file("${path.module}/jvm.options"))),
-      cluster_ips = join(",", [for ip in local.cluster_node_private_ips : format("\\\"%s\\\"", ip)]),
+      cluster_ips            = join(",", [for ip in local.cluster_node_private_ips : format("\\\"%s\\\"", ip)]),
       node_name              = format("node-%s", each.key),
       nodes_type             = local.nodes_type,
     }
@@ -101,6 +101,21 @@ resource "aws_instance" "target-cluster-main-node" {
 
   private_dns_name_options {
     hostname_type = "resource-name"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "echo 'Waiting for user data script to finish'",
+      "cloud-init status --wait > /dev/null",
+      "echo 'User data script finished'",
+    ]
+  }
+
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = var.ssh_priv_key
+    host        = self.public_ip
   }
 
   tags       = var.tags
