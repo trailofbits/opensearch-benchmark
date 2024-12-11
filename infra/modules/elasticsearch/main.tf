@@ -153,6 +153,21 @@ resource "aws_instance" "target-cluster-main-node" {
     hostname_type = "resource-name"
   }
 
+  provisioner "remote-exec" {
+    inline = [
+      "echo 'Waiting for user data script to finish'",
+      "cloud-init status --wait > /dev/null",
+      "echo 'User data script finished'",
+    ]
+  }
+
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = var.ssh_priv_key
+    host        = self.public_ip
+  }
+
   tags = var.tags
 }
 
