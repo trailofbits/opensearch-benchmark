@@ -93,18 +93,36 @@ while ! curl --max-time 5 -ks https://localhost:9200 > /dev/null 2>&1 ; do
     fi
 done 
 
+version_lt() {
+    # Test if version $1 is less than version $2
+    [ "$(echo -e "$1\n$2" | sort -V | head -n1)" != "$2" ]
+}
+
 echo "OpenSearch responds on port 9200, now verify credentials"
 curl -X GET https://localhost:9200 -u "admin:$CLUSTER_PASSWORD" --insecure || (echo "Failed to query server" && false)
 echo
 
 echo "Setting concurrent_segment_search.mode to all..."
-curl -XPUT "https://localhost:9200/_cluster/settings" -u "admin:$CLUSTER_PASSWORD" --insecure -H 'Content-Type: application/json' -d'
-{
-   "persistent":{
-      "search.concurrent_segment_search.mode": "all"
-   }
-}
-'
-echo "Set concurrent_segment_search.mode to all"
+
+# Enable concurrent segment search. Use old setting if CLUSTER_VERSION < "2.17.0".
+if version_lt "$CLUSTER_VERSION" "2.17.0"; then
+    curl -XPUT "https://localhost:9200/_cluster/settings" -u "admin:$CLUSTER_PASSWORD" --insecure -H 'Content-Type: application/json' -d'
+    {
+    "persistent":{
+        "search.concurrent_segment_search.enabled": true
+    }
+    }
+    '
+    echo "search.concurrent_segment_search.enabled: true"
+else
+    curl -XPUT "https://localhost:9200/_cluster/settings" -u "admin:$CLUSTER_PASSWORD" --insecure -H 'Content-Type: application/json' -d'
+    {
+    "persistent":{
+        "search.concurrent_segment_search.mode": "all"
+    }
+    }
+    '
+    echo "Set concurrent_segment_search.mode to all"
+fi
 
 echo "Server up and running (pid $SERVER_PID)"
