@@ -120,4 +120,15 @@ done
 echo "OpenSearch responds on port 9200, now verify credentials"
 curl -X GET https://localhost:9200 -u "admin:$CLUSTER_PASSWORD" --insecure || (echo "Failed to query server" && false)
 echo
+
+echo "Setting concurrent_segment_search.mode to all..."
+curl -XPUT "https://localhost:9200/_cluster/settings" -u "admin:$CLUSTER_PASSWORD" --insecure -H 'Content-Type: application/json' -d'
+{
+   "persistent":{
+      "search.concurrent_segment_search.mode": "all"
+   }
+}
+'
+echo "Set concurrent_segment_search.mode to all"
+
 echo "Server up and running (pid $SERVER_PID)"
