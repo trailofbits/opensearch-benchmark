@@ -39,6 +39,12 @@ AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 -s http://169.254.169.254/latest/meta-data/
 
 SHARD_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$INDEX_NAME/_settings" | jq --raw-output ".\"$INDEX_NAME\".settings.index.number_of_shards")"
 REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$INDEX_NAME/_settings" | jq --raw-output ".\"$INDEX_NAME\".settings.index.number_of_replicas")"
+TOTAL_SEGMENT_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/_cat/segments/$INDEX_NAME?v" | grep -v "^index" | wc -l)"
+PRIMARY_SEGMENT_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/_cat/segments/$INDEX_NAME?v" | grep -v "^index" | grep " p " | wc -l)"
+
+echo "TOTAL SEGMENT COUNT: $TOTAL_SEGMENT_COUNT"
+echo "PRIMARY SEGMENT COUNT: $PRIMARY_SEGMENT_COUNT"
+exit 1
 
 if [ -z "$SHARD_COUNT" ] || [ "$SHARD_COUNT" == "null" ]; then
     echo "Failed to retrieve the shard count"
