@@ -50,6 +50,21 @@ if [ -z "$REPLICA_COUNT" ] || [ "$REPLICA_COUNT" == "null" ]; then
     exit 1
 fi
 
+
+version_gte() {
+    # Test if version $1 is greater than or equal to version $2
+    [ "$(echo -e "$1\n$2" | sort -V | head -n1)" == "$2" ]
+}
+
+if version_gte "$CLUSTER_VERSION" "2.18.0" && grep -q "faiss\|nmslib" "$WORKLOAD_PARAMS";  then
+    curl -XPUT "$CLUSTER_HOST/$INDEX_NAME/_settings" -u "admin:$CLUSTER_PASSWORD" --insecure -H 'Content-Type: application/json' -d'
+    {
+    "index.knn.advanced.approximate_threshold": "0"
+    }
+    '
+    echo "Set index.knn.advanced.approximate_threshold to 0"
+fi
+
 # assumes same machine for cluster
 GROUP_USER_TAGS="run-group:$RUN_GROUP_ID,engine-type:$ENGINE_TYPE,arch:$(arch),instance-type:$INSTANCE_TYPE,aws-user-id:$AWS_USERID,aws-loadgen-instance-id:$AWS_LOADGEN_INSTANCE_ID"
 GROUP_USER_TAGS+=",cluster-version:$CLUSTER_VERSION,workload-distribution-version:$DISTRIBUTION_VERSION,shard-count:$SHARD_COUNT,replica-count:$REPLICA_COUNT"
