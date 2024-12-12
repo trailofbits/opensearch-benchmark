@@ -101,10 +101,10 @@ echo "Setting concurrent_segment_search.mode to all..."
 curl -XPUT "https://localhost:9200/_cluster/settings" -u "admin:$CLUSTER_PASSWORD" --insecure -H 'Content-Type: application/json' -d'
 {
    "persistent":{
-      "search.concurrent_segment_search.mode": "all"
+      "search.concurrent_segment_search.mode": "auto"
    }
 }
 '
-echo "Set concurrent_segment_search.mode to all"
+echo "Set concurrent_segment_search.mode to auto"
 
 echo "Server up and running (pid $SERVER_PID)"
