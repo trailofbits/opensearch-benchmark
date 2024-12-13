@@ -24,7 +24,7 @@ WORKLOAD_PARAMS=/mnt/workload_params.json
 INDEX_NAME=$(workload_index_name $WORKLOAD)
 
 CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
-SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD;no-force-merge" "$WORKLOAD_PARAMS")
+SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD;no-force-merge-1" "$WORKLOAD_PARAMS")
 
 INGESTION_RESULTS=/mnt/ingestion_results
 USER_TAGS="run-type:ingest,aws-user-id:$AWS_USERID,ci:$(ci_tag_value)"
@@ -47,6 +47,19 @@ if [[ $(echo "$response" | jq -r '.snapshots | length') -gt 0 ]] && [ -z "$FORCE
     echo "There's a snapshot already. Use /mnt/restore_snapshot.sh to restore it."
     echo "If you want to recreate the snapshot, set FORCE_INGESTION=true."
     exit 1
+fi
+
+version_gte() {
+    # Test if version $1 is greater than or equal to version $2
+    [ "$(echo -e "$1\n$2" | sort -V | head -n1)" == "$2" ]
+}
+
+# Modify vectorsearch index settings for OS >=2.18.0 nmslib and faiss
+if version_gte "$CLUSTER_VERSION" "2.18.0";  then
+  sed -i 's/"knn": true$/"knn": true,\n        "knn.advanced.approximate_threshold": 0/' \
+    /mnt/.benchmark/benchmarks/workloads/default/vectorsearch/indices/faiss-index.json \
+    /mnt/.benchmark/benchmarks/workloads/default/vectorsearch/indices/nmslib-index.json
+  echo "Set index.knn.advanced.approximate_threshold to 0"
 fi
 
 EXCLUDE_TASKS="type:search,prod-queries,warmup-indices"
