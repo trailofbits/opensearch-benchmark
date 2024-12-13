@@ -488,4 +488,5 @@ jobs:
             _OS Version:_ ${{ inputs.os_version }}
             _AWS Region:_ ${{ inputs.aws_region }}
             _CI Tag:_ ${{ inputs.ci_tag }}
-        
+        env:
+            SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
