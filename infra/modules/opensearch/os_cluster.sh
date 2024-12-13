@@ -9,10 +9,25 @@ CLUSTER_IPS=$6
 NODE_NAME=$7
 NODES_TYPE=$8
 
+# Check if the cluster version is a nightly one
+if [[ $CLUSTER_VERSION == *"-nightly-"* ]]; then
+    IS_NIGHTLY=true
+    NIGHTLY_VERSION="${CLUSTER_VERSION#*-nightly-}"
+    CLUSTER_VERSION="${CLUSTER_VERSION/-nightly*/}"
+    echo "Downloading nightly version $CLUSTER_VERSION of OpenSearch"
+else
+    echo "Downloading version $CLUSTER_VERSION of OpenSearch"
+fi
+
 INSTALL_ROOT=/mnt/opensearch
 INSTALL_PATH=$INSTALL_ROOT/opensearch-$CLUSTER_VERSION
 INSTALL_FILENAME=opensearch-$CLUSTER_VERSION-linux-$CLUSTER_ARCH.tar.gz
-DOWNLOAD_URL=https://artifacts.opensearch.org/releases/bundle/opensearch/$CLUSTER_VERSION/$INSTALL_FILENAME
+# If it's a nightly version, download it from the nightly repository
+if [[ $IS_NIGHTLY == true ]]; then
+    DOWNLOAD_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/$CLUSTER_VERSION/$NIGHTLY_VERSION/linux/$CLUSTER_ARCH/tar/dist/opensearch/$INSTALL_FILENAME
+else
+    DOWNLOAD_URL=https://artifacts.opensearch.org/releases/bundle/opensearch/$CLUSTER_VERSION/$INSTALL_FILENAME
+fi
 CONFIG_FILE=$INSTALL_PATH/config/opensearch.yml
 JVM_CONFIG=$INSTALL_PATH/config/jvm.options
 
