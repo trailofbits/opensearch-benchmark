@@ -76,8 +76,8 @@ sudo mkdir /mnt/logs && sudo chmod ugo+rwx /mnt/logs
 export OPENSEARCH_JAVA_HOME=$INSTALL_PATH/jdk
 echo "export OPENSEARCH_JAVA_HOME=$OPENSEARCH_JAVA_HOME" >> ~/.bashrc
 
-# Fix the JVM size
-GB=$(echo "$(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / (1024*1024*2)" | bc)
+# Fix the JVM size to 32 GB
+GB="32"
 sed -i "s/-Xms1g/-Xms${GB}g/" $JVM_CONFIG
 sed -i "s/-Xmx1g/-Xmx${GB}g/" $JVM_CONFIG
 
