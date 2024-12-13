@@ -39,6 +39,14 @@ AWS_LOADGEN_INSTANCE_ID="$(curl -m 5 -s http://169.254.169.254/latest/meta-data/
 
 SHARD_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$INDEX_NAME/_settings" | jq --raw-output ".\"$INDEX_NAME\".settings.index.number_of_shards")"
 REPLICA_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$INDEX_NAME/_settings" | jq --raw-output ".\"$INDEX_NAME\".settings.index.number_of_replicas")"
+TOTAL_SEGMENT_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/_cat/segments/$INDEX_NAME?v" | grep -v "^index" | wc -l)"
+PRIMARY_SEGMENT_COUNT="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/_cat/segments/$INDEX_NAME?v" | grep -v "^index" | grep " p " | wc -l)"
+INDEX_SETTINGS="$(curl -m 5 -s --insecure --user "$CLUSTER_USER:$CLUSTER_PASSWORD" --request GET "$CLUSTER_HOST/$INDEX_NAME/_settings")"
+
+echo "TOTAL SEGMENT COUNT: $TOTAL_SEGMENT_COUNT"
+echo "PRIMARY SEGMENT COUNT: $PRIMARY_SEGMENT_COUNT"
+echo "INDEX SETTINGS: $INDEX_SETTINGS"
+
 
 if [ -z "$SHARD_COUNT" ] || [ "$SHARD_COUNT" == "null" ]; then
     echo "Failed to retrieve the shard count"
@@ -68,6 +76,7 @@ GROUP_USER_TAGS+=",tc-cpu-cache-l1i:$($TC_CMD 'lscpu | grep "L1i" | cut -d':' -f
 GROUP_USER_TAGS+=",tc-cpu-cache-l2:$($TC_CMD 'lscpu | grep "L2" | cut -d':' -f2 | xargs')"
 GROUP_USER_TAGS+=",tc-cpu-cache-l3:$($TC_CMD 'lscpu | grep "L3" | cut -d':' -f2 | xargs')"
 GROUP_USER_TAGS+=",ci:$(ci_tag_value),force-merge:no"
+GROUP_USER_TAGS+=",total-segment-count:$TOTAL_SEGMENT_COUNT,primary-segment-count:$PRIMARY_SEGMENT_COUNT"
 
 REPOSITORY_SET=$(curl -sku "$CLUSTER_USER:$CLUSTER_PASSWORD" -X GET "$CLUSTER_HOST/_cluster/state/metadata" | jq --raw-output '.metadata | has("repositories") and .repositories != null')
 if [ "$REPOSITORY_SET" == "true" ]; then
