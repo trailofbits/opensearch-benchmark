@@ -77,6 +77,7 @@ GROUP_USER_TAGS+=",tc-cpu-cache-l2:$($TC_CMD 'lscpu | grep "L2" | cut -d':' -f2 
 GROUP_USER_TAGS+=",tc-cpu-cache-l3:$($TC_CMD 'lscpu | grep "L3" | cut -d':' -f2 | xargs')"
 GROUP_USER_TAGS+=",ci:$(ci_tag_value),force-merge:no"
 GROUP_USER_TAGS+=",total-segment-count:$TOTAL_SEGMENT_COUNT,primary-segment-count:$PRIMARY_SEGMENT_COUNT"
+GROUP_USER_TAGS+=",jvm-heap-gb:32"
 
 REPOSITORY_SET=$(curl -sku "$CLUSTER_USER:$CLUSTER_PASSWORD" -X GET "$CLUSTER_HOST/_cluster/state/metadata" | jq --raw-output '.metadata | has("repositories") and .repositories != null')
 if [ "$REPOSITORY_SET" == "true" ]; then
