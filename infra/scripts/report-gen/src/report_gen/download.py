@@ -83,6 +83,13 @@ class BenchmarkResult:
             return NotImplemented
         return self.__dict__ == other.__dict__
 
+    def __repr__(self) -> str:
+        """Override default __repr__."""
+        return (
+            f"BenchResult({self.RunGroup!s} {self.Engine} {self.EngineVersion} {self.Environment} {self.Workload}"
+            f"{self.Operation} {self.Run} P90={self.P90[:4]})"
+        )
+
 
 class VerboseTransport(Transport):
     """Extend the Transport class to log information about the request."""

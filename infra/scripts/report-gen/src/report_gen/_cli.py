@@ -200,7 +200,19 @@ def create_command(args: argparse.Namespace) -> bool:
     return create_report(benchmark_data, token_path, credential_path) is not None
 
 
+from .download import read_csv_files
+from .results import VersionPair, build_results, create_google_sheet
+
+
 def main() -> None:
+    bench_results = read_csv_files(Path("./download_nightly_2024-12-07_2024-12-14"))
+
+    results = build_results(bench_results, [VersionPair("2.16.0", "8.15.4")])
+    cred = None  # Path("/Users/brad/Code/opensearch-benchmark/local/credentials.json")
+    create_google_sheet(results, Path("./token.json"), cred)
+
+    return
+
     arg_parser = argparse.ArgumentParser(description="Tool to help download benchmark data and generate reports")
     subparser = arg_parser.add_subparsers(dest="command", help="Available Commands")
 

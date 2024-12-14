@@ -5,13 +5,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from statistics import mean, median, stdev, variance
 
-from googleapiclient.discovery import Resource
-
 from .download import BenchmarkResult
+from .google_sheets import SheetsBuilder
+from .sheets.common import get_category
 
 
 @dataclass
-class Compare:
+class VersionPair:
     """A pair of OS/ES versions to be compared."""
 
     os_version: str
@@ -33,6 +33,7 @@ class Result:
     os_avg_90: float
     os_rsd_50: float
     os_rsd_90: float
+
     es_version: str
     es_std_50: float
     es_std_90: float
@@ -42,8 +43,21 @@ class Result:
     es_rsd_90: float
     comparison: float
 
+    @property
+    def relative_diff(self) -> float:
+        """(ES-OS) / AVG(ES,OS)."""
+        es = self.es_avg_90
+        os = self.os_avg_90
+        return (es - os) / mean([es, os])
 
-def build_results(data: list[BenchmarkResult], comparisons: list[Compare]) -> list[Result]:
+    @property
+    def ratio(self) -> float:
+        """ES / OS."""
+        return self.es_avg_90 / self.os_avg_90
+
+
+def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -> list[Result]:  # noqa: C901
+    """Build the results data from the raw benchmark results."""
     sub_groups: dict[str, dict[str, list[BenchmarkResult]]] = defaultdict(lambda: defaultdict(list))
 
     # Filter down to relevant runs, storing rows by their workload and operation
@@ -57,39 +71,34 @@ def build_results(data: list[BenchmarkResult], comparisons: list[Compare]) -> li
 
     results = []
     for workload, operations in sub_groups.items():
-        category = "todo"
         for operation, rows in operations.items():
+            category = get_category(workload, operation)
+
             os_rows = [row for row in rows if row.Engine == "OS"]
             es_rows = [row for row in rows if row.Engine == "ES"]
             for compare in comparisons:
                 os_data = [row for row in os_rows if row.EngineVersion == compare.os_version]
+                if len(os_data) == 0:
+                    raise RuntimeError(f"No data for OS {compare.os_version}")  # noqa: TRY003, EM102
                 es_data = [row for row in es_rows if row.EngineVersion == compare.es_version]
+                if len(es_data) == 0:
+                    raise RuntimeError(f"No data for OS {compare.es_version}")  # noqa: TRY003, EM102
 
-                def verify_data(data: list[BenchmarkResult]) -> None:
+                def verify_data(engine: str, workload: str, operation: str, data: list[BenchmarkResult]) -> None:
                     """Check assumptions about the data before reporting stats."""
-                    if [d.Run for d in data] != ["1", "2", "3", "4"]:
-                        msg = f"{workload}-{operation} expected 5 runs but got {[d.Run for d in data]}"
-                        raise RuntimeError(msg)
+                    runs = defaultdict(set)
+                    for d in data:
+                        runs[d.RunGroup].add(d.Run)
+                    # We expect each run group to have 4 data points
+                    # Technically 5 but we disregard run 0
+                    for group, run_counts in runs.items():
+                        if run_counts != {"1", "2", "3", "4"}:
+                            msg = f"{engine}-{workload}-{operation} {group} expected 4 runs but got {run_counts}"
+                            raise RuntimeError(msg)
 
-                verify_data(os_data)
-                verify_data(es_data)
+                verify_data("OS", workload, operation, os_data)
+                verify_data("ES", workload, operation, es_data)
 
-                """ Currently computing these via google sheets looks like:
-                    base = (
-                        f"{raw_sheet}!$E$2:$E=$A{index},"
-                        f"{raw_sheet}!$G$2:$G<>0,"
-                        f"{raw_sheet}!$H$2:$H=$C{index},"
-                        f'{raw_sheet}!$I$2:$I="service_time"'
-                    )
-                    os_stat = f'{raw_sheet}!$C$2:$C="OS",' f'{raw_sheet}!$D$2:$D="{os}",' + base
-                    cell_os_p50_stdev = f"G{index}"
-                    cell_os_p90_stdev = f"H{index}"
-                    cell_os_p50_avg = f"I{index}"
-                    cell_os_p90_avg = f"J{index}"
-
-                    f"=STDEV.S(FILTER({raw_sheet}!$J$2:$J, {os_stat}))",  # p50 stdev
-                    f"={cell_es_p50_stdev}/{cell_es_p50_avg}",  # p50 rsd
-                """
                 os_std_50 = stdev(float(row.P50) for row in os_data)
                 os_std_90 = stdev(float(row.P90) for row in os_data)
                 os_avg_50 = mean(float(row.P50) for row in os_data)
@@ -130,33 +139,42 @@ def build_results(data: list[BenchmarkResult], comparisons: list[Compare]) -> li
     return results
 
 
-class SheetsAPI:
-    # TODO: wrap requests to check rate limit
-    service = Resource
-    spreadsheet_id: str
+class EngineTable:
+    """Table showing the number of tests run for each Engine/Version/Workload combo."""
 
-    def __init__(self, token: Path, credentials: Path | None = None):
-        raise NotImplementedError
+    @dataclass
+    class Row:
+        """Single Row in the Engine Table."""
 
-    def create_sheet(self, sheet_name: str) -> None:
-        raise NotImplementedError
+        engine: str
+        version: str
+        workload: str
+        test_count: int
 
-    def insert_rows(self, sheet_name: str, sheet_range: str, rows: list[list[str]]) -> None:
-        request_properties: dict = {
-            "majorDimension": "ROWS",
-            "values": rows,
-        }
-        self.service.spreadsheets().values().append(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"{sheet_name}!{sheet_range}",
-            valueInputOption="USER_ENTERED",
-            body=request_properties,
-        ).execute()
-        raise NotImplementedError
+    rows: list[Row]
+
+    def __init__(self, results: list[BenchmarkResult]) -> None:
+        # Sort the results by Engine/Version/Workload to be counted
+        filtered: dict[tuple[str, str, str], list[BenchmarkResult]] = defaultdict(list)
+
+        for r in results:
+            key = (r.Engine, r.EngineVersion, r.Workload)
+            filtered[key].append(r)
+
+        self.rows = [
+            EngineTable.Row(
+                engine=grouped_results[0].Engine,
+                version=grouped_results[0].EngineVersion,
+                workload=grouped_results[0].Workload,
+                test_count=len(grouped_results),
+            )
+            for grouped_results in filtered.values()
+        ]
 
 
-def create_google_sheet(data: list[Result]) -> None:
-    sheets_api = SheetsAPI(Path("./token.json"))
+def create_google_sheet(data: list[Result], token: Path, credentials: Path | None = None) -> None:
+    """Export data to a google sheet."""
+    sheets_api = SheetsBuilder("Report", token, credentials)
 
     header = [
         [
@@ -208,12 +226,21 @@ def create_google_sheet(data: list[Result]) -> None:
         for row in data
     ]
 
-    results_sheet_name = "Results"
+    nrows = len(sheet_rows)
 
+    results_sheet_name = "Results"
     sheets_api.create_sheet(results_sheet_name)
     sheets_api.insert_rows(results_sheet_name, "A1", sheet_rows)
-
-    # TODO: sheets formatting api calls as before
+    fmt = sheets_api.format_builder(results_sheet_name)
+    fmt.bold_font("A1:T1")
+    fmt.freeze_row(1)
+    fmt.freeze_col(4)
+    for r in [f"D2:D{nrows}", f"G2:G{nrows}", f"O2:T{nrows}"]:
+        fmt.style_float(r)
+    fmt.color_comparison(f"D2:D{nrows}")
+    fmt.rsd(f"K2:L{nrows}")
+    fmt.rsd(f"S2:T{nrows}")
+    fmt.apply()
 
 
 def stats_comparing(results: list[Result]) -> None:
@@ -223,11 +250,11 @@ def stats_comparing(results: list[Result]) -> None:
 
     def stats(rows: list[float]) -> None:
         """Just an example of computing additional stats."""
-        print(f"Average: {mean(rows)}")
-        print(f"Median: {median(rows)}")
-        print(f"Max: {max(rows)}")
-        print(f"StdDev: {stdev(rows)}")
-        print(f"Variance: {variance(rows)}")
+        _a = f"Average: {mean(rows)}"
+        _b = f"Median: {median(rows)}"
+        _c = f"Max: {max(rows)}"
+        _d = f"StdDev: {stdev(rows)}"
+        _e = f"Variance: {variance(rows)}"
 
     stats(os_faster)
     stats(os_slower)

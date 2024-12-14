@@ -6,22 +6,18 @@ from dataclasses import dataclass
 from googleapiclient.discovery import Resource
 
 from .common import (
-    get_category_operation_map,
     adjust_sheet_columns,
-    get_sheet_id,
     convert_range_to_dict,
-    get_workload_operations,
+    get_category_operation_map,
+    get_sheet_id,
     get_workload_operation_categories,
+    get_workload_operations,
     get_workloads,
 )
 from .format.color import (
     color as format_color,
 )
-from .format.color import (
-    get_light_blue,
-    get_light_yellow,
-    get_light_gray
-)
+from .format.color import get_light_blue, get_light_gray, get_light_yellow
 from .format.font import (
     bold as format_font_bold,
 )
@@ -59,7 +55,7 @@ class OSVersion:
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
 
     def create_header(self, os_version: str, es_version: str, workload_str: str) -> list[dict]:
-        """Fills in header rows & column."""
+        """Fill in header rows & column."""
         requests: list[dict] = []
 
         # Fill in first row
@@ -190,11 +186,11 @@ class OSVersion:
                 break
 
         offset = 3
-        for category,operations in spec["categories"].items():
+        for category, operations in spec["categories"].items():
             rows = []
             rows.append([f"{category}"])
-            rows.extend([[""]] * (len(operations)-1))
-            request_properties: dict = {
+            rows.extend([[""]] * (len(operations) - 1))
+            request_properties2: dict = {
                 "majorDimension": "ROWS",
                 "values": rows,
             }
@@ -205,7 +201,7 @@ class OSVersion:
                     spreadsheetId=self.spreadsheet_id,
                     range=f"{self.sheet_name}!A{offset}",
                     valueInputOption="USER_ENTERED",
-                    body=request_properties,
+                    body=request_properties2,
                 )
                 .execute()
             )
@@ -218,15 +214,10 @@ class OSVersion:
 
         return requests
 
-    #TODO
     def fill(self, os_version: str, es_version: str, workload_str: str) -> list[dict]:
-        """Fills in OS Version sheet with data."""
+        """Fill in OS Version sheet with data."""
         # Create header
-        requests = self.create_header(os_version, es_version, workload_str)
-
-        results_name = "Results"
-
-        return requests
+        return self.create_header(os_version, es_version, workload_str)
 
     def get(self) -> bool:
         """Retrieve data to fill in OS Version sheets."""
@@ -267,7 +258,7 @@ class OSVersion:
                 continue
 
             # Fill OS version sheet
-            requests = self.fill(osv,es_version,workload_str)
+            requests = self.fill(osv, es_version, workload_str)
 
             # Format sheet
             self.format(requests)

@@ -147,6 +147,17 @@ def get_category_operation_map() -> list[dict]:
     return spec_list
 
 
+def get_category(workload: str, operation: str) -> str | None:
+    """Return the category for the supplied workload operation."""
+    m = next((m for m in get_category_operation_map() if m["workload"] == workload), None)
+    if m is None:
+        return None
+    for category, operations in m["categories"].items():
+        if operation in operations:
+            return str(category)
+    return None
+
+
 def get_workloads(service: Resource, spreadsheet_id: str) -> dict[str, dict[str, list[str]]]:
     """Retrieve tuples of (engine,version,workload) for all benchmarks in the spreadsheet."""
     rv: dict[str, dict[str, list[str]]] = {}
