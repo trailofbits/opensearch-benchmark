@@ -130,7 +130,10 @@ register_snapshot_repo() {
   \"type\": \"s3\",
   \"settings\": {
     \"bucket\": \"$snapshot_s3_bucket\",
-    \"base_path\": \"$cluster_type/$cluster_version/$workload/$snapshot_version\"
+    \"base_path\": \"$cluster_type/$cluster_version/$workload/$snapshot_version\",
+    \"max_restore_bytes_per_sec\": \"5gb\",
+    \"max_snapshot_bytes_per_sec\": \"5gb\",
+    \"chunk_size\": \"5gb\"
   }
 }
 ")
