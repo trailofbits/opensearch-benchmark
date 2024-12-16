@@ -34,6 +34,7 @@ path.repo: ["/mnt/backup"]
 path.data: /mnt/data
 path.logs: /mnt/logs
 s3.client.default.region: us-east-1
+indices.recovery.max_bytes_per_sec: 2048mb
 EOF
 
 if [[ "$NODES_TYPE" == "multi" ]]; then
