@@ -26,6 +26,8 @@ path.repo: ["/mnt/backup"]
 path.data: /mnt/data
 path.logs: /mnt/logs
 
+indices.recovery.max_bytes_per_sec: 2048mb
+
 xpack.security.enabled: true
 xpack.security.enrollment.enabled: true
 
