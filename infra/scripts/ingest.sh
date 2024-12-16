@@ -62,7 +62,7 @@ if version_gte "$CLUSTER_VERSION" "2.18.0";  then
   echo "Set index.knn.advanced.approximate_threshold to 0"
 fi
 
-EXCLUDE_TASKS="type:search,prod-queries,warmup-indices"
+#EXCLUDE_TASKS="type:search,prod-queries,warmup-indices"
 
 # Ingest data in the cluster
 opensearch-benchmark execute-test \
