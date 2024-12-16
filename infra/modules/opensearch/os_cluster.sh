@@ -25,6 +25,9 @@ INSTALL_FILENAME=opensearch-$CLUSTER_VERSION-linux-$CLUSTER_ARCH.tar.gz
 # If it's a nightly version, download it from the nightly repository
 if [[ $IS_NIGHTLY == true ]]; then
     DOWNLOAD_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/$CLUSTER_VERSION/$NIGHTLY_VERSION/linux/$CLUSTER_ARCH/tar/dist/opensearch/$INSTALL_FILENAME
+
+    S3_INSTALL_FILENAME=repository-s3-$CLUSTER_VERSION.zip
+    S3_PLUGIN_URL=https://ci.opensearch.org/ci/dbc/distribution-build-opensearch/$CLUSTER_VERSION/$NIGHTLY_VERSION/linux/$CLUSTER_ARCH/tar/builds/opensearch/core-plugins/$S3_INSTALL_FILENAME
 else
     DOWNLOAD_URL=https://artifacts.opensearch.org/releases/bundle/opensearch/$CLUSTER_VERSION/$INSTALL_FILENAME
 fi
@@ -38,7 +41,6 @@ mkdir -p $INSTALL_PATH
 wget $DOWNLOAD_URL
 tar -xvf $INSTALL_FILENAME -C $INSTALL_ROOT
 rm $INSTALL_FILENAME
-
 
 # Specify directories for storage and update the configuration to allow incoming connections.
 # Also a config that is needed to make the s3 client successfully locate the snapshot bucket
@@ -79,8 +81,14 @@ GB=$(echo "$(cat /proc/meminfo | grep MemTotal | awk '{print $2}') / (1024*1024*
 sed -i "s/-Xms1g/-Xms${GB}g/" $JVM_CONFIG
 sed -i "s/-Xmx1g/-Xmx${GB}g/" $JVM_CONFIG
 
-# Install and configure pre-requisites for S3 snapshot buckets
-sudo $INSTALL_PATH/bin/opensearch-plugin install -b -s repository-s3
+# Install the s3 plugin if necessary (S3_PLUGIN_URL and S3_INSTALL_FILENAME is set)
+if [[ -n "$S3_PLUGIN_URL" ]]; then
+    wget $S3_PLUGIN_URL
+    sudo $INSTALL_PATH/bin/opensearch-plugin install -b file:///mnt/$S3_INSTALL_FILENAME
+else
+    sudo $INSTALL_PATH/bin/opensearch-plugin install -b -s repository-s3
+fi
+
 echo "$OS_SNAPSHOT_AWS_ACCESS_KEY_ID" | $INSTALL_PATH/bin/opensearch-keystore add -s -f -x s3.client.default.access_key
 echo "$OS_SNAPSHOT_AWS_SECRET_ACCESS_KEY" | $INSTALL_PATH/bin/opensearch-keystore add -s -f -x s3.client.default.secret_key
 
