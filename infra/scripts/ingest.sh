@@ -24,7 +24,7 @@ WORKLOAD_PARAMS=/mnt/workload_params.json
 INDEX_NAME=$(workload_index_name $WORKLOAD)
 
 CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
-SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD;no-force-merge-1" "$WORKLOAD_PARAMS")
+SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD;no-force-merge-2" "$WORKLOAD_PARAMS")
 
 INGESTION_RESULTS=/mnt/ingestion_results
 USER_TAGS="run-type:ingest,aws-user-id:$AWS_USERID,ci:$(ci_tag_value)"

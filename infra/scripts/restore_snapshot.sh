@@ -18,7 +18,7 @@ WORKLOAD_PARAMS=/mnt/workload_params.json
 # Based on the workload, we can figure out the index name. It is mostly the same, but somtimes not.
 INDEX_NAME=$(workload_index_name $WORKLOAD)
 
-SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD;no-force-merge-1" "$WORKLOAD_PARAMS")
+SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD;no-force-merge-2" "$WORKLOAD_PARAMS")
 
 # If SNAPSHOT_S3_BUCKET is not set, skip the snapshot
 if [ -z "$SNAPSHOT_S3_BUCKET" ]; then
