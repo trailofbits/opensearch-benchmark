@@ -36,6 +36,12 @@ write_files:
     content: ${ssh_private_key}
     owner: root:root
     permissions: '0600'
+  - path: /utils.sh
+    encoding: gz+b64
+    content: |
+      ${utils_script}
+    owner: root:root
+    permissions: '0600'
 
 fs_setup:
   - label: None
@@ -67,6 +73,8 @@ runcmd:
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
   - [ mv, /id_rsa, /home/ubuntu/.ssh/id_rsa ]
   - [ chown, ubuntu:ubuntu, /home/ubuntu/.ssh/id_rsa ]
+  - [ mv, /utils.sh, /mnt/utils.sh ]
+  - [ chown, ubuntu:ubuntu, /mnt/utils.sh ]
   - [ sudo, -u, ubuntu, /load_generation.sh, ${os_cluster}, admin, ${os_password}, ${distribution_version}, ${os_version}, "OS", ${instance_type}, ${cluster_instance_id}]
   - [ sudo, -u, ubuntu, /fix_files.sh ]
   - [sed, -i, '/^env.name =/c\env.name = ${benchmark_environment}', /mnt/.benchmark/benchmark.ini]

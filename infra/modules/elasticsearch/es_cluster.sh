@@ -76,8 +76,8 @@ echo "$ES_SNAPSHOT_AWS_SECRET_ACCESS_KEY" | bin/elasticsearch-keystore add -s -f
 tries=0
 while ! curl --max-time 5 -ks https://localhost:9200 > /dev/null 2>&1 ; do
     echo "Waiting for Elasticsearch to start"
-    sleep 1
     ((tries++))
+    sleep $tries
     if [ $tries -eq 20 ]; then
         echo "Failed to start ElasticSearch"
         exit 1

@@ -85,8 +85,8 @@ echo "Waiting for server to boot"
 tries=0
 while ! curl --max-time 5 -ks https://localhost:9200 > /dev/null 2>&1 ; do
     echo "Waiting for OpenSearch to start ($tries)"
-    sleep 1
     ((tries++))
+    sleep $tries
     if [ $tries -eq 20 ]; then
         echo "Failed to start OpenSearch"
         exit 1

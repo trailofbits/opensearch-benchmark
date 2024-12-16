@@ -99,6 +99,21 @@ resource "aws_instance" "target-cluster-additional-nodes" {
     hostname_type = "resource-name"
   }
 
+  provisioner "remote-exec" {
+    inline = [
+      "echo 'Waiting for user data script to finish'",
+      "cloud-init status --wait > /dev/null",
+      "echo 'User data script finished'",
+    ]
+  }
+
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = var.ssh_priv_key
+    host        = self.public_ip
+  }
+
   tags = var.tags
 }
 
@@ -138,6 +153,21 @@ resource "aws_instance" "target-cluster-main-node" {
     hostname_type = "resource-name"
   }
 
+  provisioner "remote-exec" {
+    inline = [
+      "echo 'Waiting for user data script to finish'",
+      "cloud-init status --wait > /dev/null",
+      "echo 'User data script finished'",
+    ]
+  }
+
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = var.ssh_priv_key
+    host        = self.public_ip
+  }
+
   tags = var.tags
 }
 
@@ -165,6 +195,7 @@ resource "aws_instance" "load-generation" {
           osb_version = var.osb_version
         }
       ))),
+      utils_script            = yamlencode(base64gzip(file("${path.module}/../../scripts/utils.sh"))),
       es_cluster              = aws_instance.target-cluster-main-node.public_dns
       es_password             = var.password,
       distribution_version    = var.distribution_version,
@@ -235,11 +266,6 @@ resource "aws_instance" "load-generation" {
       }
     )
     destination = "/mnt/benchmark.sh"
-  }
-
-  provisioner "file" {
-    source      = "${path.module}/../../scripts/utils.sh"
-    destination = "/mnt/utils.sh"
   }
 
   provisioner "file" {
