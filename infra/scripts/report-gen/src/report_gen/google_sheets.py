@@ -52,8 +52,8 @@ def authenticate_from_token(token_file_path: Path) -> Credentials | None:
     return creds
 
 
-class SheetsBuilder:
-    """Helper for building a google sheet."""
+class SpreadSheetBuilder:
+    """Helper for building a google spreadsheet."""
 
     # TODO(brad): wrap requests to check rate limit #noqa: FIX002, TD003
     service = Resource
@@ -75,50 +75,17 @@ class SheetsBuilder:
             raise RuntimeError(msg)
 
         self.service = service
-        self.spreadsheet_id = SheetsBuilder._create_spreadsheet(self.service, spreadsheet_name)
+        self.spreadsheet_id = SpreadSheetBuilder._create_spreadsheet(self.service, spreadsheet_name)
 
-    def create_sheet(self, sheet_name: str) -> None:
+    def create_sheet(self, sheet_name: str) -> "SheetBuilder":
+        """Add a sheet to the spreadsheet and return a builder for the new sheet."""
+        self._create_sheet(sheet_name)
+        return SheetBuilder(sheet_name, self)
+
+    def _create_sheet(self, sheet_name: str) -> None:
         """Add a sheet to the spreadsheet."""
         self.service.spreadsheets().batchUpdate(
             spreadsheetId=self.spreadsheet_id, body={"requests": [{"addSheet": {"properties": {"title": sheet_name}}}]}
-        ).execute()
-
-    def insert_rows(self, sheet_name: str, sheet_range: str, rows: list[list[str]]) -> None:
-        """Insert rows in `sheet_name` at the position `sheet_range`.
-
-        `sheet_range` should be a google sheets range. For example "A1" or "B7".
-        """
-        request_properties: dict = {
-            "majorDimension": "ROWS",
-            "values": rows,
-        }
-        self.service.spreadsheets().values().append(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"{sheet_name}!{sheet_range}",
-            valueInputOption="USER_ENTERED",
-            body=request_properties,
-        ).execute()
-
-    def get_sheet_id(self, sheet_name: str) -> int | None:
-        """Return the sheet ID for the given sheet name."""
-        # Get the spreadsheet metadata to find the sheetId
-        spreadsheet = self.service.spreadsheets().get(spreadsheetId=self.spreadsheet_id).execute()
-
-        # Find the sheetId by sheet name
-        for sheet in spreadsheet["sheets"]:
-            if sheet["properties"]["title"] == sheet_name:
-                return int(sheet["properties"]["sheetId"])
-
-        return None
-
-    def format_builder(self, sheet_name: str) -> "FormatBuilder":
-        """Create a `FormatBuilder` for the specified sheet, used to apply formatting rules."""
-        return FormatBuilder(self, sheet_name, self.get_sheet_id(sheet_name))
-
-    def apply_format(self, fmt: "FormatBuilder") -> None:
-        """Apply the supplied format rules to this spreadsheet."""
-        self.service.spreadsheets().batchUpdate(
-            spreadsheetId=self.spreadsheet_id, body={"requests": fmt.requests}
         ).execute()
 
     @classmethod
@@ -139,16 +106,79 @@ class SheetsBuilder:
         return cast(str, spreadsheet.get("spreadsheetId"))
 
 
+class SheetBuilder:
+    """Helper for building a google sheet."""
+
+    parent: SpreadSheetBuilder
+    sheet_name: str
+
+    @property
+    def service(self) -> Resource:
+        """Get the google sheets service."""
+        return self.parent.service
+
+    @property
+    def spreadsheet_id(self) -> str:
+        """Get the spreadsheet id."""
+        return self.parent.spreadsheet_id
+
+    def __init__(self, sheet_name: str, parent: SpreadSheetBuilder) -> None:
+        """Authenticate and create a new spreadsheet to build."""
+        self.sheet_name = sheet_name
+        self.parent = parent
+
+    def insert_rows(self, sheet_range: str, rows: list[list[str]]) -> None:
+        """Insert rows at the position `sheet_range`.
+
+        `sheet_range` should be a google sheets range. For example "A1" or "B7".
+        """
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        self.service.spreadsheets().values().append(
+            spreadsheetId=self.spreadsheet_id,
+            range=f"{self.sheet_name}!{sheet_range}",
+            valueInputOption="USER_ENTERED",
+            body=request_properties,
+        ).execute()
+
+    def get_sheet_id(self) -> int | None:
+        """Return the sheet ID for the given sheet name."""
+        # Get the spreadsheet metadata to find the sheetId
+        spreadsheet = self.service.spreadsheets().get(spreadsheetId=self.spreadsheet_id).execute()
+
+        # Find the sheetId by sheet name
+        for sheet in spreadsheet["sheets"]:
+            if sheet["properties"]["title"] == self.sheet_name:
+                return int(sheet["properties"]["sheetId"])
+
+        return None
+
+    def format_builder(self) -> "FormatBuilder":
+        """Create a `FormatBuilder` for the specified sheet, used to apply formatting rules."""
+        sheet_id = self.get_sheet_id()
+        if sheet_id is None:
+            raise RuntimeError(f"missing sheet '{self.sheet_name}'")  # noqa: TRY003, EM102
+        return FormatBuilder(self, self.sheet_name, sheet_id)
+
+    def apply_format(self, fmt: "FormatBuilder") -> None:
+        """Apply the supplied format rules to this spreadsheet."""
+        self.service.spreadsheets().batchUpdate(
+            spreadsheetId=self.spreadsheet_id, body={"requests": fmt.requests}
+        ).execute()
+
+
 class FormatBuilder:
     """Helper for building a set of formatting rules to apply to a spreadsheet."""
 
-    parent: SheetsBuilder
+    parent: SheetBuilder
 
     requests: list[dict]
     sheet_id: int
     sheet_name: str
 
-    def __init__(self, parent: SheetsBuilder, sheet_name: str, sheet_id: int) -> None:
+    def __init__(self, parent: SheetBuilder, sheet_name: str, sheet_id: int) -> None:
         self.parent = parent
         self.sheet_id = sheet_id
         self.sheet_name = sheet_name
@@ -159,24 +189,12 @@ class FormatBuilder:
         self.parent.apply_format(self)
         self.requests = []
 
-    def sheet_rowcount(self) -> int:
-        """Get the number of rows in the sheet."""
-        """todo
-        metadata = sheets.get(spreadsheetId=self.sheet_id).execute()
-        properties = metadata..get('sheets')[0].get('properties')
-        return properties.get('gridProperties').get('rowCount')
-        """
-
-        return 0
-
     def bold_font(self, range_str: str) -> None:
         """Make the specified range bold."""
-        range_dict = convert_range_to_dict(f"{self.sheet_name}!{range_str}")
-        range_dict["sheetId"] = self.sheet_id
         self.requests.append(
             {
                 "repeatCell": {
-                    "range": range_dict,
+                    "range": self.range_dict(range_str),
                     "cell": {"userEnteredFormat": {"textFormat": {"bold": True}}},
                     "fields": "userEnteredFormat.textFormat.bold",
                 }
@@ -207,12 +225,10 @@ class FormatBuilder:
 
     def style_float(self, range_str: str) -> None:
         """Style the specified range as floats."""
-        range_dict = convert_range_to_dict(f"{self.sheet_name}!{range_str}")
-        range_dict["sheetId"] = self.sheet_id
         self.requests.append(
             {
                 "repeatCell": {
-                    "range": range_dict,
+                    "range": self.range_dict(range_str),
                     "cell": {"userEnteredFormat": {"numberFormat": {"type": "NUMBER", "pattern": "#,##0.000"}}},
                     "fields": "userEnteredFormat.numberFormat",
                 }
@@ -285,15 +301,44 @@ class FormatBuilder:
             },
         ]
 
+    def color_relative_difference(self, range_str: str) -> None:
+        """Conditionally formats relative difference."""
+        self.requests += [
+            # Value is less than 0
+            {
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [self.range_dict(range_str)],
+                        "booleanRule": {
+                            "condition": {"type": "NUMBER_LESS", "values": [{"userEnteredValue": "0"}]},
+                            "format": {"backgroundColor": LIGHT_RED},
+                        },
+                    },
+                    "index": 0,
+                }
+            },
+            # Value is greater than 0
+            {
+                "addConditionalFormatRule": {
+                    "rule": {
+                        "ranges": [self.range_dict(range_str)],
+                        "booleanRule": {
+                            "condition": {"type": "NUMBER_GREATER", "values": [{"userEnteredValue": "0"}]},
+                            "format": {"backgroundColor": LIGHT_GREEN},
+                        },
+                    },
+                    "index": 0,
+                }
+            },
+        ]
+
     def rsd(self, range_str: str) -> None:
         """Apply the RSD style rules to the specified range."""
-        range_dict = convert_range_to_dict(f"{self.sheet_name}!{range_str}")
-        range_dict["sheetId"] = self.sheet_id
         self.requests.append(
             {
                 "addConditionalFormatRule": {
                     "rule": {
-                        "ranges": [range_dict],
+                        "ranges": [self.range_dict(range_str)],
                         "booleanRule": {
                             "condition": {"type": "NUMBER_GREATER", "values": [{"userEnteredValue": "0.05"}]},
                             "format": {"backgroundColor": LIGHT_RED},
@@ -303,6 +348,32 @@ class FormatBuilder:
                 }
             }
         )
+
+    def color(self, range_str: str, color: dict) -> None:
+        """Color the range."""
+        self.requests.append(
+            {
+                "repeatCell": {
+                    "range": self.range_dict(range_str),
+                    "cell": {
+                        "userEnteredFormat": {
+                            "backgroundColor": color,
+                        }
+                    },
+                    "fields": "userEnteredFormat(backgroundColor)",
+                }
+            }
+        )
+
+    def merge(self, range_str: str) -> None:
+        """Merge range."""
+        self.requests.append({"mergeCells": {"range": self.range_dict(range_str), "mergeType": "MERGE_ALL"}})
+
+    def range_dict(self, range_str: str) -> dict:
+        """Convert a range str to a range_dict to be used in a request."""
+        range_dict = convert_range_to_dict(f"{self.sheet_name}!{range_str}")
+        range_dict["sheetId"] = self.sheet_id
+        return range_dict
 
 
 LIGHT_RED = {"red": 244 / 255, "green": 199 / 255, "blue": 195 / 255}

@@ -6,11 +6,11 @@ from pathlib import Path
 from statistics import mean, median, stdev, variance
 
 from .download import BenchmarkResult
-from .google_sheets import SheetsBuilder
+from .google_sheets import LIGHT_BLUE, LIGHT_GRAY, LIGHT_YELLOW, SpreadSheetBuilder
 from .sheets.common import get_category
 
 
-@dataclass
+@dataclass(frozen=True)
 class VersionPair:
     """A pair of OS/ES versions to be compared."""
 
@@ -73,6 +73,8 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
     for workload, operations in sub_groups.items():
         for operation, rows in operations.items():
             category = get_category(workload, operation)
+            if category is None:
+                raise RuntimeError(f"No category for {workload} {operation}")  # noqa: TRY003, EM102
 
             os_rows = [row for row in rows if row.Engine == "OS"]
             es_rows = [row for row in rows if row.Engine == "ES"]
@@ -139,6 +141,65 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
     return results
 
 
+@dataclass
+class VersionCompareTable:
+    """Represents a table comparing a single OS and ES version."""
+
+    @dataclass
+    class Row:
+        """One row of data in the table."""
+
+        category: str
+        operation: str
+        es_p90_st: float
+        es_p90_rsd: float
+        os_p90_st: float
+        os_p90_rsd: float
+
+        @property
+        def relative_diff(self) -> float:
+            """(es - os) / avg(es, os)."""
+            es = self.es_p90_st
+            os = self.os_p90_st
+            return (es - os) / mean([es, os])
+
+        @property
+        def ratio(self) -> float:
+            """ES / OS."""
+            return self.es_p90_st / self.os_p90_st
+
+    comparison: VersionPair
+    workload: str
+    rows: list["VersionCompareTable.Row"]
+
+
+def build_version_compare_tables(workload: str, results: list[Result]) -> list[VersionCompareTable]:
+    """Build a version comparison table for each OS version pair in results."""
+    grouped = defaultdict(list)
+    for row in results:
+        if row.workload == workload:
+            grouped[VersionPair(row.os_version, row.es_version)].append(row)
+
+    return [
+        VersionCompareTable(
+            comparison,
+            workload,
+            [
+                VersionCompareTable.Row(
+                    category=row.category,
+                    operation=row.operation,
+                    es_p90_st=row.es_avg_90,
+                    es_p90_rsd=row.es_rsd_90,
+                    os_p90_st=row.os_avg_90,
+                    os_p90_rsd=row.os_rsd_90,
+                )
+                for row in rows
+            ],
+        )
+        for comparison, rows in grouped.items()
+    ]
+
+
 class EngineTable:
     """Table showing the number of tests run for each Engine/Version/Workload combo."""
 
@@ -174,7 +235,7 @@ class EngineTable:
 
 def create_google_sheet(data: list[Result], token: Path, credentials: Path | None = None) -> None:
     """Export data to a google sheet."""
-    sheets_api = SheetsBuilder("Report", token, credentials)
+    spreadsheet = SpreadSheetBuilder("Report", token, credentials)
 
     header = [
         [
@@ -229,9 +290,9 @@ def create_google_sheet(data: list[Result], token: Path, credentials: Path | Non
     nrows = len(sheet_rows)
 
     results_sheet_name = "Results"
-    sheets_api.create_sheet(results_sheet_name)
-    sheets_api.insert_rows(results_sheet_name, "A1", sheet_rows)
-    fmt = sheets_api.format_builder(results_sheet_name)
+    results_sheet = spreadsheet.create_sheet(results_sheet_name)
+    results_sheet.insert_rows("A1", sheet_rows)
+    fmt = results_sheet.format_builder()
     fmt.bold_font("A1:T1")
     fmt.freeze_row(1)
     fmt.freeze_col(4)
@@ -241,6 +302,78 @@ def create_google_sheet(data: list[Result], token: Path, credentials: Path | Non
     fmt.rsd(f"K2:L{nrows}")
     fmt.rsd(f"S2:T{nrows}")
     fmt.apply()
+
+    version_tables = build_version_compare_tables("big5", data)
+    for table in version_tables:
+        os_sheet_name = f"OS {table.comparison.os_version} - {table.workload}"
+        os_sheet = spreadsheet.create_sheet(os_sheet_name)
+        fmt = os_sheet.format_builder()
+        # Top Header Row
+        os_sheet.insert_rows("A1", [["Results"]])
+        fmt.merge("A1:F1")
+        fmt.bold_font("A1:I1")
+        fmt.color("A1:F1", LIGHT_GRAY)
+        # 2nd header row
+        os_sheet.insert_rows(
+            "A2",
+            [
+                [
+                    "Category",
+                    "Operation",
+                    f"ES {table.comparison.es_version} P90 ST (AVG)",
+                    "RSD",
+                    f"OS {table.comparison.os_version} P90 ST (AVG)",
+                    "RSD",
+                    "Relative Difference\n(ES-OS)/AVG(ES,OS)",
+                    f"Ratio ES {table.comparison.es_version} / OS {table.comparison.os_version}",
+                    "Comments",
+                ]
+            ],
+        )
+        fmt.bold_font("A2:I2")
+        fmt.merge("G1:G2")
+        fmt.merge("H1:H2")
+        fmt.color("A2:I2", LIGHT_GRAY)
+        fmt.color("G1:G2", LIGHT_YELLOW)
+        fmt.color("H1:H2", LIGHT_BLUE)
+
+        # Group data by category
+        grouped = defaultdict(list)
+        for row in table.rows:
+            grouped[row.category].append(row)
+
+        offset = 3
+        for category, rows in sorted(grouped.items()):
+            os_sheet.insert_rows(
+                f"A{offset}",
+                [
+                    [
+                        category,
+                        row.operation,
+                        str(row.es_p90_st),
+                        str(row.es_p90_rsd),
+                        str(row.os_p90_st),
+                        str(row.os_p90_rsd),
+                        str(row.relative_diff),
+                        str(row.ratio),
+                    ]
+                    for row in sorted(rows, key=lambda r: r.operation)
+                ],
+            )
+            end = offset + len(rows)
+            fmt.merge(f"A{offset}:A{end-1}")
+            fmt.bold_font(f"A{offset}:A{end-1}")
+            fmt.color(f"A{offset}:A{end-1}", LIGHT_GRAY)
+            offset = end
+
+        # Format all data as float
+        fmt.style_float(f"C3:H{offset+1}")
+        # Format Relative Diff Column
+        fmt.color_relative_difference(f"G3:G{offset+1}")
+        # Format Ratio Column
+        fmt.color_comparison(f"H3:H{offset+1}")
+
+        fmt.apply()
 
 
 def stats_comparing(results: list[Result]) -> None:

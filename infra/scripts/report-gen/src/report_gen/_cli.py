@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 from datetime import datetime
+from itertools import product
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -11,6 +12,8 @@ from report_gen.download import Source, download, dump_csv_files
 from report_gen.sheets import create_report
 
 from . import __version__
+from .download import read_csv_files
+from .results import VersionPair, build_results, create_google_sheet
 
 
 def build_download_args(download_parser: argparse.ArgumentParser) -> None:
@@ -200,15 +203,15 @@ def create_command(args: argparse.Namespace) -> bool:
     return create_report(benchmark_data, token_path, credential_path) is not None
 
 
-from .download import read_csv_files
-from .results import VersionPair, build_results, create_google_sheet
-
-
 def main() -> None:
     bench_results = read_csv_files(Path("./download_nightly_2024-12-07_2024-12-14"))
 
-    results = build_results(bench_results, [VersionPair("2.16.0", "8.15.4")])
-    cred = None  # Path("/Users/brad/Code/opensearch-benchmark/local/credentials.json")
+    os_versions = {r.EngineVersion for r in bench_results if r.Engine == "OS"}
+    es_versions = {r.EngineVersion for r in bench_results if r.Engine == "ES"}
+    comparisons = [VersionPair(os_version=os, es_version=es) for os, es in product(os_versions, es_versions)]
+
+    results = build_results(bench_results, comparisons)
+    cred = Path("/Users/brad/Code/opensearch-benchmark/local/credentials.json")
     create_google_sheet(results, Path("./token.json"), cred)
 
     return
