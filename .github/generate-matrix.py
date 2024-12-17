@@ -75,6 +75,7 @@ def main() -> None:
     os_versions = sys.argv[4].split(",")
     es_versions = sys.argv[5].split(",")
     benchmark_type = sys.argv[6]
+    snapshot_version = sys.argv[7]
 
     if not all(
         x in ["opensearch", "elasticsearch"] for x in [x.lower() for x in cluster_types]
@@ -134,6 +135,7 @@ def main() -> None:
                         "workload": workload,
                         "workload_params": str(json.dumps(params)),
                         "benchmark_type": benchmark_type,
+                        "snapshot_version": snapshot_version,
                         **extra_params,
                     }
                 )

@@ -60,6 +60,7 @@ env:
   OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.17.1,2.18.0,2.19.0-nightly-10607' }}
   ES_VERSIONS: ${{ inputs.es_versions || '8.15.4' }}
   BENCHMARK_TYPE: ${{ inputs.benchmark_type ||  'official' }}
+  SNAPSHOT_VERSION: ${{ inputs.snapshot_version || 'latest' }}
 
 jobs:
   generate-matrix:
@@ -70,7 +71,7 @@ jobs:
       - uses: actions/checkout@v4
       - id: set-matrix
         run: |
-          res=$(python3 .github/generate-matrix.py "$WORKLOADS" "$WORKLOAD_PARAMS" "$CLUSTER_TYPES" "$OS_VERSIONS" "$ES_VERSIONS" "$BENCHMARK_TYPE")
+          res=$(python3 .github/generate-matrix.py "$WORKLOADS" "$WORKLOAD_PARAMS" "$CLUSTER_TYPES" "$OS_VERSIONS" "$ES_VERSIONS" "$BENCHMARK_TYPE" "$SNAPSHOT_VERSION")
           echo "matrix=$res" >> $GITHUB_OUTPUT
           echo "$res"
 
@@ -95,7 +96,7 @@ jobs:
       aws_region: ${{ inputs.aws_region || 'ca-central-1' }}
       # assumes the possible events are schedule or workflow_dispatch
       ci_tag: ${{ github.event_name == 'schedule' && 'scheduled' || 'manual' }}
-      snapshot_version: ${{ inputs.snapshot_version }}
+      snapshot_version: ${{ matrix.snapshot_version }}
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
