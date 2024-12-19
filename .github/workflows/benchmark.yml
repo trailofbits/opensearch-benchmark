@@ -324,7 +324,7 @@ jobs:
         working-directory: infra
         run: |
             scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
-              ./get_info.sh ubuntu@$(terraform output -raw load-generation-ip):/mnt/get_info.sh
+              ./scripts/get_info.sh ubuntu@$(terraform output -raw load-generation-ip):/mnt/get_info.sh
 
       - name: Get some info
         working-directory: infra
