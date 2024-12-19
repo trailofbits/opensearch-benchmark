@@ -97,3 +97,7 @@ curl -k -X POST "https://localhost:9200/_security/user/elastic/_password" -u ela
 }"
 
 curl -ku elastic:$CLUSTER_PASSWORD https://localhost:9200
+curl -ku elastic:$CLUSTER_PASSWORD -XPUT 'https://localhost:9200/_all/_settings' -d '{
+  "index.merge.policy.floor_segment" : "1gb",
+  "index.merge.policy.segments_per_tier" : "1000"
+}'

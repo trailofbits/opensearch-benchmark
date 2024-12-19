@@ -121,3 +121,8 @@ echo "OpenSearch responds on port 9200, now verify credentials"
 curl -X GET https://localhost:9200 -u "admin:$CLUSTER_PASSWORD" --insecure || (echo "Failed to query server" && false)
 echo
 echo "Server up and running (pid $SERVER_PID)"
+
+curl -ku admin:$CLUSTER_PASSWORD -XPUT 'https://localhost:9200/_all/_settings' -d '{
+  "index.merge.policy.floor_segment" : "1gb",
+  "index.merge.policy.segments_per_tier" : "1000"
+}'
