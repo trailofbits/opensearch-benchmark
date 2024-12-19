@@ -6,7 +6,7 @@ from pathlib import Path
 from statistics import mean, median, stdev, variance
 
 from .download import BenchmarkResult
-from .google_sheets import LIGHT_BLUE, LIGHT_GRAY, LIGHT_YELLOW, SpreadSheetBuilder
+from .google_sheets import LIGHT_BLUE, LIGHT_GRAY, LIGHT_YELLOW, SheetBuilder, SpreadSheetBuilder
 from .sheets.common import get_category
 
 
@@ -200,6 +200,67 @@ def build_version_compare_tables(workload: str, results: list[Result]) -> list[V
     ]
 
 
+@dataclass
+class OverallSpread:
+    """Represents a table comparing multiple ES/OS versions for a single workload."""
+
+    p90s: dict[str, dict[str, dict[str, float]]]
+    """Map category -> operation -> engine+version to raw p90 vals"""
+
+    relative_diffs: dict[str, dict[str, dict[str, float]]]
+    """Map category -> operation -> engine+version comparison to relative diffs"""
+
+    ratios: dict[str, dict[str, dict[str, float]]]
+    """Map category -> operation -> engine+version comparison to ratios"""
+
+    @property
+    def p90_headers(self) -> list[str]:
+        """Sorted list of engine versions in this table."""
+        return sorted({e for ops in self.p90s.values() for engines in ops.values() for e in engines})
+
+    @property
+    def relative_diff_headers(self) -> list[str]:
+        """Sorted list of relative difference labels in this table."""
+        return sorted({e for ops in self.relative_diffs.values() for engines in ops.values() for e in engines})
+
+    @property
+    def ratio_headers(self) -> list[str]:
+        """Sorted list of ratio labels in this table."""
+        return sorted({e for ops in self.ratios.values() for engines in ops.values() for e in engines})
+
+    workload: str
+
+
+def overall_from_version(tables: list[VersionCompareTable]) -> OverallSpread:
+    """Create an overall spread from version comparison tables of a single workload."""
+    combined = defaultdict(list)
+
+    workloads = {t.workload for t in tables}
+    if len(workloads) != 1:
+        msg = "Assumed only one workload is compared at a time"
+        raise RuntimeError(msg)
+    workload = next(iter(workloads))
+
+    for table in tables:
+        es_version = table.comparison.es_version
+        os_version = table.comparison.os_version
+        for row in table.rows:
+            combined[(row.category, row.operation)].append((es_version, os_version, row))
+
+    p90s: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+    relative_diffs: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+    ratios: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+
+    for (category, operation), rows in combined.items():
+        for es_version, os_version, row in rows:
+            p90s[category][operation][f"ES {es_version}"] = row.es_p90_st
+            p90s[category][operation][f"OS {os_version}"] = row.os_p90_st
+            relative_diffs[category][operation][f"ES {es_version} vs OS {os_version}"] = row.relative_diff
+            ratios[category][operation][f"ES {es_version} / OS {os_version}"] = row.ratio
+
+    return OverallSpread(p90s, relative_diffs, ratios, workload)
+
+
 class EngineTable:
     """Table showing the number of tests run for each Engine/Version/Workload combo."""
 
@@ -231,6 +292,161 @@ class EngineTable:
             )
             for grouped_results in filtered.values()
         ]
+
+
+def create_version_table_sheet(table: VersionCompareTable, sheet: SheetBuilder) -> None:
+    """Fill the table data into the provided sheet."""
+    fmt = sheet.format_builder()
+    # Top Header Row
+    sheet.insert_rows("A1", [["Results"]])
+    fmt.merge("A1:F1")
+    fmt.bold_font("A1:I1")
+    fmt.color("A1:F1", LIGHT_GRAY)
+    # 2nd header row
+    sheet.insert_rows(
+        "A2",
+        [
+            [
+                "Category",
+                "Operation",
+                f"ES {table.comparison.es_version} P90 ST (AVG)",
+                "RSD",
+                f"OS {table.comparison.os_version} P90 ST (AVG)",
+                "RSD",
+                "Relative Difference\n(ES-OS)/AVG(ES,OS)",
+                f"Ratio ES {table.comparison.es_version} / OS {table.comparison.os_version}",
+                "Comments",
+            ]
+        ],
+    )
+    fmt.bold_font("A2:I2")
+    fmt.merge("G1:G2")
+    fmt.merge("H1:H2")
+    fmt.color("A2:I2", LIGHT_GRAY)
+    fmt.color("G1:G2", LIGHT_YELLOW)
+    fmt.color("H1:H2", LIGHT_BLUE)
+
+    # Group data by category
+    grouped = defaultdict(list)
+    for row in table.rows:
+        grouped[row.category].append(row)
+
+    offset = 3
+    for category, rows in sorted(grouped.items()):
+        sheet.insert_rows(
+            f"A{offset}",
+            [
+                [
+                    category,
+                    row.operation,
+                    str(row.es_p90_st),
+                    str(row.es_p90_rsd),
+                    str(row.os_p90_st),
+                    str(row.os_p90_rsd),
+                    str(row.relative_diff),
+                    str(row.ratio),
+                ]
+                for row in sorted(rows, key=lambda r: r.operation)
+            ],
+        )
+        end = offset + len(rows)
+        fmt.merge(f"A{offset}:A{end-1}")
+        fmt.bold_font(f"A{offset}:A{end-1}")
+        fmt.color(f"A{offset}:A{end-1}", LIGHT_GRAY)
+        offset = end
+
+    # Format all data as float
+    fmt.style_float(f"C3:H{offset+1}")
+    # Format Relative Diff Column
+    fmt.color_relative_difference(f"G3:G{offset+1}")
+    # Format Ratio Column
+    fmt.color_comparison(f"H3:H{offset+1}")
+
+    fmt.apply()
+
+
+def create_overall_spread_sheet(overall: OverallSpread, sheet: SheetBuilder) -> None:
+    """Fill in the provided sheet with data from the overall spread table."""
+    fmt = sheet.format_builder()
+
+    # top header
+    sheet.insert_rows(
+        "A1",
+        [
+            ["Results"]
+            + [""]
+            + [""] * len(overall.p90_headers)
+            + ["Relative Difference\n(ES-OS)/AVG(ES,OS)"]
+            + [""] * (len(overall.relative_diff_headers) - 1)
+            + ["Ratio ES/OS"]
+            + [""] * (len(overall.ratio_headers) - 1)
+        ],
+    )
+
+    def itoa(i: int) -> str:
+        return chr(ord("A") + i)
+
+    results_end = len(overall.p90_headers) + 1
+    results_range = f"A1:{itoa(results_end)}1"
+
+    relative_diff_start = results_end + 1
+    relative_diff_end = relative_diff_start + len(overall.relative_diff_headers) - 1
+    rd_range = f"{itoa(relative_diff_start)}1:{itoa(relative_diff_end)}1"
+
+    ratios_start = relative_diff_end + 1
+    ratios_end = ratios_start + len(overall.relative_diff_headers) - 1
+    ratios_range = f"{itoa(ratios_start)}1:{itoa(ratios_end)}1"
+
+    fmt.merge(results_range)
+    fmt.color(results_range, LIGHT_GRAY)
+
+    fmt.merge(rd_range)
+    fmt.color(rd_range, LIGHT_YELLOW)
+
+    fmt.merge(ratios_range)
+    fmt.color(ratios_range, LIGHT_BLUE)
+
+    fmt.bold_font(f"A1:{itoa(ratios_end)}1")
+
+    # second header
+    row2 = (
+        ["Category", "Operation"]
+        + [f"{e} P90 ST" for e in overall.p90_headers]
+        + [f"Relative Difference\n{e}" for e in overall.relative_diff_headers]
+        + [f"Ratio {e}" for e in overall.ratio_headers]
+    )
+    sheet.insert_rows(
+        "A2",
+        [row2],
+    )
+    row2_range = f"A2:{itoa(len(row2))}2"
+    fmt.bold_font(row2_range)
+    fmt.color(row2_range, LIGHT_GRAY)
+
+    offset = 3
+    for category in sorted(overall.p90s):
+        operations = sorted(overall.p90s[category])
+        rows = []
+        for operation in operations:
+            p90s = [str(overall.p90s[category][operation][e]) for e in overall.p90_headers]
+            diffs = [str(overall.relative_diffs[category][operation][e]) for e in overall.relative_diff_headers]
+            ratios = [str(overall.ratios[category][operation][e]) for e in overall.ratio_headers]
+            rows.append([category, operation, *p90s, *diffs, *ratios])
+        sheet.insert_rows(f"A{offset}", rows)
+        end = offset + len(rows)
+        fmt.merge(f"A{offset}:A{end-1}")
+        fmt.bold_font(f"A{offset}:A{end-1}")
+        fmt.color(f"A{offset}:A{end-1}", LIGHT_GRAY)
+        offset = end
+
+    # Format all data as float
+    fmt.style_float(f"C3:{itoa(ratios_end)}{offset+1}")
+    # Format Relative Diff Column
+    fmt.color_relative_difference(f"{itoa(relative_diff_start)}3:{itoa(relative_diff_end)}{offset+1}")
+    # Format Ratio Column
+    fmt.color_comparison(f"{itoa(ratios_start)}3:{itoa(ratios_end)}{offset+1}")
+
+    fmt.apply()
 
 
 def create_google_sheet(data: list[Result], token: Path, credentials: Path | None = None) -> None:
@@ -304,76 +520,15 @@ def create_google_sheet(data: list[Result], token: Path, credentials: Path | Non
     fmt.apply()
 
     version_tables = build_version_compare_tables("big5", data)
+    overall = overall_from_version(version_tables)
+
+    ov_sheet = spreadsheet.create_sheet("Overall Spread")
+    create_overall_spread_sheet(overall, ov_sheet)
+
     for table in version_tables:
         os_sheet_name = f"OS {table.comparison.os_version} - {table.workload}"
         os_sheet = spreadsheet.create_sheet(os_sheet_name)
-        fmt = os_sheet.format_builder()
-        # Top Header Row
-        os_sheet.insert_rows("A1", [["Results"]])
-        fmt.merge("A1:F1")
-        fmt.bold_font("A1:I1")
-        fmt.color("A1:F1", LIGHT_GRAY)
-        # 2nd header row
-        os_sheet.insert_rows(
-            "A2",
-            [
-                [
-                    "Category",
-                    "Operation",
-                    f"ES {table.comparison.es_version} P90 ST (AVG)",
-                    "RSD",
-                    f"OS {table.comparison.os_version} P90 ST (AVG)",
-                    "RSD",
-                    "Relative Difference\n(ES-OS)/AVG(ES,OS)",
-                    f"Ratio ES {table.comparison.es_version} / OS {table.comparison.os_version}",
-                    "Comments",
-                ]
-            ],
-        )
-        fmt.bold_font("A2:I2")
-        fmt.merge("G1:G2")
-        fmt.merge("H1:H2")
-        fmt.color("A2:I2", LIGHT_GRAY)
-        fmt.color("G1:G2", LIGHT_YELLOW)
-        fmt.color("H1:H2", LIGHT_BLUE)
-
-        # Group data by category
-        grouped = defaultdict(list)
-        for row in table.rows:
-            grouped[row.category].append(row)
-
-        offset = 3
-        for category, rows in sorted(grouped.items()):
-            os_sheet.insert_rows(
-                f"A{offset}",
-                [
-                    [
-                        category,
-                        row.operation,
-                        str(row.es_p90_st),
-                        str(row.es_p90_rsd),
-                        str(row.os_p90_st),
-                        str(row.os_p90_rsd),
-                        str(row.relative_diff),
-                        str(row.ratio),
-                    ]
-                    for row in sorted(rows, key=lambda r: r.operation)
-                ],
-            )
-            end = offset + len(rows)
-            fmt.merge(f"A{offset}:A{end-1}")
-            fmt.bold_font(f"A{offset}:A{end-1}")
-            fmt.color(f"A{offset}:A{end-1}", LIGHT_GRAY)
-            offset = end
-
-        # Format all data as float
-        fmt.style_float(f"C3:H{offset+1}")
-        # Format Relative Diff Column
-        fmt.color_relative_difference(f"G3:G{offset+1}")
-        # Format Ratio Column
-        fmt.color_comparison(f"H3:H{offset+1}")
-
-        fmt.apply()
+        create_version_table_sheet(table, os_sheet)
 
 
 def stats_comparing(results: list[Result]) -> None:
