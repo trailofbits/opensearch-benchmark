@@ -86,7 +86,7 @@ set -x
 EXECUTION_DIR="/mnt/test_executions"
 mkdir -p "$EXECUTION_DIR"
 
-INCLUDE_TASKS="type:search,prod-queries"
+INCLUDE_TASKS="refresh-after-index,force-merge,refresh-after-force-merge,wait-until-merges-finish,type:search,prod-queries"
 if [ "$ENGINE_TYPE" == "OS" ]; then
     # ElasticSearch doesn't support the warmup-indices operation
     INCLUDE_TASKS+=",warmup-indices"
