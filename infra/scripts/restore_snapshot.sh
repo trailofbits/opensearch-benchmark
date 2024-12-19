@@ -69,5 +69,43 @@ while true; do
   retries=$((retries - 1))
 done
 
+# Lets complete a refresh
+echo "Doing a Flush to commit all the segments"
+curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/$INDEX_NAME/_flush"
+
+echo "Doing a Refresh after flush"
+curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/$INDEX_NAME/_refresh"
+
+echo "Sleeping for 30 sec before we can fetch the merge stats"
+sleep 30
+echo "Getting merge stats"
+while true
+do
+  # gather all the merge stats
+  merge_stats=$(curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X GET "$CLUSTER_HOST/_nodes/stats?filter_path=nodes.*.indices.merges&format=json")
+  # Find the current state of the merges
+  current_merges=$(echo "$merge_stats" | jq -r '.nodes | to_entries[] | .value.indices.merges | .current')
+
+  all_merges_completed=1
+  for i in $current_merges; do
+    echo "Current merges: $i"
+    if [ "$i" -gt 0 ]; then
+      echo "Merges are still in progress, waiting for them to finish. Sleeping for 30 sec"
+      all_merges_completed=0
+      break
+    fi
+  done
+
+  if [ $all_merges_completed -eq 1 ]; then
+    echo "All merges are completed. Exiting from the loop"
+    break
+  fi
+  echo "Merges are still in progress, waiting for them to finish. Sleeping for 30 sec"
+  sleep 30
+done
+
+echo "Doing a final refresh before using the snapshot"
+curl -s -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/$INDEX_NAME/_refresh"
+
 echo "Snapshot restored"
 check_params "$CLUSTER_USER" "$CLUSTER_PASSWORD" "$CLUSTER_HOST" "$WORKLOAD" "$INDEX_NAME"
