@@ -320,6 +320,13 @@ jobs:
         working-directory: infra
         run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
 
+      - name: Get some info
+        working-directory: infra
+        run: |
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              -tt ubuntu@$(terraform output -raw load-generation-ip) -- \
+              "bash -ic \"curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD $CLUSTER_HOST/_stats/store?level=indices ; curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD $CLUSTER_HOST/_cat/indices?v\&h=index,store.size,pri.store.size,rep ; curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD $CLUSTER_HOST/_cat/shards?v\&h=index,shard,prirep,state,unassigned.reason ; \""
+
       - name: Run benchmark
         working-directory: infra
         if: ${{ inputs.perform_benchmark }}
