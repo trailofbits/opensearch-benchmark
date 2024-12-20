@@ -349,7 +349,7 @@ def read_csv_files(folder: Path) -> list[BenchmarkResult]:
                         workload=row["workload"],
                         test_procedure=row["test-procedure"],
                         workload_params=workload_params,
-                        shard_count=int(row["user-tags\\.run"]),
+                        shard_count=int(row["user-tags\\.shard-count"]),
                         replica_count=int(row["user-tags\\.replica-count"]),
                         operation=row["operation"],
                         metric_name=row["name"],

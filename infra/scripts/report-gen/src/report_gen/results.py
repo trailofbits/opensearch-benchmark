@@ -1,13 +1,17 @@
 """Calculate Results."""
 
+import logging
 from collections import defaultdict
 from dataclasses import dataclass
+from itertools import product
 from pathlib import Path
 from statistics import mean, median, stdev, variance
 
 from .download import BenchmarkResult
 from .google_sheets import LIGHT_BLUE, LIGHT_GRAY, LIGHT_YELLOW, SheetBuilder, SpreadSheetBuilder
 from .sheets.common import get_category
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -141,6 +145,73 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
     return results
 
 
+def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
+    """Fill the supplied sheet with data from Results."""
+    header = [
+        [
+            "Workload",
+            "Category",
+            "Operation",
+            "Comparison\nES/OS",
+            "",
+            "OS Version",
+            "OS: STDEV 50",
+            "OS: STDEV 90",
+            "OS: AVG 50",
+            "OS: AVG 90",
+            "OS: RSD 50",
+            "OS: RSD 90",
+            "",
+            "ES Version",
+            "ES: STDEV 50",
+            "ES: STDEV 90",
+            "ES: AVG 50",
+            "ES: AVG 90",
+            "ES: RSD 50",
+            "ES: RSD 90",
+        ]
+    ]
+    sheet_rows = header + [
+        [
+            row.workload,
+            row.category,
+            row.operation,
+            str(row.comparison),
+            "",
+            row.os_version,
+            str(row.os_std_50),
+            str(row.os_std_90),
+            str(row.os_avg_50),
+            str(row.os_avg_90),
+            str(row.os_rsd_50),
+            str(row.os_rsd_90),
+            "",
+            row.os_version,
+            str(row.os_std_50),
+            str(row.os_std_90),
+            str(row.os_avg_50),
+            str(row.os_avg_90),
+            str(row.os_rsd_50),
+            str(row.os_rsd_90),
+        ]
+        for row in results
+    ]
+
+    nrows = len(sheet_rows)
+
+    sheet.insert_rows("A1", sheet_rows)
+    fmt = sheet.format_builder()
+    fmt.bold_font("A1:T1")
+    fmt.freeze_row(1)
+    fmt.freeze_col(4)
+    for r in [f"D2:D{nrows}", f"G2:G{nrows}", f"O2:T{nrows}"]:
+        fmt.style_float(r)
+    fmt.color_comparison(f"D2:D{nrows}")
+    fmt.rsd(f"K2:L{nrows}")
+    fmt.rsd(f"S2:T{nrows}")
+    fmt.apply()
+
+
 @dataclass
 class VersionCompareTable:
     """Represents a table comparing a single OS and ES version."""
@@ -200,101 +271,7 @@ def build_version_compare_tables(workload: str, results: list[Result]) -> list[V
     ]
 
 
-@dataclass
-class OverallSpread:
-    """Represents a table comparing multiple ES/OS versions for a single workload."""
-
-    p90s: dict[str, dict[str, dict[str, float]]]
-    """Map category -> operation -> engine+version to raw p90 vals"""
-
-    relative_diffs: dict[str, dict[str, dict[str, float]]]
-    """Map category -> operation -> engine+version comparison to relative diffs"""
-
-    ratios: dict[str, dict[str, dict[str, float]]]
-    """Map category -> operation -> engine+version comparison to ratios"""
-
-    @property
-    def p90_headers(self) -> list[str]:
-        """Sorted list of engine versions in this table."""
-        return sorted({e for ops in self.p90s.values() for engines in ops.values() for e in engines})
-
-    @property
-    def relative_diff_headers(self) -> list[str]:
-        """Sorted list of relative difference labels in this table."""
-        return sorted({e for ops in self.relative_diffs.values() for engines in ops.values() for e in engines})
-
-    @property
-    def ratio_headers(self) -> list[str]:
-        """Sorted list of ratio labels in this table."""
-        return sorted({e for ops in self.ratios.values() for engines in ops.values() for e in engines})
-
-    workload: str
-
-
-def overall_from_version(tables: list[VersionCompareTable]) -> OverallSpread:
-    """Create an overall spread from version comparison tables of a single workload."""
-    combined = defaultdict(list)
-
-    workloads = {t.workload for t in tables}
-    if len(workloads) != 1:
-        msg = "Assumed only one workload is compared at a time"
-        raise RuntimeError(msg)
-    workload = next(iter(workloads))
-
-    for table in tables:
-        es_version = table.comparison.es_version
-        os_version = table.comparison.os_version
-        for row in table.rows:
-            combined[(row.category, row.operation)].append((es_version, os_version, row))
-
-    p90s: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
-    relative_diffs: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
-    ratios: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
-
-    for (category, operation), rows in combined.items():
-        for es_version, os_version, row in rows:
-            p90s[category][operation][f"ES {es_version}"] = row.es_p90_st
-            p90s[category][operation][f"OS {os_version}"] = row.os_p90_st
-            relative_diffs[category][operation][f"ES {es_version} vs OS {os_version}"] = row.relative_diff
-            ratios[category][operation][f"ES {es_version} / OS {os_version}"] = row.ratio
-
-    return OverallSpread(p90s, relative_diffs, ratios, workload)
-
-
-class EngineTable:
-    """Table showing the number of tests run for each Engine/Version/Workload combo."""
-
-    @dataclass
-    class Row:
-        """Single Row in the Engine Table."""
-
-        engine: str
-        version: str
-        workload: str
-        test_count: int
-
-    rows: list[Row]
-
-    def __init__(self, results: list[BenchmarkResult]) -> None:
-        # Sort the results by Engine/Version/Workload to be counted
-        filtered: dict[tuple[str, str, str], list[BenchmarkResult]] = defaultdict(list)
-
-        for r in results:
-            key = (r.Engine, r.EngineVersion, r.Workload)
-            filtered[key].append(r)
-
-        self.rows = [
-            EngineTable.Row(
-                engine=grouped_results[0].Engine,
-                version=grouped_results[0].EngineVersion,
-                workload=grouped_results[0].Workload,
-                test_count=len(grouped_results),
-            )
-            for grouped_results in filtered.values()
-        ]
-
-
-def create_version_table_sheet(table: VersionCompareTable, sheet: SheetBuilder) -> None:
+def dump_version_compare_table(table: VersionCompareTable, sheet: SheetBuilder) -> None:
     """Fill the table data into the provided sheet."""
     fmt = sheet.format_builder()
     # Top Header Row
@@ -365,7 +342,68 @@ def create_version_table_sheet(table: VersionCompareTable, sheet: SheetBuilder) 
     fmt.apply()
 
 
-def create_overall_spread_sheet(overall: OverallSpread, sheet: SheetBuilder) -> None:
+@dataclass
+class OverallSpread:
+    """Represents a table comparing multiple ES/OS versions for a single workload."""
+
+    p90s: dict[str, dict[str, dict[str, float]]]
+    """Map category -> operation -> engine+version to raw p90 vals"""
+
+    relative_diffs: dict[str, dict[str, dict[str, float]]]
+    """Map category -> operation -> engine+version comparison to relative diffs"""
+
+    ratios: dict[str, dict[str, dict[str, float]]]
+    """Map category -> operation -> engine+version comparison to ratios"""
+
+    @property
+    def p90_headers(self) -> list[str]:
+        """Sorted list of engine versions in this table."""
+        return sorted({e for ops in self.p90s.values() for engines in ops.values() for e in engines})
+
+    @property
+    def relative_diff_headers(self) -> list[str]:
+        """Sorted list of relative difference labels in this table."""
+        return sorted({e for ops in self.relative_diffs.values() for engines in ops.values() for e in engines})
+
+    @property
+    def ratio_headers(self) -> list[str]:
+        """Sorted list of ratio labels in this table."""
+        return sorted({e for ops in self.ratios.values() for engines in ops.values() for e in engines})
+
+    workload: str
+
+
+def build_overall(tables: list[VersionCompareTable]) -> OverallSpread:
+    """Create an overall spread from version comparison tables of a single workload."""
+    combined = defaultdict(list)
+
+    workloads = {t.workload for t in tables}
+    if len(workloads) != 1:
+        msg = "Assumed only one workload is compared at a time"
+        raise RuntimeError(msg)
+    workload = next(iter(workloads))
+
+    for table in tables:
+        es_version = table.comparison.es_version
+        os_version = table.comparison.os_version
+        for row in table.rows:
+            combined[(row.category, row.operation)].append((es_version, os_version, row))
+
+    p90s: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+    relative_diffs: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+    ratios: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
+
+    for (category, operation), rows in combined.items():
+        for es_version, os_version, row in rows:
+            p90s[category][operation][f"ES {es_version}"] = row.es_p90_st
+            p90s[category][operation][f"OS {os_version}"] = row.os_p90_st
+            relative_diffs[category][operation][f"ES {es_version} vs OS {os_version}"] = row.relative_diff
+            ratios[category][operation][f"ES {es_version} / OS {os_version}"] = row.ratio
+
+    return OverallSpread(p90s, relative_diffs, ratios, workload)
+
+
+def dump_overall(overall: OverallSpread, sheet: SheetBuilder) -> None:
     """Fill in the provided sheet with data from the overall spread table."""
     fmt = sheet.format_builder()
 
@@ -449,86 +487,67 @@ def create_overall_spread_sheet(overall: OverallSpread, sheet: SheetBuilder) -> 
     fmt.apply()
 
 
-def create_google_sheet(data: list[Result], token: Path, credentials: Path | None = None) -> None:
+class EngineTable:
+    """Table showing the number of tests run for each Engine/Version/Workload combo."""
+
+    @dataclass
+    class Row:
+        """Single Row in the Engine Table."""
+
+        engine: str
+        version: str
+        workload: str
+        test_count: int
+
+    rows: list[Row]
+
+    def __init__(self, results: list[BenchmarkResult]) -> None:
+        # Sort the results by Engine/Version/Workload to be counted
+        filtered: dict[tuple[str, str, str], list[BenchmarkResult]] = defaultdict(list)
+
+        for r in results:
+            key = (r.Engine, r.EngineVersion, r.Workload)
+            filtered[key].append(r)
+
+        self.rows = [
+            EngineTable.Row(
+                engine=grouped_results[0].Engine,
+                version=grouped_results[0].EngineVersion,
+                workload=grouped_results[0].Workload,
+                test_count=len(grouped_results),
+            )
+            for grouped_results in filtered.values()
+        ]
+
+
+def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Path | None = None) -> None:
     """Export data to a google sheet."""
+    os_versions = {r.EngineVersion for r in raw if r.Engine == "OS"}
+    es_versions = {r.EngineVersion for r in raw if r.Engine == "ES"}
+    comparisons = [VersionPair(os_version=os, es_version=es) for os, es in product(os_versions, es_versions)]
+
+    workload = "big5"
+
+    logger.info("Building results table")
+    results = build_results(raw, comparisons)
+    logger.info("Building individual comparison tables")
+    version_tables = build_version_compare_tables(workload, results)
+    logger.info("Building Overall Spread table")
+    overall = build_overall(version_tables)
+
     spreadsheet = SpreadSheetBuilder("Report", token, credentials)
 
-    header = [
-        [
-            "Workload",
-            "Category",
-            "Operation",
-            "Comparison\nES/OS",
-            "",
-            "OS Version",
-            "OS: STDEV 50",
-            "OS: STDEV 90",
-            "OS: AVG 50",
-            "OS: AVG 90",
-            "OS: RSD 50",
-            "OS: RSD 90",
-            "",
-            "ES Version",
-            "ES: STDEV 50",
-            "ES: STDEV 90",
-            "ES: AVG 50",
-            "ES: AVG 90",
-            "ES: RSD 50",
-            "ES: RSD 90",
-        ]
-    ]
-    sheet_rows = header + [
-        [
-            row.workload,
-            row.category,
-            row.operation,
-            str(row.comparison),
-            "",
-            row.os_version,
-            str(row.os_std_50),
-            str(row.os_std_90),
-            str(row.os_avg_50),
-            str(row.os_avg_90),
-            str(row.os_rsd_50),
-            str(row.os_rsd_90),
-            "",
-            row.os_version,
-            str(row.os_std_50),
-            str(row.os_std_90),
-            str(row.os_avg_50),
-            str(row.os_avg_90),
-            str(row.os_rsd_50),
-            str(row.os_rsd_90),
-        ]
-        for row in data
-    ]
+    logger.info("Exporting results table")
+    dump_results(results, spreadsheet.create_sheet("Results"))
 
-    nrows = len(sheet_rows)
+    logger.info("Exporting Overall Spread table")
+    dump_overall(overall, spreadsheet.create_sheet(f"Overall Spread - {workload}"))
 
-    results_sheet_name = "Results"
-    results_sheet = spreadsheet.create_sheet(results_sheet_name)
-    results_sheet.insert_rows("A1", sheet_rows)
-    fmt = results_sheet.format_builder()
-    fmt.bold_font("A1:T1")
-    fmt.freeze_row(1)
-    fmt.freeze_col(4)
-    for r in [f"D2:D{nrows}", f"G2:G{nrows}", f"O2:T{nrows}"]:
-        fmt.style_float(r)
-    fmt.color_comparison(f"D2:D{nrows}")
-    fmt.rsd(f"K2:L{nrows}")
-    fmt.rsd(f"S2:T{nrows}")
-    fmt.apply()
-
-    version_tables = build_version_compare_tables("big5", data)
-    overall = overall_from_version(version_tables)
-
-    ov_sheet = spreadsheet.create_sheet("Overall Spread")
-    create_overall_spread_sheet(overall, ov_sheet)
-
+    logger.info("Exporting individual comparison tables")
     for table in version_tables:
         os_sheet_name = f"OS {table.comparison.os_version} - {table.workload}"
         os_sheet = spreadsheet.create_sheet(os_sheet_name)
-        create_version_table_sheet(table, os_sheet)
+        dump_version_compare_table(table, os_sheet)
 
 
 def stats_comparing(results: list[Result]) -> None:
