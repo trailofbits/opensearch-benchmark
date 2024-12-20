@@ -332,6 +332,22 @@ def _handle_results_response(
 
 def read_csv_files(folder: Path) -> list[BenchmarkResult]:
     """Read benchmark results that were previously dumped to folder."""
+
+    def get_workload_subtype(engine: str, workload: str, workload_params: dict) -> str:
+        if workload != "vectorsearch":
+            return ""
+
+        query_data_set_corpus = workload_params["query_data_set_corpus"]
+        target_index_body = workload_params["target_index_body"]
+
+        vector_index_body_lookup = {
+            "indices/faiss-index.json": "faiss",
+            "indices/nmslib-index.json": "nmslib",
+            "indices/lucene-index.json": "lucene",
+        }
+        subtype_dataset = "lucene" if engine == "ES" else vector_index_body_lookup.get(target_index_body, "unknown")
+        return f"{subtype_dataset}-{query_data_set_corpus}"
+
     results = []
     for csv_filepath in folder.glob("*.csv"):
         with csv_filepath.open() as csv_file:
@@ -341,17 +357,22 @@ def read_csv_files(folder: Path) -> list[BenchmarkResult]:
                 # NOTE(brad): this assumes the date was formatted using default str(datetime)
                 run_group = datetime.strptime(row["user-tags\\.run-group"], "%Y-%m-%d %H:%M:%S")  # noqa:DTZ007
 
+                engine = row["user-tags\\.engine-type"]
+                workload = row["workload"]
+                workload_subtype = get_workload_subtype(engine, workload, workload_params)
+
                 results.append(
                     BenchmarkResult(
                         run_group=run_group,
-                        engine=row["user-tags\\.engine-type"],
+                        engine=engine,
                         environment=row["environment"],
                         engine_version=row["distribution-version"],
                         benchmark_source=row["user-tags\\.ci"],
                         run=row["user-tags\\.run"],
                         snapshot_bucket=row["user-tags\\.snapshot-s3-bucket"],
                         snapshot_base_path=row["user-tags\\.snapshot-base-path"],
-                        workload=row["workload"],
+                        workload=workload,
+                        workload_subtype=workload_subtype,
                         test_procedure=row["test-procedure"],
                         workload_params=workload_params,
                         shard_count=int(row["user-tags\\.shard-count"]),
@@ -363,7 +384,7 @@ def read_csv_files(folder: Path) -> list[BenchmarkResult]:
                     )
                 )
 
-    return results
+    return sorted(results, key=attrgetter(*FIELDS_SORT_PRIORITY))
 
 
 def dump_csv_files(results: list[BenchmarkResult], folder: Path) -> None:

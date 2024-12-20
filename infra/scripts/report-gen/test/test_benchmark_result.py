@@ -1,10 +1,9 @@
 """Test BenchmarkResult serialization and deserialization."""
 
-from report_gen.download import read_csv_files, dump_csv_files
-
 from pathlib import Path
-
 from tempfile import TemporaryDirectory
+
+from report_gen.download import dump_csv_files, read_csv_files
 
 
 def test_benchmark_serialization() -> None:
@@ -18,5 +17,5 @@ def test_benchmark_serialization() -> None:
         actual_results = read_csv_files(tmp_path)
     assert len(actual_results) == len(expected_results), "Mismatch in number of results"
 
-    for actual, expected in zip(actual_results, expected_results, strict=True):
-        assert actual == expected
+    for i, (actual, expected) in enumerate(zip(actual_results, expected_results, strict=True)):
+        assert actual == expected, f"{i} {actual=} {expected=}"
