@@ -44,7 +44,7 @@ To use a prefix list:
   - Set `prefix_list_region` to the prefix list's region.
   - The workspace name is used as a description for the prefix list entry
 
-If you don't want to use a prefix list, you don't need to set `prefix_list_id` or `prefix_list_region`.
+If you don't want to use a prefix list, you don't need to set `prefix_list_id` nor `prefix_list_region`.
 #### Snapshot S3 Bucket
 If you want to use snapshots for OS and ES, create an AWS S3 bucket.
 
