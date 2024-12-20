@@ -12,6 +12,8 @@ You will need to set the following Github Secrets:
 - `DATASTORE_PASSWORD`: Data store password
 - `AWS_ACCESS_KEY_ID`: AWS Access Key to give Terraform permission to provision infrastructure
 - `AWS_SECRET_ACCESS_KEY`: AWS Secret Access Key to give Terraform permission to provision infrastructure
+- (optional) `PREFIX_LIST_ID`: ID of prefix list for IP-based access control to data store.
+- (optional) `PREFIX_LIST_REGION`: AWS region of prefix list.
 - (optional) `SLACK_BOT_TOKEN`: Slack Bot Token to alert on failed nightly runs
 - (optional) `SLACK_CHANNEL_ID`: Slack Channel ID to alert on failed nightly runs
 
