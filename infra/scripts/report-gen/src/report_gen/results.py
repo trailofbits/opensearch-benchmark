@@ -398,7 +398,7 @@ def build_overall(tables: list[VersionCompareTable]) -> OverallSpread:
             p90s[category][operation][f"ES {es_version}"] = row.es_p90_st
             p90s[category][operation][f"OS {os_version}"] = row.os_p90_st
             relative_diffs[category][operation][f"ES {es_version} vs OS {os_version}"] = row.relative_diff
-            ratios[category][operation][f"ES {es_version} / OS {os_version}"] = row.ratio
+            ratios[category][operation][f"ES {es_version} /\n OS {os_version}"] = row.ratio
 
     return OverallSpread(p90s, relative_diffs, ratios, workload)
 
@@ -615,7 +615,7 @@ def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Pa
     dump_overall(overall, spreadsheet.create_sheet(f"Overall Spread - {workload}"))
 
     logger.info("Exporting individual comparison tables")
-    for table in version_tables:
+    for table in sorted(version_tables, key=lambda t: t.comparison.os_version):
         os_sheet_name = f"OS {table.comparison.os_version} - {table.workload}"
         os_sheet = spreadsheet.create_sheet(os_sheet_name)
         dump_version_compare_table(table, os_sheet)
