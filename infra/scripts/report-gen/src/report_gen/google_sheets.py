@@ -201,6 +201,23 @@ class SheetBuilder:
     @rate_limit
     def apply_format(self, fmt: "FormatBuilder") -> None:
         """Apply the supplied format rules to this spreadsheet."""
+        # Get metadata about the sheet being formatted
+        spreadsheet = self.service.spreadsheets().get(spreadsheetId=self.spreadsheet_id).execute()
+        sheet = next(sheet for sheet in spreadsheet["sheets"] if sheet["properties"]["sheetId"] == fmt.sheet_id)
+        # Resize columns based on content
+        column_count = sheet["properties"].get("gridProperties", {}).get("columnCount", 0)
+        fmt.requests += [
+            {
+                "autoResizeDimensions": {
+                    "dimensions": {
+                        "sheetId": fmt.sheet_id,
+                        "dimension": "COLUMNS",
+                        "startIndex": 0,
+                        "endIndex": column_count,
+                    }
+                }
+            }
+        ]
         self.service.spreadsheets().batchUpdate(
             spreadsheetId=self.spreadsheet_id, body={"requests": fmt.requests}
         ).execute()
