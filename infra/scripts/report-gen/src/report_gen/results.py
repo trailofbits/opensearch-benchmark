@@ -263,14 +263,14 @@ def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
 
     sheet.insert_rows("A1", sheet_rows)
     fmt = sheet.format_builder()
-    fmt.bold_font("A1:T1")
+    fmt.bold_font("A1:V1")
     fmt.freeze_row(1)
     fmt.freeze_col(4)
     for r in [f"D2:D{nrows}", f"G2:G{nrows}", f"O2:T{nrows}"]:
         fmt.style_float(r)
     fmt.color_comparison(f"D2:D{nrows}")
-    fmt.rsd(f"K2:L{nrows}")
-    fmt.rsd(f"S2:T{nrows}")
+    fmt.rsd(f"L2:M{nrows}")
+    fmt.rsd(f"U2:V{nrows}")
     fmt.apply()
 
 
