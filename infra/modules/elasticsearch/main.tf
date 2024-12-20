@@ -296,6 +296,7 @@ resource "aws_instance" "load-generation" {
 }
 
 resource "aws_ec2_managed_prefix_list_entry" "prefix-list-entry-load-gen" {
+  count          = length(var.prefix_list_id) > 0 ? 1 : 0
   provider       = aws.prefix_list_region
   cidr           = "${aws_instance.load-generation.public_ip}/32"
   description    = terraform.workspace

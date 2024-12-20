@@ -29,7 +29,7 @@ provider "aws" {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = var.prefix_list_region
   alias  = "prefix_list_region"
 
   default_tags {
@@ -127,6 +127,7 @@ resource "aws_route_table_association" "subnet-association" {
 }
 
 data "aws_ec2_managed_prefix_list" "prefix-list" {
+  count    = length(var.prefix_list_id) > 0 ? 1 : 0
   provider = aws.prefix_list_region
   id       = var.prefix_list_id
 }
@@ -226,7 +227,7 @@ module "es-cluster" {
   subnet_id             = aws_subnet.subnet.id
   subnet_cidr_block     = aws_subnet.subnet.cidr_block
   password              = random_password.cluster-password.result
-  prefix_list_id        = data.aws_ec2_managed_prefix_list.prefix-list.id
+  prefix_list_id        = var.prefix_list_id
   benchmark_environment = var.benchmark_environment
   datastore_host        = var.datastore_host
   datastore_username    = var.datastore_username
@@ -268,7 +269,7 @@ module "os-cluster" {
   subnet_id             = aws_subnet.subnet.id
   subnet_cidr_block     = aws_subnet.subnet.cidr_block
   password              = random_password.cluster-password.result
-  prefix_list_id        = data.aws_ec2_managed_prefix_list.prefix-list.id
+  prefix_list_id        = var.prefix_list_id
   benchmark_environment = var.benchmark_environment
   datastore_host        = var.datastore_host
   datastore_username    = var.datastore_username
