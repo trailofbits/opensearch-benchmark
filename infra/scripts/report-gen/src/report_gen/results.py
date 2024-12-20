@@ -624,7 +624,7 @@ class AllCategoriesFaster:
 
         rows = []
         for category, data in by_category.items():
-            count = len([d for d in data if d.ratio > 1])
+            count = len([d for d in data if d.comparison > 1])
             total = len(data)
             percentage = (count / total) * 100
             rows.append(AllCategoriesFaster.Row(category=category, count=count, total=total, percentage=percentage))
@@ -635,6 +635,44 @@ class AllCategoriesFaster:
         self.total_total = sum([r.total for r in rows])
         self.total_percentage = (self.total_count / self.total_total) * 100
         self.rows = rows
+
+
+class StatsCompareTable:
+    """Table comparing overall stats between two versions."""
+
+    class Row:
+        """Single row in comparison table."""
+
+        avg: float
+        median: float
+        mmax: float
+        mmin: float
+        stdev: float
+        variance: float
+
+        def __init__(self, data: list[float]) -> None:
+            self.avg = mean(data)
+            self.median = median(data)
+            self.mmax = max(data)
+            self.mmin = min(data)
+            self.stdev = stdev(data)
+            self.variance = variance(data)
+
+    os_version: str
+    es_version: str
+
+    faster: Row
+    slower: Row
+
+    def __init__(self, os_version: str, es_version: str, results: list[Result]) -> None:
+        version_filtered = [row for row in results if row.os_version == os_version and row.es_version == es_version]
+        os_faster = [row.comparison for row in version_filtered if row.comparison > 1]
+        os_slower = [row.comparison for row in version_filtered if row.comparison < 1]
+
+        self.os_version = os_version
+        self.es_version = es_version
+        self.faster = StatsCompareTable.Row(os_faster)
+        self.slower = StatsCompareTable.Row(os_slower)
 
 
 def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Path | None = None) -> None:
