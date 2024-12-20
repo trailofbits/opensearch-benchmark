@@ -487,6 +487,61 @@ def dump_overall(overall: OverallSpread, sheet: SheetBuilder) -> None:
     fmt.apply()
 
 
+def dump_raw(data: list[BenchmarkResult], sheet: SheetBuilder) -> None:
+    """Fill the provided sheet with raw data."""
+    header = [
+        [
+            "user-tags\\.run-group",
+            "environment",
+            "user-tags\\.engine-type",
+            "distribution-version",
+            "workload",
+            "workload_subtype",
+            "test-procedure",
+            "user-tags\\.run",
+            "operation",
+            "name",
+            "value\\.50_0",
+            "value\\.90_0",
+            "user-tags\\.shard-count",
+            "user-tags\\.replica-count",
+            "workload\\.target_throughput",
+            "workload\\.number_of_replicas",
+            "workload\\.bulk_indexing_clients",
+            "workload\\.max_num_segments",
+            "workload\\.query_data_set_corpus",
+            "workload\\.target_index_body",
+        ]
+    ]
+    rows: list[list[str]] = [
+        [
+            str(result.RunGroup),
+            result.Environment,
+            result.Engine,
+            result.EngineVersion,
+            result.Workload,
+            result.WorkloadSubType,
+            result.TestProcedure,
+            result.Run,
+            result.Operation,
+            result.MetricName,
+            result.P50,
+            result.P90,
+            str(result.ShardCount),
+            str(result.ReplicaCount),
+            result.WorkloadParams["target_throughput"],
+            result.WorkloadParams["number_of_replicas"],
+            result.WorkloadParams["bulk_indexing_clients"],
+            result.WorkloadParams["max_num_segments"],
+            result.WorkloadParams["query_data_set_corpus"],
+            result.WorkloadParams["target_index_body"],
+        ]
+        for result in data
+    ]
+
+    sheet.insert_rows("A1", header + rows)
+
+
 class EngineTable:
     """Table showing the number of tests run for each Engine/Version/Workload combo."""
 
@@ -548,6 +603,9 @@ def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Pa
         os_sheet_name = f"OS {table.comparison.os_version} - {table.workload}"
         os_sheet = spreadsheet.create_sheet(os_sheet_name)
         dump_version_compare_table(table, os_sheet)
+
+    logger.info("Dumping raw")
+    dump_raw(raw, spreadsheet.create_sheet("raw"))
 
 
 def stats_comparing(results: list[Result]) -> None:
