@@ -35,6 +35,7 @@ class Result:
     operation: str
 
     os_version: str
+    os_subtype: str
     os_std_50: float
     os_std_90: float
     os_avg_50: float
@@ -43,6 +44,7 @@ class Result:
     os_rsd_90: float
 
     es_version: str
+    es_subtype: str
     es_std_50: float
     es_std_90: float
     es_avg_50: float
@@ -64,7 +66,7 @@ class Result:
         return self.es_avg_90 / self.os_avg_90
 
 
-def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -> list[Result]:  # noqa: C901
+def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -> list[Result]:  # noqa: C901, PLR0912, PLR0915
     """Build the results data from the raw benchmark results."""
     sub_groups: dict[str, dict[str, list[BenchmarkResult]]] = defaultdict(lambda: defaultdict(list))
 
@@ -76,6 +78,9 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
         workload = row.Workload
         operation = row.Operation
         sub_groups[workload][operation] += [row]
+
+    # Get all subtypes once
+    subtypes = sorted({d.WorkloadSubType for d in data})
 
     results = []
     for workload, operations in sub_groups.items():
@@ -109,34 +114,46 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
                 verify_data("OS", workload, operation, os_data)
                 verify_data("ES", workload, operation, es_data)
 
-                os_std_50 = stdev(float(row.P50) for row in os_data)
-                os_std_90 = stdev(float(row.P90) for row in os_data)
-                os_avg_50 = mean(float(row.P50) for row in os_data)
-                os_avg_90 = mean(float(row.P90) for row in os_data)
-                os_rsd_50 = os_std_50 / os_avg_50
-                os_rsd_90 = os_std_90 / os_avg_90
+                def build_result(  # noqa: PLR0913
+                    workload: str,
+                    category: str,
+                    operation: str,
+                    os_version: str,
+                    os_data: list[BenchmarkResult],
+                    es_version: str,
+                    es_data: list[BenchmarkResult],
+                    os_subtype: str = "",
+                    es_subtype: str = "",
+                ) -> Result:
+                    os_std_50 = stdev(float(row.P50) for row in os_data)
+                    os_std_90 = stdev(float(row.P90) for row in os_data)
+                    os_avg_50 = mean(float(row.P50) for row in os_data)
+                    os_avg_90 = mean(float(row.P90) for row in os_data)
+                    os_rsd_50 = os_std_50 / os_avg_50
+                    os_rsd_90 = os_std_90 / os_avg_90
 
-                es_std_50 = stdev(float(row.P50) for row in es_data)
-                es_std_90 = stdev(float(row.P90) for row in es_data)
-                es_avg_50 = mean(float(row.P50) for row in es_data)
-                es_avg_90 = mean(float(row.P90) for row in es_data)
-                es_rsd_50 = es_std_50 / es_avg_50
-                es_rsd_90 = es_std_90 / es_avg_90
+                    es_std_50 = stdev(float(row.P50) for row in es_data)
+                    es_std_90 = stdev(float(row.P90) for row in es_data)
+                    es_avg_50 = mean(float(row.P50) for row in es_data)
+                    es_avg_90 = mean(float(row.P90) for row in es_data)
+                    es_rsd_50 = es_std_50 / es_avg_50
+                    es_rsd_90 = es_std_90 / es_avg_90
 
-                comparison = es_avg_90 / os_avg_90
-                results.append(
-                    Result(
+                    comparison = es_avg_90 / os_avg_90
+                    return Result(
                         workload=workload,
                         category=category,
                         operation=operation,
-                        os_version=compare.os_version,
+                        os_version=os_version,
+                        os_subtype=os_subtype,
                         os_std_50=os_std_50,
                         os_std_90=os_std_90,
                         os_avg_50=os_avg_50,
                         os_avg_90=os_avg_90,
                         os_rsd_50=os_rsd_50,
                         os_rsd_90=os_rsd_90,
-                        es_version=compare.es_version,
+                        es_version=es_version,
+                        es_subtype=es_subtype,
                         es_std_50=es_std_50,
                         es_std_90=es_std_90,
                         es_avg_50=es_avg_50,
@@ -145,7 +162,44 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
                         es_rsd_90=es_rsd_90,
                         comparison=comparison,
                     )
-                )
+
+                # NOTE: Consider not hardcoding this in the future
+                if workload == "vectorsearch":
+                    for os_workload_subtype in subtypes:
+                        # Get size to compare
+                        es_workload_subtype = "lucene-cohere-"
+                        if "-1m" in os_workload_subtype:
+                            es_workload_subtype = f"{es_workload_subtype}1m"
+                        elif "-10m" in os_workload_subtype:
+                            es_workload_subtype = f"{es_workload_subtype}10m"
+                        else:
+                            es_workload_subtype = f"{es_workload_subtype}1m"
+
+                        os_subtype_data = [d for d in os_data if d.WorkloadSubType == os_workload_subtype]
+                        es_subtype_data = [d for d in os_data if d.WorkloadSubType == es_workload_subtype]
+                        if len(os_subtype_data) == 0 and len(es_subtype_data) == 0:
+                            continue
+                        results.append(
+                            build_result(
+                                workload,
+                                category,
+                                operation,
+                                compare.os_version,
+                                os_subtype_data,
+                                compare.es_version,
+                                es_subtype_data,
+                                os_workload_subtype,
+                                es_workload_subtype,
+                            )
+                        )
+
+                else:
+                    results.append(
+                        build_result(
+                            workload, category, operation, compare.os_version, os_data, compare.es_version, es_data
+                        )
+                    )
+
     return results
 
 
@@ -158,19 +212,21 @@ def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
             "Operation",
             "Comparison\nES/OS",
             "",
-            "OS Version",
+            "OS version",
+            "OS SubType",
             "OS: STDEV 50",
             "OS: STDEV 90",
-            "OS: AVG 50",
-            "OS: AVG 90",
+            "OS: Average 50",
+            "OS: Average 90",
             "OS: RSD 50",
             "OS: RSD 90",
             "",
-            "ES Version",
+            "ES version",
+            "ES SubType",
             "ES: STDEV 50",
             "ES: STDEV 90",
-            "ES: AVG 50",
-            "ES: AVG 90",
+            "ES: Average 50",
+            "ES: Average 90",
             "ES: RSD 50",
             "ES: RSD 90",
         ]
@@ -183,6 +239,7 @@ def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
             str(row.comparison),
             "",
             row.os_version,
+            row.os_subtype,
             str(row.os_std_50),
             str(row.os_std_90),
             str(row.os_avg_50),
@@ -191,6 +248,7 @@ def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
             str(row.os_rsd_90),
             "",
             row.os_version,
+            row.es_subtype,
             str(row.os_std_50),
             str(row.os_std_90),
             str(row.os_avg_50),
