@@ -9,7 +9,7 @@ from statistics import mean, median, stdev, variance
 
 from .download import BenchmarkResult
 from .google_sheets import LIGHT_BLUE, LIGHT_GRAY, LIGHT_YELLOW, SheetBuilder, SpreadSheetBuilder
-from .sheets.common import get_category
+from .sheets.common import get_category, get_category_operation_map
 
 logger = logging.getLogger(__name__)
 
@@ -542,6 +542,22 @@ def dump_raw(data: list[BenchmarkResult], sheet: SheetBuilder) -> None:
     sheet.insert_rows("A1", header + rows)
 
 
+def dump_categories(sheet: SheetBuilder) -> None:
+    """Fill the provided sheet with categories data."""
+    # Generate the rows in the spreadsheet
+    spec_list: list[dict] = get_category_operation_map()
+    row_list: list[list[str]] = [["Workload", "Operation", "Category"]]
+
+    for spec in spec_list:
+        workload_name: str = spec["workload"]
+
+        for category_name in spec["categories"]:
+            for operation_name in spec["categories"][category_name]:
+                row_list.append([workload_name, operation_name, category_name])  # noqa: PERF401
+
+    sheet.insert_rows("A1", row_list)
+
+
 class EngineTable:
     """Table showing the number of tests run for each Engine/Version/Workload combo."""
 
@@ -604,7 +620,10 @@ def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Pa
         os_sheet = spreadsheet.create_sheet(os_sheet_name)
         dump_version_compare_table(table, os_sheet)
 
-    logger.info("Dumping raw")
+    logger.info("Exporting categories")
+    dump_categories(spreadsheet.create_sheet("Categories"))
+
+    logger.info("Exporting raw")
     dump_raw(raw, spreadsheet.create_sheet("raw"))
 
 
