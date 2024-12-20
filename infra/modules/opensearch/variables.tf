@@ -8,15 +8,20 @@ variable "loadgen_instance_type" {
   type        = string
 }
 
-variable "ami_id" {
+variable "cluster_ami_id" {
   description = "AMI ID to use for the cluster"
+  type        = string
+}
+
+variable "loadgen_ami_id" {
+  description = "AMI ID to use for the load generation machine"
   type        = string
 }
 
 variable "os_version" {
   description = "Version of OpenSearch to deploy"
   type        = string
-  default     = "2.16.0"
+  default     = "2.18.0"
 }
 
 variable "distribution_version" {
@@ -46,6 +51,11 @@ variable "security_groups" {
 
 variable "subnet_id" {
   description = "Subnet ID"
+  type        = string
+}
+
+variable "subnet_cidr_block" {
+  description = "Subnet CIDR Block"
   type        = string
 }
 
@@ -129,4 +139,9 @@ variable "snapshot_version" {
     condition     = can(regex("^\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}$", var.snapshot_version))
     error_message = "Snapshot version must be: YYYY-mm-dd_HH-MM-ss"
   }
+}
+
+variable "osb_version" {
+  description = "OpenSearch Benchmark version"
+  type        = string
 }

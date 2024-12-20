@@ -12,6 +12,7 @@ from .auth import authenticate
 from .common import adjust_sheet_columns, get_category_operation_map, get_sheet_id
 from .import_data import ImportData
 from .osversion import OSVersion
+from .overall import OverallSheet
 from .result import Result
 from .summary import Summary
 
@@ -63,7 +64,10 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         return None
     logger.info("Summary processed successfully")
 
-    # TODO(Evan): #noqa: FIX002, TD003
+    # Create a pause here because of the default limit of 60 requests per minute
+    logger.info("Pausing for 60 seconds because of Google API rate limiting.")
+    time.sleep(60)
+
     # Create OS version sheets for big5
     os_version = OSVersion(service=service, spreadsheet_id=spreadsheet_id)
     if not os_version.get():
@@ -71,8 +75,16 @@ def create_report(benchmark_data: Path, token_path: Path, credential_path: Path 
         return None
     logger.info("OS versions processed successfully")
 
-    # TODO(Evan): #noqa: FIX002, TD003
-    # Create Overall Spread sheet for big5
+    # Create a pause here because of the default limit of 60 requests per minute
+    logger.info("Pausing for 60 seconds because of Google API rate limiting.")
+    time.sleep(60)
+
+    # Create Overall sheet for big5
+    overall_sheet = OverallSheet(service=service, spreadsheet_id=spreadsheet_id)
+    if not overall_sheet.get():
+        logger.error("Error creating Overall sheet")
+        return None
+    logger.info("Overall processed successfully")
 
     # Output spreadsheet URL for ease
     report_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}"
@@ -137,7 +149,7 @@ def _create_spreadsheet(service: Resource, title: str) -> str | None:
         return None
 
     # Create sheets for OS versions 2.16, 2.17, and 2.18
-    for name in ["OS 2.16.0", "OS 2.17.0", "OS 2.18.0"]:
+    for name in ["OS 2.16.0", "OS 2.17.1", "OS 2.18.0"]:
         _add_sheet(service, spreadsheet_id, name)
 
     # Create a new spreadsheet and add the initial columns
@@ -156,6 +168,7 @@ def _create_spreadsheet(service: Resource, title: str) -> str | None:
                 "Comparison\nES/OS",
                 "",
                 "OS version",
+                "OS SubType",
                 "OS: STDEV 50",
                 "OS: STDEV 90",
                 "OS: Average 50",
@@ -164,6 +177,7 @@ def _create_spreadsheet(service: Resource, title: str) -> str | None:
                 "OS: RSD 90",
                 "",
                 "ES version",
+                "ES SubType",
                 "ES: STDEV 50",
                 "ES: STDEV 90",
                 "ES: Average 50",

@@ -33,6 +33,12 @@ from .format.font import (
 from .format.merge import (
     merge as format_merge,
 )
+from .format.number import (
+    format_float as format_number_float,
+)
+from .format.number import (
+    format_integer as format_number_integer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -159,7 +165,7 @@ class Summary:
 
             for e, es_version in enumerate(workload["ES"]):
                 filter_str = (
-                    f'Results!$A$2:$A="{workload_str}",Results!$F$2:$F="{os_version}",Results!$N$2:$N="{es_version}"'
+                    f'Results!$A$2:$A="{workload_str}",Results!$F$2:$F="{os_version}",Results!$O$2:$O="{es_version}"'
                 )
                 row.append(
                     f"=FILTER(Results!$D2:D, {filter_str}, Results!$C2:C = INDIRECT(ADDRESS(ROW(), COLUMN()-1-{e})))"
@@ -258,7 +264,7 @@ class Summary:
         row.append("Tasks faster than ES")
         for es_version in workload["ES"]:
             count_str = (
-                f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+                f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$O$2:$O,"{es_version}"'
             )
             row.append(f'=COUNTIFS({count_str}, Results!$D$2:$D,">1")')
         rows.append(row)
@@ -267,7 +273,7 @@ class Summary:
         row.append("Fast Outliers (> 2)")
         for es_version in workload["ES"]:
             count_str = (
-                f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+                f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$O$2:$O,"{es_version}"'
             )
             row.append(f'=COUNTIFS({count_str}, Results!$D$2:$D,">2")')
         rows.append(row)
@@ -276,7 +282,7 @@ class Summary:
         row.append("Slow Outliers (< 0.5)")
         for es_version in workload["ES"]:
             count_str = (
-                f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+                f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$O$2:$O,"{es_version}"'
             )
             row.append(f'=COUNTIFS({count_str}, Results!$D$2:$D,"<0.5")')
         rows.append(row)
@@ -368,7 +374,7 @@ class Summary:
 
             for e, es_version in enumerate(workload["ES"]):
                 count_str = (
-                    f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+                    f'Results!$A$2:$A,"{workload_str}",Results!$F$2:$F,"{os_version}",Results!$O$2:$O,"{es_version}"'
                 )
                 row.append(
                     f'=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-1-{e})), Results!$D$2:$D,">1")'  # noqa: E501
@@ -423,8 +429,11 @@ class Summary:
 
         # Find versions to compare
         for engines in workloads.values():
+            if "OS" not in engines or "ES" not in engines:
+                continue
             os_version = engines["OS"][-1]
             es_version = engines["ES"][-1]
+            break
 
         # Add space
         rows.append([""])
@@ -476,8 +485,8 @@ class Summary:
 
         rows.append(["ES/OS", "Average", "Median", "Max", "Min", "Stdev", "Variance"])
 
-        filter_faster = f'Results!$F$2:$F="{os_version}",Results!$N$2:$N="{es_version}",Results!$D$2:$D>1'
-        filter_slower = f'Results!$F$2:$F="{os_version}",Results!$N$2:$N="{es_version}",Results!$D$2:$D<1'
+        filter_faster = f'Results!$F$2:$F="{os_version}",Results!$O$2:$O="{es_version}",Results!$D$2:$D>1'
+        filter_slower = f'Results!$F$2:$F="{os_version}",Results!$O$2:$O="{es_version}",Results!$D$2:$D<1'
 
         faster_row: list[str] = ["When OS is faster\n(OS service_time is smaller)"]
         faster_row.append(f"=AVERAGE(FILTER(Results!$D$2:$D,{filter_faster}))")
@@ -515,10 +524,16 @@ class Summary:
         )
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
+        updated_range = result["updates"]["updatedRange"]
+
+        # Format numbers in table
+        range_dict = convert_range_to_dict(updated_range)
+        range_dict["sheetId"] = self.sheet_id
+        requests.append(format_number_float(range_dict))
 
         return rows_added, requests
 
-    def create_all_categories_table(
+    def create_all_categories_table(  # noqa: PLR0915
         self, workloads: dict[str, dict[str, list[str]]], offset: int
     ) -> tuple[int, list[dict]]:
         """Create a table summarizing all categories."""
@@ -527,6 +542,8 @@ class Summary:
 
         # Find versions to compare
         for engines in workloads.values():
+            if "OS" not in engines or "ES" not in engines:
+                continue
             os_version = engines["OS"][-1]
             es_version = engines["ES"][-1]
             break
@@ -534,10 +551,13 @@ class Summary:
         # Find category counts and totals for each workload
         all_categories: set[str] = set()
         for workload in workloads:
+            # NOTE: Because ES does not support noaa-semantic-search, we skip this
+            if workload == "noaa_semantic_search":
+                continue
             categories = get_workload_operation_categories(workload)
             all_categories.update(categories)
 
-        count_str = f'Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+        count_str = f'Results!$F$2:$F,"{os_version}",Results!$O$2:$O,"{es_version}"'
 
         # Add space
         rows.append([""])
@@ -585,6 +605,7 @@ class Summary:
         requests = self.format_headers_merge([updated_range])
 
         # Add data
+        offset_tmp = offset + 1  # Save offset for percentage calculation
         rows: list[list[str]] = []
         rows.append(["Category", "Count", "Total", "Percentage (%)"])
         for category in sorted(all_categories):
@@ -594,7 +615,6 @@ class Summary:
                 f'=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-1)), Results!$D$2:$D,">1")'
             )
             row.append(f"=COUNTIFS({count_str}, Results!$B$2:$B,INDIRECT(ADDRESS(ROW(),COLUMN()-2)))")
-            row.append("=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))")
             rows.append(row)
 
         size = len(all_categories)
@@ -603,7 +623,6 @@ class Summary:
                 "Total",
                 f'=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&":"&ADDRESS(ROW()-1,COLUMN()) ))',
                 f'=SUM(INDIRECT( ADDRESS(ROW()-{size},COLUMN())&":"&ADDRESS(ROW()-1,COLUMN()) ))',
-                "=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))",
             ]
         )
 
@@ -625,6 +644,48 @@ class Summary:
         )
         offset += result["updates"]["updatedRows"]
         rows_added += result["updates"]["updatedRows"]
+        updated_range = result["updates"]["updatedRange"]
+
+        # Format numbers in table
+        range_dict = convert_range_to_dict(updated_range)
+        range_dict["sheetId"] = self.sheet_id
+        requests.append(format_number_integer(range_dict))
+
+        # Add data
+        rows: list[list[str]] = []
+        for _ in all_categories:
+            row = []
+            row.append("=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))")
+            rows.append(row)
+
+        rows.append(
+            [
+                "=INDIRECT(ADDRESS(ROW(),COLUMN()-2)) * 100 / INDIRECT(ADDRESS(ROW(),COLUMN()-1))",
+            ]
+        )
+
+        # Update table to Summary sheet
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"{self.sheet_name}!$D{offset_tmp}",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        updated_range = result["updates"]["updatedRange"]
+
+        # Format numbers in table
+        range_dict = convert_range_to_dict(updated_range)
+        range_dict["sheetId"] = self.sheet_id
+        requests.append(format_number_float(range_dict))
 
         return rows_added, requests
 
@@ -638,8 +699,8 @@ class Summary:
 
         number_of_operations = len(get_workload_operations(workload))
 
-        filter_str = f'Results!$A$2:$A="{workload}",Results!$F$2:$F="{os_version}",Results!$N$2:$N="{es_version}"'
-        count_str = f'Results!$A$2:$A,"{workload}",Results!$F$2:$F,"{os_version}",Results!$N$2:$N,"{es_version}"'
+        filter_str = f'Results!$A$2:$A="{workload}",Results!$F$2:$F="{os_version}",Results!$O$2:$O="{es_version}"'
+        count_str = f'Results!$A$2:$A,"{workload}",Results!$F$2:$F,"{os_version}",Results!$O$2:$O,"{es_version}"'
 
         # Add overview of results
         header_rows.append(header_row_count)
@@ -822,7 +883,7 @@ class Summary:
 
         index = 2
         workload_ranges: list[str] = []
-        for workload, engines in workloads.items():
+        for workload, engines in sorted(workloads.items()):
             rows = []
             row, index = self.get_workload_engines(workload, engines, index)
             rows.extend(row)
@@ -876,7 +937,7 @@ class Summary:
 
         # For each workload, summarize results
         workload_offset = 1
-        for workload, engines in workloads.items():
+        for workload, engines in sorted(workloads.items()):
             logger.info(f"Summarizing {workload}")
             o, r = self.create_summary_tables(workload, engines, workload_offset)
             workload_offset += o

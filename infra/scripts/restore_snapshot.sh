@@ -41,8 +41,8 @@ register_snapshot_repo \
 # Restore the snapshot
 echo "Restoring snapshot..."
 
-# Keep trying to restore the snapshot until it's successful (up to 5 times)
-retries=5
+# Keep trying to restore the snapshot until it's successful
+retries=10
 while true; do
   curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X DELETE "$CLUSTER_HOST/$INDEX_NAME?pretty"
   response=$(curl -ku $CLUSTER_USER:$CLUSTER_PASSWORD -X POST "$CLUSTER_HOST/_snapshot/$SNAPSHOT_S3_BUCKET/$SNAPSHOT_NAME/_restore?wait_for_completion=true" -H "Content-Type: application/json" -d"
@@ -65,7 +65,7 @@ while true; do
   fi
 
   echo "Snapshot restore failed. Retrying in 5 seconds..."
-  sleep 5
+  sleep 8
   retries=$((retries - 1))
 done
 

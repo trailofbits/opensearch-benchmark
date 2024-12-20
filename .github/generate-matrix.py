@@ -22,6 +22,7 @@ DEFAULT_EXTRA_PARAMS = {
     },
 }
 
+OS_ONLY_WORKLOADS = {"vectorsearch-faiss", "vectorsearch-nmslib"}
 
 def get_available_cluster_types(cluster_types: list[str]) -> list[str]:
     """Get the cluster types"""
@@ -74,6 +75,7 @@ def main() -> None:
     os_versions = sys.argv[4].split(",")
     es_versions = sys.argv[5].split(",")
     benchmark_type = sys.argv[6]
+    snapshot_version = sys.argv[7]
 
     if not all(
         x in ["opensearch", "elasticsearch"] for x in [x.lower() for x in cluster_types]
@@ -102,16 +104,16 @@ def main() -> None:
 
     for workload_name in workloads:
         for cluster_type in get_available_cluster_types(cluster_types):
+            # skip OS-only workloads for ES
+            if cluster_type == "ElasticSearch" and workload_name in OS_ONLY_WORKLOADS:
+                continue
             extra_params = DEFAULT_EXTRA_PARAMS.get(workload_name, {})
-            workflow_benchmark_type = (
-                "dev" if workload_name.startswith("vectorsearch") else benchmark_type
-            )
             workload = WORKLOAD_NAME_MAP.get(workload_name, workload_name)
             version_key, versions = cluster_versions[cluster_type]
 
             # We should still set the os_version even for ES because it is used
             # to determine the distribution_version in OSB
-            os_version = os_versions[0] if os_versions else "2.16.0"
+            os_version = os_versions[0] if os_versions else "2.18.0"
             if version_key != cluster_versions["OpenSearch"][0]:
                 extra_params["os_version"] = os_version
 
@@ -132,7 +134,8 @@ def main() -> None:
                         version_key: version,
                         "workload": workload,
                         "workload_params": str(json.dumps(params)),
-                        "benchmark_type": workflow_benchmark_type,
+                        "benchmark_type": benchmark_type,
+                        "snapshot_version": snapshot_version,
                         **extra_params,
                     }
                 )

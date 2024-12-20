@@ -4,17 +4,17 @@ get_doc_count() {
     local workload=$1
 
     declare -A doc_counts
-    doc_counts["big5"]=116000000
-    doc_counts["nyc_taxis"]=165346691 # NOTE: should be 165346692 but there's an issue with one document
-    doc_counts["pmc"]=574199
-    doc_counts["noaa"]=33659481
-    doc_counts["vectorsearch"]=1000000
-    doc_counts["noaa_semantic_search"]=33659481
+    doc_counts["big5"]="116000000"
+    doc_counts["nyc_taxis"]="165346691" # NOTE: should be 165346692 but there's an issue with one document
+    doc_counts["pmc"]="574199"
+    doc_counts["noaa"]="33659481"
+    doc_counts["vectorsearch"]="10000000"
+    doc_counts["noaa_semantic_search"]="33659481"
 
     # Check if the workload exists in the associative array
     if [[ -v "doc_counts[$workload]" ]]; then
         # Get the DOC_COUNT based on the WORKLOAD
-        echo "${doc_counts[$workload]}"
+        echo ${doc_counts[$workload]}
     else
         # Default value
         echo "1000"
@@ -27,7 +27,7 @@ get_shards_count() {
     declare -A shards_count
     shards_count["big5"]=1
     shards_count["pmc"]=5
-    shards_count["vectorsearch"]=3
+    shards_count["vectorsearch"]=6
     shards_count["noaa_semantic_search"]=6
 
     # Check if the workload exists in the associative array
@@ -66,7 +66,6 @@ check_params () {
             --request GET "$host/$index/_count" \
         | jq --raw-output '"\(.count) \(._shards.total) \(._shards.failed) \(._shards.skipped)"' \
     )
-
     check_value "document count" "${DOC_COUNT:-$(get_doc_count $workload)}" "$doc_count"
     check_value "total shards count" "${TOTAL_SHARDS:-$(get_shards_count $workload)}" "$shards_total"
     check_value "failed shards count" "${FAILED_SHARDS:-0}" "$shards_failed"
@@ -131,7 +130,10 @@ register_snapshot_repo() {
   \"type\": \"s3\",
   \"settings\": {
     \"bucket\": \"$snapshot_s3_bucket\",
-    \"base_path\": \"$cluster_type/$cluster_version/$workload/$snapshot_version\"
+    \"base_path\": \"$cluster_type/$cluster_version/$workload/$snapshot_version\",
+    \"max_restore_bytes_per_sec\": \"5gb\",
+    \"max_snapshot_bytes_per_sec\": \"5gb\",
+    \"chunk_size\": \"5gb\"
   }
 }
 ")

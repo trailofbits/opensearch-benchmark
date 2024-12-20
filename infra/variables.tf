@@ -33,13 +33,13 @@ variable "es_version" {
 variable "os_version" {
   description = "Version of OpenSearch to deploy"
   type        = string
-  default     = "2.16.0"
+  default     = "2.18.0"
 }
 
 variable "distribution_version" {
   description = "OSB distribution-version to use"
   type        = string
-  default     = "2.16.0"
+  default     = "2.18.0"
 }
 
 variable "s3_bucket_name" {
@@ -115,4 +115,10 @@ variable "snapshot_version" {
     condition     = can(regex("^(latest|new)$", var.snapshot_version)) || can(regex("^\\d{4}-\\d{2}-\\d{2}_\\d{2}-\\d{2}-\\d{2}$", var.snapshot_version))
     error_message = "Snapshot version must be one of: latest, new, or a specific version (YYYY-mm-dd_HH-MM-ss)"
   }
+}
+
+variable "osb_version" {
+  description = "OpenSearch Benchmark version"
+  type        = string
+  default     = "1.11.0"
 }

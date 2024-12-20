@@ -2,6 +2,10 @@ output "target-cluster-ip" {
   value = var.target_cluster_type == "ElasticSearch" ? module.es-cluster[0].es-cluster-ip : module.os-cluster[0].os-cluster-ip
 }
 
+output "additional-cluster-ips" {
+  value = var.target_cluster_type == "ElasticSearch" ? module.es-cluster[0].es-additional-cluster-ips : module.os-cluster[0].os-additional-cluster-ips
+}
+
 output "load-generation-ip" {
   value = var.target_cluster_type == "ElasticSearch" ? module.es-cluster[0].load-generation-ip : module.os-cluster[0].load-generation-ip
 }

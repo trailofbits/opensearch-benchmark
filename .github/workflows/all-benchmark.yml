@@ -35,26 +35,32 @@ on:
         description: 'Elasticsearch versions (comma separated)'
         required: false
         type: string
-        default: 8.15.0
+        default: '8.15.4'
       os_versions:
         description: 'OpenSearch versions (comma separated)'
         required: false
         type: string
-        default: 2.16.0
+        default: '2.16.0,2.17.1,2.18.0,2.19.0-nightly-10607'
       aws_region:
         description: 'AWS region'
         required: false
         type: string
         default: eu-north-1
+      snapshot_version:
+        description: 'Snapshot version (`new` or `latest`)'
+        required: true
+        type: string
+        default: 'latest'
 
 env:
   # nightly run default parameters
-  WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis,vectorsearch' }}
+  WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis,vectorsearch,noaa_semantic_search' }}
   WORKLOAD_PARAMS: ${{ inputs.workload_params || '{}' }}
   CLUSTER_TYPES: ${{ inputs.cluster_types || 'OpenSearch,ElasticSearch' }}
-  OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.17.0,2.18.0' }}
-  ES_VERSIONS: ${{ inputs.es_versions || '8.15.0' }}
+  OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.17.1,2.18.0,2.19.0-nightly-10607' }}
+  ES_VERSIONS: ${{ inputs.es_versions || '8.15.4' }}
   BENCHMARK_TYPE: ${{ inputs.benchmark_type ||  'official' }}
+  SNAPSHOT_VERSION: ${{ inputs.snapshot_version || 'latest' }}
 
 jobs:
   generate-matrix:
@@ -65,7 +71,7 @@ jobs:
       - uses: actions/checkout@v4
       - id: set-matrix
         run: |
-          res=$(python3 .github/generate-matrix.py "$WORKLOADS" "$WORKLOAD_PARAMS" "$CLUSTER_TYPES" "$OS_VERSIONS" "$ES_VERSIONS" "$BENCHMARK_TYPE")
+          res=$(python3 .github/generate-matrix.py "$WORKLOADS" "$WORKLOAD_PARAMS" "$CLUSTER_TYPES" "$OS_VERSIONS" "$ES_VERSIONS" "$BENCHMARK_TYPE" "$SNAPSHOT_VERSION")
           echo "matrix=$res" >> $GITHUB_OUTPUT
           echo "$res"
 
@@ -73,7 +79,7 @@ jobs:
     needs: generate-matrix
     strategy:
       fail-fast: false
-      max-parallel: 6
+      max-parallel: 12
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
 
     uses: ./.github/workflows/benchmark.yml
@@ -90,10 +96,11 @@ jobs:
       aws_region: ${{ inputs.aws_region || 'ca-central-1' }}
       # assumes the possible events are schedule or workflow_dispatch
       ci_tag: ${{ github.event_name == 'schedule' && 'scheduled' || 'manual' }}
+      snapshot_version: ${{ matrix.snapshot_version }}
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
-      DATASTORE_HOST: ${{ vars.DATASTORE_HOST }}
+      DATASTORE_HOST: ${{ secrets.DATASTORE_HOST }}
       DATASTORE_USERNAME: ${{ secrets.DATASTORE_USERNAME }}
       DATASTORE_PASSWORD: ${{ secrets.DATASTORE_PASSWORD }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

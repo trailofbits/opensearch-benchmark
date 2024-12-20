@@ -131,12 +131,28 @@ data "aws_ec2_managed_prefix_list" "prefix-list" {
   id       = var.prefix_list_id
 }
 
-data "aws_ami" "ubuntu_ami" {
+data "aws_ami" "ubuntu_ami_amd64" {
   most_recent = true
 
   filter {
     name   = "name"
     values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"]
+}
+
+data "aws_ami" "ubuntu_ami_arm64" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-arm64-server-*"]
   }
 
   filter {
@@ -172,7 +188,7 @@ locals {
   # set instance types based on the workload
   # TODO set r*.4xlarge if vectorsearch with 10 million docs
   workload_cluster_instance_map = {
-    vectorsearch = "r5d.2xlarge"
+    vectorsearch = "r6gd.4xlarge"
   }
   workload_loadgen_instance_map = {
     vectorsearch = "c5d.4xlarge"
@@ -181,6 +197,16 @@ locals {
   default_loadgen_instance = "c5d.2xlarge"
   cluster_instance_type    = lookup(local.workload_cluster_instance_map, var.workload, local.default_cluster_instance)
   loadgen_instance_type    = lookup(local.workload_loadgen_instance_map, var.workload, local.default_loadgen_instance)
+
+  workload_cluster_ami_map = {
+    vectorsearch = data.aws_ami.ubuntu_ami_arm64.id
+  }
+  workload_loadgen_ami_map = {
+  }
+  default_cluster_ami = data.aws_ami.ubuntu_ami_amd64.id
+  default_loadgen_ami = data.aws_ami.ubuntu_ami_amd64.id
+  cluster_ami_id      = lookup(local.workload_cluster_ami_map, var.workload, local.default_cluster_ami)
+  loadgen_ami_id      = lookup(local.workload_loadgen_ami_map, var.workload, local.default_loadgen_ami)
 }
 
 module "es-cluster" {
@@ -189,7 +215,8 @@ module "es-cluster" {
   source                = "./modules/elasticsearch"
   cluster_instance_type = local.cluster_instance_type
   loadgen_instance_type = local.loadgen_instance_type
-  ami_id                = data.aws_ami.ubuntu_ami.id
+  cluster_ami_id        = local.cluster_ami_id
+  loadgen_ami_id        = local.loadgen_ami_id
   es_version            = var.es_version
   distribution_version  = var.distribution_version
   ssh_key_name          = aws_key_pair.ssh_key.key_name
@@ -197,6 +224,7 @@ module "es-cluster" {
   ssh_pub_key           = tls_private_key.ssh_key.public_key_openssh
   security_groups       = [aws_security_group.allow_osb.id]
   subnet_id             = aws_subnet.subnet.id
+  subnet_cidr_block     = aws_subnet.subnet.cidr_block
   password              = random_password.cluster-password.result
   prefix_list_id        = data.aws_ec2_managed_prefix_list.prefix-list.id
   benchmark_environment = var.benchmark_environment
@@ -204,6 +232,7 @@ module "es-cluster" {
   datastore_username    = var.datastore_username
   datastore_password    = var.datastore_password
   workload              = var.workload
+  osb_version           = var.osb_version
 
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_version                    = data.external.latest_snapshot_version.result.latest_version
@@ -228,7 +257,8 @@ module "os-cluster" {
   source                = "./modules/opensearch"
   cluster_instance_type = local.cluster_instance_type
   loadgen_instance_type = local.loadgen_instance_type
-  ami_id                = data.aws_ami.ubuntu_ami.id
+  cluster_ami_id        = local.cluster_ami_id
+  loadgen_ami_id        = local.loadgen_ami_id
   os_version            = var.os_version
   distribution_version  = var.distribution_version
   ssh_key_name          = aws_key_pair.ssh_key.key_name
@@ -236,6 +266,7 @@ module "os-cluster" {
   ssh_pub_key           = tls_private_key.ssh_key.public_key_openssh
   security_groups       = [aws_security_group.allow_osb.id]
   subnet_id             = aws_subnet.subnet.id
+  subnet_cidr_block     = aws_subnet.subnet.cidr_block
   password              = random_password.cluster-password.result
   prefix_list_id        = data.aws_ec2_managed_prefix_list.prefix-list.id
   benchmark_environment = var.benchmark_environment
@@ -243,6 +274,7 @@ module "os-cluster" {
   datastore_username    = var.datastore_username
   datastore_password    = var.datastore_password
   workload              = var.workload
+  osb_version           = var.osb_version
 
   s3_bucket_name                      = var.s3_bucket_name
   snapshot_version                    = data.external.latest_snapshot_version.result.latest_version

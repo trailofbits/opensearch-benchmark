@@ -14,10 +14,33 @@ write_files:
     content: ${load_script}
     owner: root:root
     permissions: '0755'
+  - path: /fix_files.sh
+    encoding: gz+b64
+    content: ${fix_files_script}
+    owner: root:root
+    permissions: '0755'
+  - path: /os_files/osb-1.11.0-knn.patch
+    encoding: gz+b64
+    content: |
+      ${osb_knn_patch}
+    owner: root:root
+    permissions: '0644'
+  - path: /os_files/vectorsearch-task.patch
+    encoding: gz+b64
+    content: |
+      ${vectorsearch_task_patch}
+    owner: root:root
+    permissions: '0644'
   - path: /id_rsa
     encoding: gz+b64
     content: ${ssh_private_key}
-    owner: ubuntu:ubuntu
+    owner: root:root
+    permissions: '0600'
+  - path: /utils.sh
+    encoding: gz+b64
+    content: |
+      ${utils_script}
+    owner: root:root
     permissions: '0600'
 
 fs_setup:
@@ -31,6 +54,7 @@ mounts:
   - [ /dev/nvme1n1, /mnt, xfs, "defaults", "0", "0" ]
 
 bootcmd:
+  - timeout 30s sh -c 'while [ ! -e /dev/nvme1n1 ]; do sleep 1; done'
   - swapoff -a
 
 byobu_by_default: enable-user
@@ -49,7 +73,10 @@ runcmd:
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
   - [ mv, /id_rsa, /home/ubuntu/.ssh/id_rsa ]
   - [ chown, ubuntu:ubuntu, /home/ubuntu/.ssh/id_rsa ]
+  - [ mv, /utils.sh, /mnt/utils.sh ]
+  - [ chown, ubuntu:ubuntu, /mnt/utils.sh ]
   - [ sudo, -u, ubuntu, /load_generation.sh, ${os_cluster}, admin, ${os_password}, ${distribution_version}, ${os_version}, "OS", ${instance_type}, ${cluster_instance_id}]
+  - [ sudo, -u, ubuntu, /fix_files.sh ]
   - [sed, -i, '/^env.name =/c\env.name = ${benchmark_environment}', /mnt/.benchmark/benchmark.ini]
   - [sed, -i, '/^datastore\./s/^/# /',  /mnt/.benchmark/benchmark.ini]
   - |

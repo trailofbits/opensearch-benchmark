@@ -1,7 +1,7 @@
 #cloud-config
 
-hostname: os-cluster
-fqdn: os-cluster
+hostname: ${node_name}
+fqdn: ${node_name}
 
 write_files:
   - path: /etc/sysctl.d/99-custom.conf
@@ -16,7 +16,13 @@ write_files:
     permissions: '0755'
   - path: /ssh_pub_key
     content: ${authorized_ssh_key}
-    owner: ubuntu:ubuntu
+    owner: root:root
+    permissions: '0644'
+  - path: /jvm.options
+    encoding: gz+b64
+    content: |
+      ${jvm_options}
+    owner: root:root
     permissions: '0644'
 
 fs_setup:
@@ -30,6 +36,7 @@ mounts:
   - [ /dev/nvme1n1, /mnt, xfs, "defaults", "0", "0" ]
 
 bootcmd:
+  - timeout 30s sh -c 'while [ ! -e /dev/nvme1n1 ]; do sleep 1; done'
   - swapoff -a
   - ufw allow 9200/tcp
   - ufw allow 9300/tcp
@@ -38,4 +45,6 @@ runcmd:
   - [ sysctl, -p, /etc/sysctl.d/99-custom.conf ]
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
   - [ mv, /ssh_pub_key, /home/ubuntu/.ssh/authorized_keys ]
-  - [ sudo, -u, ubuntu, /os_cluster.sh, ${os_password}, ${os_version}, ${os_snapshot_access_key}, ${os_snapshot_secret_key}  ]
+  - [ chown, ubuntu:ubuntu, /home/ubuntu/.ssh/authorized_keys ]
+  - [ mv, /jvm.options, /mnt/jvm.options ]
+  - [ sudo, -u, ubuntu, /os_cluster.sh, ${os_password}, ${os_version}, ${os_arch}, ${os_snapshot_access_key}, ${os_snapshot_secret_key}, "${cluster_ips}", ${node_name}, "${nodes_type}" ]

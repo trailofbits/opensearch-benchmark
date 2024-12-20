@@ -32,11 +32,16 @@ on:
         required: false
         type: string
         default: 8.15.0
+      snapshot_version:
+        description: 'Snapshot version (`new` or `latest`)'
+        required: true
+        type: string
+        default: 'latest'
       os_versions:
         description: 'OpenSearch versions (comma separated)'
         required: false
         type: string
-        default: 2.16.0
+        default: 2.18.0
       aws_region:
         description: 'AWS region'
         required: false
@@ -47,8 +52,8 @@ env:
   WORKLOADS: ${{ inputs.workloads }}
   WORKLOAD_PARAMS: ${{ inputs.workload_params }}
   CLUSTER_TYPES: ${{ inputs.cluster_types }}
-  OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.18.0' }}
-  ES_VERSIONS: ${{ inputs.es_versions || '8.15.0' }}
+  OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.17.1,2.18.0' }}
+  ES_VERSIONS: ${{ inputs.es_versions || '8.15.4' }}
 
 jobs:
   generate-matrix:
@@ -73,7 +78,7 @@ jobs:
     needs: generate-matrix
     strategy:
       fail-fast: false
-      max-parallel: 6
+      max-parallel: 12
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
 
     uses: ./.github/workflows/benchmark.yml
@@ -88,12 +93,13 @@ jobs:
       es_version: ${{ matrix.es_version }}
       os_version: ${{ matrix.os_version }}
       aws_region: ${{ inputs.aws_region || 'ca-central-1' }}
+      snapshot_version: ${{ inputs.snapshot_version }}
       # assumes the only possible event is workflow_dispatch
       ci_tag: 'manual'
     secrets:
       SNAPSHOT_AWS_ACCESS_KEY_ID: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
       SNAPSHOT_AWS_SECRET_ACCESS_KEY: ${{ secrets.SNAPSHOT_AWS_SECRET_ACCESS_KEY }}
-      DATASTORE_HOST: ${{ vars.DATASTORE_HOST }}
+      DATASTORE_HOST: ${{ secrets.DATASTORE_HOST }}
       DATASTORE_USERNAME: ${{ secrets.DATASTORE_USERNAME }}
       DATASTORE_PASSWORD: ${{ secrets.DATASTORE_PASSWORD }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

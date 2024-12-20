@@ -7,12 +7,41 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from report_gen.diff import diff_folders
 from report_gen.download import Source, download, dump_csv_files
 from report_gen.sheets import create_report
 
 from . import __version__
 from .download import read_csv_files
 from .results import create_google_sheet
+
+
+def build_diff_args(diff_parser: argparse.ArgumentParser) -> None:
+    def directory_path_parser(user_input: str) -> Path:
+        if Path(user_input).is_dir():
+            return Path(user_input)
+        msg = f"Not a valid folder path: {user_input}"
+        raise argparse.ArgumentTypeError(msg)
+
+    diff_parser.add_argument(
+        "--a",
+        help="Path to the first benchmark data folder",
+        required=True,
+        type=directory_path_parser,
+    )
+
+    diff_parser.add_argument(
+        "--b",
+        help="Path to the second benchmark data folder",
+        required=True,
+        type=directory_path_parser,
+    )
+
+
+def diff_command(args: argparse.Namespace) -> None:
+    folder_a: Path = args.a
+    folder_b: Path = args.b
+    diff_folders(folder_a, folder_b)
 
 
 def build_download_args(download_parser: argparse.ArgumentParser) -> None:
@@ -53,6 +82,7 @@ def build_download_args(download_parser: argparse.ArgumentParser) -> None:
         "--run-type",
         help="Which benchmark data run type (normally dev or official) to download " "(default: %(default)s)",
         type=str,
+        choices=["official", "dev"],
         default="official",
     )
     download_parser.add_argument(
@@ -229,9 +259,17 @@ def main() -> None:
     )
     build_create_args(create_parser)
 
+    diff_parser = subparser.add_parser(
+        "diff",
+        help="Determines if two downloaded folders of CSV files are unusually different",
+    )
+    build_diff_args(diff_parser)
+
     args = arg_parser.parse_args()
 
     if args.command == "download":
         download_command(args)
     elif args.command == "create":
         create_command(args)
+    elif args.command == "diff":
+        diff_command(args)

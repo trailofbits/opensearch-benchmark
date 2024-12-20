@@ -52,12 +52,12 @@ on:
         description: 'Elasticsearch version'
         required: false
         type: string
-        default: 8.15.0
+        default: 8.15.4
       os_version:
         description: 'OpenSearch version'
         required: false
         type: string
-        default: 2.16.0
+        default: 2.18.0
       aws_region:
         description: 'AWS region'
         required: true
@@ -66,6 +66,11 @@ on:
         description: 'Tag describing CI run'
         required: true
         type: string
+      snapshot_version:
+        description: 'Snapshot version (`new` or `latest`)'
+        required: false
+        type: string
+        default: 'latest'
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -82,9 +87,9 @@ on:
       DATASTORE_PASSWORD:
         required: true
       SLACK_BOT_TOKEN:
-        required: true
+        required: false
       SLACK_CHANNEL_ID:
-        required: true
+        required: false
 
 env:
   TF_VAR_snapshot_user_aws_access_key_id: ${{ secrets.SNAPSHOT_AWS_ACCESS_KEY_ID }}
@@ -102,6 +107,7 @@ env:
   TF_VAR_es_version: ${{ inputs.es_version }}
   TF_VAR_os_version: ${{ inputs.os_version }}
   TF_VAR_distribution_version: ${{ inputs.os_version }}
+  TF_VAR_snapshot_version: ${{ inputs.snapshot_version }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   SSH_OPTIONS: -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=10
@@ -179,6 +185,8 @@ jobs:
   ingest-data:
     needs: prepare_workspace
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
+    # slowest vectorsearch cohere-10m ingests took >1000 minutes
+    timeout-minutes: 1200
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -194,8 +202,26 @@ jobs:
       - name: Terraform setup
         working-directory: infra
         run: terraform init
-      - name: Download artifacts
+      - name: Download SSH key artifact
         uses: actions/download-artifact@v4
+        with:
+          name: ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}
+      - name: Download Terraform state artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-state-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: terraform-state-${{ needs.prepare_workspace.outputs.workspace_name }}
+      - name: Download terraform dir
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-dir-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: terraform-dir-${{ needs.prepare_workspace.outputs.workspace_name }}
+      - name: Download terraform lock file
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}
       - name: Set up SSH keys
         run: |
           cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
@@ -213,32 +239,32 @@ jobs:
         working-directory: infra
         run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
 
-      - name: Ingest data / Create snapshot
+      - name: Restore snapshot
         working-directory: infra
-        if: ${{ inputs.create_snapshot }}
+        id: restoresnapshot
+        if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
+        continue-on-error: true
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
-              -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240  CI_TAG=$CI_TAG bash -x /mnt/ingest.sh;\""
+              -tt ubuntu@$(terraform output -raw load-generation-ip) -- \
+              "set -x; bash -ixc 'bash -ix /mnt/restore_snapshot.sh;'"
+
+      - name: Ingest data / Create snapshot
+        working-directory: infra
+        if: ${{ inputs.create_snapshot || steps.restoresnapshot.outcome == 'failure' }}
+        run: |
+            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              -tt ubuntu@$(terraform output -raw load-generation-ip) -- \
+              "set -x; bash -ixc \"FORCE_INGESTION=$FORCE_INGESTION EXTRA_CLIENT_OPTIONS=timeout:240 CI_TAG=$CI_TAG bash -ix /mnt/ingest.sh;\""
         env:
             FORCE_INGESTION: ${{ inputs.force_snapshot && 'true' || '' }}
             CI_TAG: ${{ inputs.ci_tag }}
-
-      - name: Restore snapshot
-        working-directory: infra
-        if: ${{ inputs.perform_benchmark && !inputs.create_snapshot }}
-        run: |
-            ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
-              -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc 'bash -x /mnt/restore_snapshot.sh;'"
-      
 
   run-osb:
     needs: [prepare_workspace, ingest-data]
     runs-on: [self-hosted, standard, ubuntu-latest-micro]
     if: ${{ inputs.perform_benchmark && needs.ingest-data.result == 'success' }}
     name: run-osb-${{ needs.prepare_workspace.outputs.now_run_group_id }}
-    continue-on-error: true
     # Almost 17h; the longest benchmark (big5 on OS) should take ~15h
     timeout-minutes: 1000
 
@@ -257,8 +283,26 @@ jobs:
       - name: Terraform setup
         working-directory: infra
         run: terraform init
-      - name: Download artifacts
+      - name: Download SSH key artifact
         uses: actions/download-artifact@v4
+        with:
+          name: ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}
+      - name: Download Terraform state artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-state-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: terraform-state-${{ needs.prepare_workspace.outputs.workspace_name }}
+      - name: Download terraform dir
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-dir-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: terraform-dir-${{ needs.prepare_workspace.outputs.workspace_name }}
+      - name: Download terraform lock file
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}
       - name: Set up SSH keys
         run: |
           cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
@@ -277,13 +321,12 @@ jobs:
         run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
 
       - name: Run benchmark
-        continue-on-error: true
         working-directory: infra
         if: ${{ inputs.perform_benchmark }}
         run: |
             ssh -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
-              -t ubuntu@$(terraform output -raw load-generation-ip) -- \
-              "set -x; bash -ixc \"EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -x /mnt/benchmark.sh $BENCHMARK_TYPE;\""
+              -tt ubuntu@$(terraform output -raw load-generation-ip) -- \
+              "EXTRA_CLIENT_OPTIONS=timeout:240 RUN_GROUP_ID=$RUN_GROUP_ID CI_TAG=$CI_TAG bash -i /mnt/benchmark.sh $BENCHMARK_TYPE"
         env:
             BENCHMARK_TYPE: ${{ inputs.benchmark_type }}
             RUN_GROUP_ID: ${{ needs.prepare_workspace.outputs.now_run_group_id }}
@@ -309,8 +352,26 @@ jobs:
       - name: Terraform setup
         working-directory: infra
         run: terraform init
-      - name: Download artifacts
+      - name: Download SSH key artifact
         uses: actions/download-artifact@v4
+        with:
+          name: ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}
+      - name: Download Terraform state artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-state-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: terraform-state-${{ needs.prepare_workspace.outputs.workspace_name }}
+      - name: Download terraform dir
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-dir-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: terraform-dir-${{ needs.prepare_workspace.outputs.workspace_name }}
+      - name: Download terraform lock file
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}
+          path: terraform-lock-${{ needs.prepare_workspace.outputs.workspace_name }}
       - name: Set up SSH keys
         run: |
           cp ssh-key-${{ needs.prepare_workspace.outputs.workspace_name }}/private_key-gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}.pem infra/
@@ -327,6 +388,40 @@ jobs:
       - name: Switch Terraform workspace
         working-directory: infra
         run: terraform workspace select gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
+
+      - name: Download target-cluster log (OS)
+        if: inputs.cluster_type == 'OpenSearch'
+        working-directory: infra
+        continue-on-error: true
+        run: |
+            scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              ubuntu@$(terraform output -raw target-cluster-ip):/mnt/opensearch.log ./target-cluster.log
+      - name: Download target-cluster log (ES)
+        if: inputs.cluster_type == 'ElasticSearch'
+        working-directory: infra
+        continue-on-error: true
+        run: |
+            mkdir target-cluster.log
+            scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              -r ubuntu@$(terraform output -raw target-cluster-ip):/mnt/logs ./target-cluster.log/
+      - name: Download osb log
+        working-directory: infra
+        continue-on-error: true
+        run: |
+            scp -i $(terraform output -raw ssh_private_key_file) $SSH_OPTIONS \
+              ubuntu@$(terraform output -raw load-generation-ip):/mnt/.benchmark/logs/benchmark.log ./osb.log
+      - name: Upload target-cluster log
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: target-cluster-${{ needs.prepare_workspace.outputs.workspace_name }}.log
+          path: ${{ github.workspace }}/infra/target-cluster.log
+      - name: Upload osb log
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: osb-${{ needs.prepare_workspace.outputs.workspace_name }}.log
+          path: ${{ github.workspace }}/infra/osb.log
 
       - name: Destroy benchmark environment
         working-directory: infra
@@ -356,10 +451,21 @@ jobs:
             --region ${TF_VAR_aws_region} \
             --key-name gh-nightly-${{ needs.prepare_workspace.outputs.workspace_name }}
 
+  check_slack_token:
+      runs-on: ubuntu-latest
+      outputs:
+        do_notify_slack: ${{ steps.init.outputs.do_notify_slack }}
+      steps:
+        - name: Environment variables to output
+          id: init
+          run: |
+            # Set the output variable to "true" if the secret exists
+            echo "do_notify_slack=${{ secrets.SLACK_BOT_TOKEN != '' && 'true' || 'false' }}" >> $GITHUB_OUTPUT
+
   notify_slack:
-    needs: [prepare_workspace, run-osb]
+    needs: [prepare_workspace, run-osb, check_slack_token]
     runs-on: ubuntu-latest
-    if: ${{ (failure() || cancelled()) && github.ref == 'refs/heads/main' }}
+    if: needs.check_slack_token.outputs.do_notify_slack == 'true' && (failure() || cancelled()) && github.ref == 'refs/heads/main'
     steps:
       - name: Slack Report
         uses: slackapi/slack-github-action@6c661ce58804a1a20f6dc5fbee7f0381b469e001 #v1.25.0
@@ -383,4 +489,4 @@ jobs:
             _AWS Region:_ ${{ inputs.aws_region }}
             _CI Tag:_ ${{ inputs.ci_tag }}
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+            SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}

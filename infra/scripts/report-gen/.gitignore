@@ -12,4 +12,6 @@ token.json
 
 # Default location for downloaded benchmark results
 download_nightly_*/
+download_dev_*/
 download_versioned/
+credentials.json

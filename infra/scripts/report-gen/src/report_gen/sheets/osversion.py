@@ -17,12 +17,21 @@ from .common import (
 from .format.color import (
     color as format_color,
 )
+from .format.color import (
+    comparison as format_color_comparison,
+)
 from .format.color import get_light_blue, get_light_gray, get_light_yellow
+from .format.color import (
+    relative_difference as format_color_relative_difference,
+)
 from .format.font import (
     bold as format_font_bold,
 )
 from .format.merge import (
     merge as format_merge,
+)
+from .format.number import (
+    format_float as format_number_float,
 )
 
 logger = logging.getLogger(__name__)
@@ -54,13 +63,13 @@ class OSVersion:
         body = {"requests": requests}
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body).execute()
 
-    def create_header(self, os_version: str, es_version: str, workload_str: str) -> list[dict]:
+    def create_header(self, os_version: str, es_version: str, workload_str: str) -> list[dict]:  # noqa: PLR0915
         """Fill in header rows & column."""
         requests: list[dict] = []
 
         # Fill in first row
         rows: list[list[str]] = []
-        rows.append(["Results"] + [""] * 4)
+        rows.append(["Results"] + [""] * 5)
         request_properties: dict = {
             "majorDimension": "ROWS",
             "values": rows,
@@ -94,7 +103,7 @@ class OSVersion:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"{self.sheet_name}!F1",
+                range=f"{self.sheet_name}!G1",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -118,7 +127,7 @@ class OSVersion:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"{self.sheet_name}!G1",
+                range=f"{self.sheet_name}!H1",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -142,7 +151,7 @@ class OSVersion:
             .values()
             .append(
                 spreadsheetId=self.spreadsheet_id,
-                range=f"{self.sheet_name}!H1",
+                range=f"{self.sheet_name}!I1",
                 valueInputOption="USER_ENTERED",
                 body=request_properties,
             )
@@ -155,7 +164,9 @@ class OSVersion:
 
         # Add second row
         rows = []
-        rows.append(["Operation", f"ES {es_version} P90 ST", "RSD", f"OS {os_version} P90 ST", "RSD"])
+        rows.append(
+            ["Category", "Operation", f"ES {es_version} P90 ST (AVG)", "RSD", f"OS {os_version} P90 ST (AVG)", "RSD"]
+        )
         request_properties: dict = {
             "majorDimension": "ROWS",
             "values": rows,
@@ -190,7 +201,7 @@ class OSVersion:
             rows = []
             rows.append([f"{category}"])
             rows.extend([[""]] * (len(operations) - 1))
-            request_properties2: dict = {
+            request_properties = {
                 "majorDimension": "ROWS",
                 "values": rows,
             }
@@ -201,7 +212,7 @@ class OSVersion:
                     spreadsheetId=self.spreadsheet_id,
                     range=f"{self.sheet_name}!A{offset}",
                     valueInputOption="USER_ENTERED",
-                    body=request_properties2,
+                    body=request_properties,
                 )
                 .execute()
             )
@@ -210,6 +221,25 @@ class OSVersion:
             # Format
             requests.extend(self.format_headers_merge([updated_range], get_light_gray()))
 
+            rows = []
+            for operation in operations:
+                rows.append([f"{operation}"])
+            request_properties = {
+                "majorDimension": "ROWS",
+                "values": rows,
+            }
+            result = (
+                self.service.spreadsheets()
+                .values()
+                .append(
+                    spreadsheetId=self.spreadsheet_id,
+                    range=f"{self.sheet_name}!B{offset}",
+                    valueInputOption="USER_ENTERED",
+                    body=request_properties,
+                )
+                .execute()
+            )
+
             offset += len(operations)
 
         return requests
@@ -217,14 +247,110 @@ class OSVersion:
     def fill(self, os_version: str, es_version: str, workload_str: str) -> list[dict]:
         """Fill in OS Version sheet with data."""
         # Create header
-        return self.create_header(os_version, es_version, workload_str)
+        requests = self.create_header(os_version, es_version, workload_str)
+
+        spec_list: list[dict] = get_category_operation_map()
+        for spec in spec_list:
+            if spec["workload"] == workload_str:
+                break
+
+        logger.info(f"processing {os_version} and {es_version}")
+
+        rows: list[list[str]] = []
+
+        results_sheet = "Results"
+
+        # Match workload name, OS version, and ES version
+        base = (
+            f'{results_sheet}!$A$2:$A="{workload_str}",'
+            f'{results_sheet}!$F$2:$F="{os_version}",'
+            f'{results_sheet}!$O$2:$O="{es_version}",'
+        )
+
+        def get_base_operation(results_sheet: str, category_cell: str, operation_cell: str) -> str:
+            """Create base operation string."""
+            return base + f"{results_sheet}!$B$2:$B={category_cell}," + f"{results_sheet}!$C$2:$C={operation_cell}"
+
+        # For each category and operation
+        category_index = 3
+        operation_index = 3
+        for category, operations in spec["categories"].items():
+            logger.info(f"Processing category {category}")
+
+            for operation in operations:
+                logger.info(f"Processing operation {operation}")
+
+                category_cell = f"$A{category_index}"
+                operation_cell = f"$B{operation_index}"
+                base_operation = get_base_operation(results_sheet, category_cell, operation_cell)
+
+                es_st_value = f"=FILTER({results_sheet}!$T$2:$T,{base_operation})"
+                es_rsd_value = f"=FILTER({results_sheet}!$V$2:$V,{base_operation})"
+                os_st_value = f"=FILTER({results_sheet}!$K$2:$K,{base_operation})"
+                os_rsd_value = f"=FILTER({results_sheet}!$M$2:$M,{base_operation})"
+
+                es_st_cell = f"$C{operation_index}"
+                os_st_cell = f"$E{operation_index}"
+                relative_difference = f"=({es_st_cell}-{os_st_cell})/AVERAGE({es_st_cell},{os_st_cell})"
+                ratio = f"={es_st_cell}/{os_st_cell}"
+
+                row: list[str] = [
+                    es_st_value,
+                    es_rsd_value,
+                    os_st_value,
+                    os_rsd_value,
+                    relative_difference,
+                    ratio,
+                    "",
+                ]
+                rows.append(row)
+
+                operation_index += 1
+            category_index += len(operations)
+
+        # Update table to Summary sheet
+        request_properties: dict = {
+            "majorDimension": "ROWS",
+            "values": rows,
+        }
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .append(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"{self.sheet_name}!$C3",
+                valueInputOption="USER_ENTERED",
+                body=request_properties,
+            )
+            .execute()
+        )
+        updated_range = result["updates"]["updatedRange"]
+
+        # Format float numbers
+        range_dict = convert_range_to_dict(updated_range)
+        range_dict["sheetId"] = self.sheet_id
+        requests.append(format_number_float(range_dict))
+
+        # Format Relative Difference colors
+        for cells in ["G2:G"]:
+            range_dict = convert_range_to_dict(f"{self.sheet_name}!{cells}")
+            range_dict["sheetId"] = self.sheet_id
+            requests.extend(format_color_relative_difference(range_dict))
+
+        # Format ES/OS colors
+        for cells in ["H2:H"]:
+            range_dict = convert_range_to_dict(f"{self.sheet_name}!{cells}")
+            range_dict["sheetId"] = self.sheet_id
+            requests.extend(format_color_comparison(range_dict))
+
+        return requests
 
     def get(self) -> bool:
         """Retrieve data to fill in OS Version sheets."""
         workload_str = "big5"
-        es_version = "8.15.0"
+        es_version = "8.15.4"
         # NOTE(Evan): These correspond to the OS version sheet names in _create_spreadsheet() in __init__.py
-        os_versions = ["2.16.0", "2.17.0", "2.18.0"]
+        os_versions = ["2.16.0", "2.17.1", "2.18.0"]
 
         # Retrieve workload to process and compare
         workloads: dict[str, dict[str, list[str]]] = get_workloads(self.service, self.spreadsheet_id)
