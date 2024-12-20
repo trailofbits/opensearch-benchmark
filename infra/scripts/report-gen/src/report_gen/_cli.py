@@ -8,12 +8,10 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from report_gen.diff import diff_folders
-from report_gen.download import Source, download, dump_csv_files
-from report_gen.sheets import create_report
+from report_gen.download import Source, download, dump_csv_files, read_csv_files
+from report_gen.results import create_google_sheet
 
 from . import __version__
-from .download import read_csv_files
-from .results import create_google_sheet
 
 
 def build_diff_args(diff_parser: argparse.ArgumentParser) -> None:
@@ -229,18 +227,13 @@ def create_command(args: argparse.Namespace) -> bool:
             print(f"token path '{credential_path}' is not a file")
             return False
 
-    return create_report(benchmark_data, token_path, credential_path) is not None
+    bench_results = read_csv_files(benchmark_data)
+    create_google_sheet(bench_results, token_path, credential_path)
+    return True
 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
-
-    bench_results = read_csv_files(Path("./download_nightly_2024-12-07_2024-12-14"))
-
-    cred = Path("/Users/brad/Code/opensearch-benchmark/local/credentials.json")
-    create_google_sheet(bench_results, Path("./token.json"), cred)
-
-    return
 
     arg_parser = argparse.ArgumentParser(description="Tool to help download benchmark data and generate reports")
     subparser = arg_parser.add_subparsers(dest="command", help="Available Commands")
