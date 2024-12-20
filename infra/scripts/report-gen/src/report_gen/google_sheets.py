@@ -1,12 +1,16 @@
 """API for interacting with Google Sheets."""
 
 import logging
+import time
+from collections.abc import Callable
+from functools import wraps
 from pathlib import Path
-from typing import cast
+from typing import Any, Concatenate, ParamSpec, TypeVar, cast
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import Resource, build
+from googleapiclient.errors import HttpError
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +56,34 @@ def authenticate_from_token(token_file_path: Path) -> Credentials | None:
     return creds
 
 
+# T is the return type of the decorated function
+# P is a ParamSpec that captures all parameter types
+T = TypeVar("T")
+P = ParamSpec("P")
+TOO_MANY_REQUESTS = 429
+
+
+def rate_limit(func: Callable[Concatenate[Any, P], T]) -> Callable[Concatenate[Any, P], T]:
+    """Catches 429 (Too Many Requests) errors and retries after a minute."""
+
+    @wraps(func)
+    def decorator(self: Any, *args: P.args, **kwargs: P.kwargs) -> T:
+        max_retries = 5
+        delay = 61
+
+        for retry in range(max_retries):
+            try:
+                return func(self, *args, **kwargs)
+            except HttpError as err:
+                if err.resp.status != TOO_MANY_REQUESTS or retry == max_retries - 1:
+                    raise
+                logger.info(f"Rate Limit Exceeded. Retrying in {delay} seconds.")
+                time.sleep(delay)
+        raise RuntimeError
+
+    return decorator
+
+
 class SpreadSheetBuilder:
     """Helper for building a google spreadsheet."""
 
@@ -82,6 +114,7 @@ class SpreadSheetBuilder:
         self._create_sheet(sheet_name)
         return SheetBuilder(sheet_name, self)
 
+    @rate_limit
     def _create_sheet(self, sheet_name: str) -> None:
         """Add a sheet to the spreadsheet."""
         self.service.spreadsheets().batchUpdate(
@@ -89,6 +122,7 @@ class SpreadSheetBuilder:
         ).execute()
 
     @classmethod
+    @rate_limit
     def _create_spreadsheet(cls, service: Resource, spreadsheet_name: str) -> str:
         """Create a new spreadsheet and return its spreadsheetId."""
         spreadsheet: dict = (
@@ -127,6 +161,7 @@ class SheetBuilder:
         self.sheet_name = sheet_name
         self.parent = parent
 
+    @rate_limit
     def insert_rows(self, sheet_range: str, rows: list[list[str]]) -> None:
         """Insert rows at the position `sheet_range`.
 
@@ -143,6 +178,7 @@ class SheetBuilder:
             body=request_properties,
         ).execute()
 
+    @rate_limit
     def get_sheet_id(self) -> int | None:
         """Return the sheet ID for the given sheet name."""
         # Get the spreadsheet metadata to find the sheetId
@@ -162,6 +198,7 @@ class SheetBuilder:
             raise RuntimeError(f"missing sheet '{self.sheet_name}'")  # noqa: TRY003, EM102
         return FormatBuilder(self, self.sheet_name, sheet_id)
 
+    @rate_limit
     def apply_format(self, fmt: "FormatBuilder") -> None:
         """Apply the supplied format rules to this spreadsheet."""
         self.service.spreadsheets().batchUpdate(
