@@ -3,13 +3,24 @@
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from itertools import product
+from itertools import cycle, product
 from pathlib import Path
 from statistics import mean, median, stdev, variance
 from typing import TYPE_CHECKING
 
+from packaging import version
+
 from .download import BenchmarkResult
-from .google_sheets import LIGHT_BLUE, LIGHT_GRAY, LIGHT_YELLOW, SheetBuilder, SpreadSheetBuilder
+from .google_sheets import (
+    LIGHT_BLUE,
+    LIGHT_GRAY,
+    LIGHT_GREEN,
+    LIGHT_ORANGE,
+    LIGHT_PURPLE,
+    LIGHT_YELLOW,
+    SheetBuilder,
+    SpreadSheetBuilder,
+)
 from .sheets.common import get_category, get_category_operation_map
 
 if TYPE_CHECKING:
@@ -733,6 +744,194 @@ class StatsCompareTable:
         self.slower = StatsCompareTable.Row(os_slower)
 
 
+def dump_summary(raw: list[BenchmarkResult], results: list[Result], sheet: SheetBuilder) -> None:  # noqa: PLR0915
+    """Fill the provided sheet with summary of Results."""
+    # # # # # # # # # # # #
+    #   Engine Table      #
+    # # # # # # # # # # # #
+    engine_table = EngineTable(raw)
+    fmt = sheet.format_builder()
+    engine_table_rows = [["Engine", "Version", "Workload", "Number of Tests"]] + [
+        [
+            row.engine,
+            row.version,
+            row.workload,
+            str(row.test_count),
+        ]
+        for row in sorted(engine_table.rows, key=lambda r: (r.workload, r.version, r.engine))
+    ]
+    sheet.insert_rows("A1", engine_table_rows)
+    # format header
+    fmt.color("A1:D1", LIGHT_BLUE)
+    fmt.bold_font("A1:D1")
+    # color each set of workloads
+    colors = cycle([LIGHT_ORANGE, LIGHT_GREEN, LIGHT_PURPLE, LIGHT_YELLOW])
+    workload_count: dict[str, int] = defaultdict(int)
+    for row in engine_table.rows:
+        workload_count[row.workload] += 1
+    offset = 2  # skip header row
+    for workload in sorted(workload_count):
+        count = workload_count[workload]
+        fmt.color(f"A{offset}:D{offset+count-1}", next(colors))
+        offset += count
+
+    latest_os = str(max([r.os_version for r in results], key=version.parse))
+    latest_es = str(max([r.es_version for r in results], key=version.parse))
+    logger.info(f"Comparing latest versions: OS {latest_os} - ES {latest_es}")
+
+    # # # # # # # # # # # #
+    #   All Categories    #
+    # # # # # # # # # # # #
+    fast = AllCategoriesFaster(latest_os, latest_es, results)
+    fast_rows = (
+        [
+            [f"All Categories: OS {latest_os} is faster than ES {latest_es}"],
+            ["Category", "Count", "Total", "Percentage (%)"],
+        ]
+        + [
+            [
+                row.category,
+                str(row.count),
+                str(row.total),
+                str(row.percentage),
+            ]
+            for row in sorted(fast.rows, key=lambda r: r.category)
+        ]
+        + [["Total", str(fast.total_count), str(fast.total_total), str(fast.total_percentage)]]
+    )
+    fast_start_row = len(engine_table_rows) + 2
+    sheet.insert_rows(f"A{fast_start_row}", fast_rows)
+    # Style Header
+    fast_header_range = f"A{fast_start_row}:D{fast_start_row}"
+    fmt.bold_font(fast_header_range)
+    fmt.merge(fast_header_range)
+    fmt.color(fast_header_range, LIGHT_BLUE)
+    # Style percentage row
+    fmt.style_float(f"D{fast_start_row+2}:D{fast_start_row+len(fast_rows)}")
+
+    # # # # # # # # # # # #
+    #   Stats Compare     #
+    # # # # # # # # # # # #
+    stats = StatsCompareTable(latest_os, latest_es, results)
+    stats_rows = [
+        [f"Statistics comparing: OS {latest_os} and ES {latest_es}"],
+        ["ES/OS", "Average", "Median", "Max", "Min", "Stdev", "Variance"],
+        [
+            "When OS is faster\n(OS service_time is smaller)",
+            str(stats.faster.avg),
+            str(stats.faster.median),
+            str(stats.faster.mmax),
+            str(stats.faster.mmin),
+            str(stats.faster.stdev),
+            str(stats.faster.variance),
+        ],
+        [
+            "When OS is slower\n(OS service_time is larger)",
+            str(stats.slower.avg),
+            str(stats.slower.median),
+            str(stats.slower.mmax),
+            str(stats.slower.mmin),
+            str(stats.slower.stdev),
+            str(stats.slower.variance),
+        ],
+    ]
+    stat_start_row = fast_start_row + len(fast_rows) + 1
+    sheet.insert_rows(f"A{stat_start_row}", stats_rows)
+    # Style Header
+    stat_header_range = f"A{stat_start_row}:G{stat_start_row}"
+    fmt.bold_font(stat_header_range)
+    fmt.merge(stat_header_range)
+    fmt.color(stat_header_range, LIGHT_BLUE)
+    # Style data as float
+    fmt.style_float(f"B{stat_start_row+2}:G{stat_start_row+3}")
+
+    # # # # # # # # # # # #
+    #  Workload Summaries #
+    # # # # # # # # # # # #
+
+    offset = 1
+    for workload in sorted({r.workload for r in results}):
+        logger.info(f"Summarizing {workload}")
+        workload_results = [
+            r for r in results if r.workload == workload and r.os_version == latest_os and r.es_version == latest_es
+        ]
+
+        # Total Tasks table
+        total_tasks = len(workload_results)
+        fast_bar = 2
+        slow_bar = 0.5
+        faster_than_es = len([r for r in workload_results if r.comparison > 1])
+        fast_outliers = len([r for r in workload_results if r.comparison > fast_bar])
+        slow_outliers = len([r for r in workload_results if r.comparison < slow_bar])
+        sheet.insert_rows(
+            f"I{offset}",
+            [
+                [f"{workload}", f"ES {latest_es}"],
+                ["Total Tasks", str(total_tasks)],
+                ["Tasks faster than ES", str(faster_than_es)],
+                [f"Fast Outliers (>{fast_bar})", str(fast_outliers)],
+                [f"Slow Outliers (<{slow_bar})", str(slow_outliers)],
+            ],
+        )
+        fmt.bold_font(f"I{offset}:J{offset}")
+        fmt.color(f"I{offset}:J{offset}", LIGHT_BLUE)
+        offset += 6
+
+        categories = sorted({r.category for r in workload_results})
+
+        faster_ops: dict[str, dict[str, float]] = defaultdict(dict)
+        slower_ops: dict[str, dict[str, float]] = defaultdict(dict)
+        total_ops: dict[str, int] = defaultdict(int)
+        for category in categories:
+            for result in workload_results:
+                if result.category != category:
+                    continue
+                total_ops[result.category] += 1
+                if result.comparison > 1:
+                    faster_ops[category][result.operation] = result.comparison
+                elif result.comparison < 1:
+                    slower_ops[category][result.operation] = result.comparison
+
+        # Workload Categories Table
+        faster_categories_rows = [
+            [f"{workload}", f"Categories: OS {latest_os} is faster"],
+            ["Category", "Count", "Total"],
+        ] + [[c, str(len(faster_ops[c])), str(total_ops[c])] for c in categories]
+        sheet.insert_rows(f"I{offset}", faster_categories_rows)
+        fmt.bold_font(f"I{offset}:K{offset}")
+        fmt.color(f"I{offset}:K{offset}", LIGHT_BLUE)
+        offset += 2 + len(faster_categories_rows)
+
+        # Workload Faster Operations Table
+        faster_op_rows = [
+            [f"{workload}", f"Operations: OS {latest_os} is Faster"],
+            ["Category", "Operation", "ES/OS"],
+            *sorted([[cat, op, str(val)] for cat, ops in faster_ops.items() for op, val in ops.items()]),
+        ]
+        sheet.insert_rows(f"I{offset}", faster_op_rows)
+        fmt.bold_font(f"I{offset}:K{offset}")
+        fmt.color(f"I{offset}:K{offset}", LIGHT_BLUE)
+        fmt.style_float(f"K{offset+2}:K{offset+len(faster_op_rows)}")
+        offset += 2 + len(faster_op_rows)
+
+        # Workload Slower Operations Table
+        slower_op_rows = [
+            [f"{workload}", f"Operations: OS {latest_os} if Slower"],
+            ["Category", "Operation", "ES/OS"],
+            *sorted([[cat, op, str(val)] for cat, ops in slower_ops.items() for op, val in ops.items()]),
+        ]
+        sheet.insert_rows(f"I{offset}", slower_op_rows)
+        fmt.bold_font(f"I{offset}:K{offset}")
+        fmt.color(f"I{offset}:K{offset}", LIGHT_BLUE)
+        fmt.style_float(f"K{offset+2}:K{offset+len(slower_op_rows)}")
+        offset += 2 + len(slower_op_rows)
+
+        # Buffer between workloads
+        offset += 4
+
+    fmt.apply()
+
+
 def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Path | None = None) -> None:
     """Export data to a google sheet."""
     os_versions = {r.EngineVersion for r in raw if r.Engine == "OS"}
@@ -759,28 +958,15 @@ def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Pa
     logger.info("Exporting individual comparison tables")
     for table in sorted(version_tables, key=lambda t: t.comparison.os_version):
         os_sheet_name = f"OS {table.comparison.os_version} - {table.workload}"
+        logger.info(f"\t{os_sheet_name}")
         os_sheet = spreadsheet.create_sheet(os_sheet_name)
         dump_version_compare_table(table, os_sheet)
+
+    logger.info("Exporting Summary Sheet")
+    dump_summary(raw, results, spreadsheet.create_sheet("Summary"))
 
     logger.info("Exporting categories")
     dump_categories(spreadsheet.create_sheet("Categories"))
 
     logger.info("Exporting raw")
     dump_raw(raw, spreadsheet.create_sheet("raw"))
-
-
-def stats_comparing(results: list[Result]) -> None:
-    """Rough example of what computing the  Statistics comparing summary table could look like."""
-    os_faster = [row.comparison for row in results if row.comparison > 1]
-    os_slower = [row.comparison for row in results if row.comparison < 1]
-
-    def stats(rows: list[float]) -> None:
-        """Just an example of computing additional stats."""
-        _a = f"Average: {mean(rows)}"
-        _b = f"Median: {median(rows)}"
-        _c = f"Max: {max(rows)}"
-        _d = f"StdDev: {stdev(rows)}"
-        _e = f"Variance: {variance(rows)}"
-
-    stats(os_faster)
-    stats(os_slower)
