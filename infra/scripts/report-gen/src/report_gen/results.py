@@ -6,10 +6,14 @@ from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
 from statistics import mean, median, stdev, variance
+from typing import TYPE_CHECKING
 
 from .download import BenchmarkResult
 from .google_sheets import LIGHT_BLUE, LIGHT_GRAY, LIGHT_YELLOW, SheetBuilder, SpreadSheetBuilder
 from .sheets.common import get_category, get_category_operation_map
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -574,21 +578,63 @@ class EngineTable:
 
     def __init__(self, results: list[BenchmarkResult]) -> None:
         # Sort the results by Engine/Version/Workload to be counted
-        filtered: dict[tuple[str, str, str], list[BenchmarkResult]] = defaultdict(list)
-
+        filtered: dict[tuple[str, str, str], set[datetime]] = defaultdict(set)
         for r in results:
             key = (r.Engine, r.EngineVersion, r.Workload)
-            filtered[key].append(r)
+            filtered[key].add(r.RunGroup)
 
         self.rows = [
             EngineTable.Row(
-                engine=grouped_results[0].Engine,
-                version=grouped_results[0].EngineVersion,
-                workload=grouped_results[0].Workload,
+                engine=engine,
+                version=version,
+                workload=workload,
                 test_count=len(grouped_results),
             )
-            for grouped_results in filtered.values()
+            for (engine, version, workload), grouped_results in filtered.items()
         ]
+
+
+class AllCategoriesFaster:
+    """All Categories Table."""
+
+    @dataclass
+    class Row:
+        """Row in All Categories Table."""
+
+        category: str
+        count: int
+        total: int
+        percentage: float
+
+    os_version: str
+    es_version: str
+
+    total_count: int
+    total_total: int
+    total_percentage: float
+
+    rows: list[Row]
+
+    def __init__(self, os_version: str, es_version: str, results: list[Result]) -> None:
+        by_category = defaultdict(list)
+        for row in results:
+            if row.os_version != os_version or row.es_version != es_version:
+                continue
+            by_category[row.category].append(row)
+
+        rows = []
+        for category, data in by_category.items():
+            count = len([d for d in data if d.ratio > 1])
+            total = len(data)
+            percentage = (count / total) * 100
+            rows.append(AllCategoriesFaster.Row(category=category, count=count, total=total, percentage=percentage))
+
+        self.es_version = es_version
+        self.os_version = os_version
+        self.total_count = sum([r.count for r in rows])
+        self.total_total = sum([r.total for r in rows])
+        self.total_percentage = (self.total_count / self.total_total) * 100
+        self.rows = rows
 
 
 def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Path | None = None) -> None:
