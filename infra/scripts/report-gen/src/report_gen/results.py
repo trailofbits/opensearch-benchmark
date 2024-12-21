@@ -949,9 +949,6 @@ def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Pa
 
     spreadsheet = SpreadSheetBuilder("Report", token, credentials)
 
-    logger.info("Exporting results table")
-    dump_results(results, spreadsheet.create_sheet("Results"))
-
     logger.info("Exporting Overall Spread table")
     dump_overall(overall, spreadsheet.create_sheet(f"Overall Spread - {workload}"))
 
@@ -965,8 +962,14 @@ def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Pa
     logger.info("Exporting Summary Sheet")
     dump_summary(raw, results, spreadsheet.create_sheet("Summary"))
 
+    logger.info("Exporting results table")
+    dump_results(results, spreadsheet.create_sheet("Results"))
+
     logger.info("Exporting categories")
     dump_categories(spreadsheet.create_sheet("Categories"))
 
     logger.info("Exporting raw")
     dump_raw(raw, spreadsheet.create_sheet("raw"))
+
+    # Try deleting the initial empty sheet Google creates
+    spreadsheet.delete_sheet("Sheet1")

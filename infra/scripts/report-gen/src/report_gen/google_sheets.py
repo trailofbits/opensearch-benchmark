@@ -139,6 +139,32 @@ class SpreadSheetBuilder:
         )
         return cast(str, spreadsheet.get("spreadsheetId"))
 
+    @rate_limit
+    def get_sheet_id(self, sheet_name: str) -> int | None:
+        """Return the sheet ID for the given sheet name."""
+        # Get the spreadsheet metadata to find the sheetId
+        spreadsheet = self.service.spreadsheets().get(spreadsheetId=self.spreadsheet_id).execute()
+
+        # Find the sheetId by sheet name
+        for sheet in spreadsheet["sheets"]:
+            if sheet["properties"]["title"] == sheet_name:
+                return int(sheet["properties"]["sheetId"])
+
+        return None
+
+    @rate_limit
+    def delete_sheet(self, name: str) -> bool:
+        """Delete the named sheet if it exists. Returns true if a sheet was deleted."""
+        sheet_id = self.get_sheet_id(name)
+        if sheet_id is None:
+            return False
+
+        self.service.spreadsheets().batchUpdate(
+            spreadsheetId=self.spreadsheet_id, body={"requests": [{"deleteSheet": {"sheetId": sheet_id}}]}
+        ).execute()
+
+        return True
+
 
 class SheetBuilder:
     """Helper for building a google sheet."""
@@ -180,16 +206,8 @@ class SheetBuilder:
 
     @rate_limit
     def get_sheet_id(self) -> int | None:
-        """Return the sheet ID for the given sheet name."""
-        # Get the spreadsheet metadata to find the sheetId
-        spreadsheet = self.service.spreadsheets().get(spreadsheetId=self.spreadsheet_id).execute()
-
-        # Find the sheetId by sheet name
-        for sheet in spreadsheet["sheets"]:
-            if sheet["properties"]["title"] == self.sheet_name:
-                return int(sheet["properties"]["sheetId"])
-
-        return None
+        """Return the sheet ID for this sheet."""
+        return self.parent.get_sheet_id(self.sheet_name)
 
     def format_builder(self) -> "FormatBuilder":
         """Create a `FormatBuilder` for the specified sheet, used to apply formatting rules."""
