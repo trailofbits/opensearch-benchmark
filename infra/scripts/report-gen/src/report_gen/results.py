@@ -258,14 +258,14 @@ def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
             str(row.os_rsd_50),
             str(row.os_rsd_90),
             "",
-            row.os_version,
+            row.es_version,
             row.es_subtype,
-            str(row.os_std_50),
-            str(row.os_std_90),
-            str(row.os_avg_50),
-            str(row.os_avg_90),
-            str(row.os_rsd_50),
-            str(row.os_rsd_90),
+            str(row.es_std_50),
+            str(row.es_std_90),
+            str(row.es_avg_50),
+            str(row.es_avg_90),
+            str(row.es_rsd_50),
+            str(row.es_rsd_90),
         ]
         for row in results
     ]
@@ -277,7 +277,7 @@ def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
     fmt.bold_font("A1:V1")
     fmt.freeze_row(1)
     fmt.freeze_col(4)
-    for r in [f"D2:D{nrows}", f"G2:G{nrows}", f"O2:T{nrows}"]:
+    for r in [f"D2:D{nrows}", f"H2:M{nrows}", f"Q2:V{nrows}"]:
         fmt.style_float(r)
     fmt.color_comparison(f"D2:D{nrows}")
     fmt.rsd(f"L2:M{nrows}")

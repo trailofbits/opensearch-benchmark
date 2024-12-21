@@ -301,7 +301,7 @@ class FormatBuilder:
             {
                 "repeatCell": {
                     "range": self.range_dict(range_str),
-                    "cell": {"userEnteredFormat": {"numberFormat": {"type": "NUMBER", "pattern": "#,##0.000"}}},
+                    "cell": {"userEnteredFormat": {"numberFormat": {"type": "NUMBER", "pattern": "#,##0.0##"}}},
                     "fields": "userEnteredFormat.numberFormat",
                 }
             }
