@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from packaging import version
 
+from .common import get_category, get_category_operation_map
 from .download import BenchmarkResult
 from .google_sheets import (
     LIGHT_BLUE,
@@ -21,7 +22,6 @@ from .google_sheets import (
     SheetBuilder,
     SpreadSheetBuilder,
 )
-from .sheets.common import get_category, get_category_operation_map
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -973,3 +973,7 @@ def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Pa
 
     # Try deleting the initial empty sheet Google creates
     spreadsheet.delete_sheet("Sheet1")
+
+    # Output spreadsheet URL for ease
+    report_url = f"https://docs.google.com/spreadsheets/d/{spreadsheet.spreadsheet_id}"
+    logger.info(f"Report URL: {report_url}")
