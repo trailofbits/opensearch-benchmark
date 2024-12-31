@@ -1,14 +1,16 @@
 # Report Generator
 
 ## Setup
+
 Install python >= 3.13 and [uv](https://docs.astral.sh/uv/).
 
 You will also need a Google API credentials file. Follow the steps below:
+
   1. [Create a project](https://developers.google.com/workspace/guides/create-project)
-  2. [Enable APIs](https://developers.google.com/workspace/guides/enable-apis). Search for and enable the Google Sheets API
-  3.  [Configure OAuth Consent](https://developers.google.com/workspace/guides/configure-oauth-consent). Select "Internal" for the user type.
-  4. [Create OAth client ID credentials](https://developers.google.com/workspace/guides/create-credentials#oauth-client-id).
-  5. Download the created credentials file.
+  1. [Enable APIs](https://developers.google.com/workspace/guides/enable-apis). Search for and enable the Google Sheets API
+  1. [Configure OAuth Consent](https://developers.google.com/workspace/guides/configure-oauth-consent). Select "Internal" for the user type.
+  1. [Create OAth client ID credentials](https://developers.google.com/workspace/guides/create-credentials#oauth-client-id).
+  1. Download the created credentials file.
 
 Lastly you will need the URL and password for the shared data store.
 
@@ -41,13 +43,12 @@ Valid sources are `nightly`, `manual` and `dev`. The type of data downloaded is 
 The script `./create_report.sh` will create and upload a google sheet report.
 
 ```shell
-./create_report.sh download_nightly_2024-12-01-2024-12-08/ /path/to/credentials.json
+./create_report.sh download_nightly_2024-12-01_2024-12-08/ /path/to/credentials.json
 ```
 
 Check your Google Drive home folder for the generated spreadsheet, or click the link outputted to the command line.
 
 If you see `Authentication has failed`, just delete `token.json` and run the script again.
-
 
 ## Generate ES Version Report
 
@@ -75,9 +76,9 @@ To run the test, the environment variable `GOOGLE_CRED` should contain the path 
 
 The snapshot test only checks that existing behavior is not broken. When modifying the generated sheet you should:
 
-    1. Modify the test to exclude the modifications.
-    2. Pass all other tests, ensuring no existing features were broken.
-    3. Verify the new features are working correctly.
-    4. Update the data and snapshots in `test/data` with the new ground truth.
+  1. Modify the test to exclude the modifications.
+  1. Pass all other tests, ensuring no existing features were broken.
+  1. Verify the new features are working correctly.
+  1. Update the data and snapshots in `test/data` with the new ground truth.
 
 Ground truth csv's can be downloaded from google drive directly (File -> download -> csv).
