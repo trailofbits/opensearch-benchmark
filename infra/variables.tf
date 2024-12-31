@@ -10,6 +10,13 @@ variable "aws_subnet_zone" {
 
 variable "prefix_list_id" {
   description = "ID of prefix list resource to add the load generation IP to"
+  default     = ""
+  type        = string
+}
+
+variable "prefix_list_region" {
+  description = "Region of prefix list resource"
+  default     = "us-east-1"
   type        = string
 }
 

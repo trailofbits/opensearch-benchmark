@@ -86,6 +86,10 @@ on:
         required: true
       DATASTORE_PASSWORD:
         required: true
+      PREFIX_LIST_ID:
+        required: false
+      PREFIX_LIST_REGION:
+        required: false
       SLACK_BOT_TOKEN:
         required: false
       SLACK_CHANNEL_ID:
@@ -100,7 +104,8 @@ env:
   TF_VAR_aws_region: ${{ inputs.aws_region }}
   TF_VAR_aws_subnet_zone: ${{ inputs.aws_region }}a
   TF_VAR_target_cluster_type: ${{ inputs.cluster_type}}
-  TF_VAR_prefix_list_id: pl-06f77c0b59dbf70fe
+  TF_VAR_prefix_list_id: ${{ secrets.PREFIX_LIST_ID || '' }} # Make obvious that '' is an allowed value
+  TF_VAR_prefix_list_region: ${{ secrets.PREFIX_LIST_REGION || 'us-east-2' }}
   TF_VAR_workload: ${{ inputs.workload}}
   TF_VAR_workload_params: ${{ inputs.workload_params }}
   TF_VAR_test_procedure: ${{ inputs.test_procedure }}

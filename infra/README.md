@@ -10,7 +10,7 @@
 - Configure `terraform.tfvars`. Common variables to configure are:
   - `aws_region`, `aws_subnet_zone`: Specify where AWS infrastructure is deployed
   - `target_cluster_type`: Cluster to benchmark, either OpenSearch or ElasticSearch
-  - `prefix_list_id`: See Prefix List under Resource Setup.
+  - `prefix_list_id`, `prefix_list_region`: See Prefix List under Resource Setup.
   - `snapshot_user_aws_access_key_id`: See Snapshot S3 Bucket under Resource Setup
   - `snapshot_user_aws_secret_access_key`: See Snapshot S3 Bucket under Resource Setup
   - `benchmark_environment`: Environment metadata tag for results in data store
@@ -25,8 +25,8 @@
 ### Resource Setup
 The following resources are not provisioned by terraform and must be created beforehand:
 - Data store
-- Prefix list
 - Snapshot S3 bucket
+- (Optional) Prefix list
 #### Data Store
 OpenSearch Benchmark will automatically upload benchmark results to a shared metric data store that is an OpenSearch deployment.
 
@@ -37,11 +37,14 @@ After you create an OpenSearch deployment to store results, you need to update t
 
 If you want to disable uploading to the shared data store, edit `/mnt/.benchmark/benchmark.ini` to use the commented default config for `[results_publishing]`. This will save results locally on the benchmark machine.
 #### Prefix List
-The current data store uses a [prefix list](https://docs.aws.amazon.com/vpc/latest/userguide/managed-prefix-lists.html) for IP-based access control. The prefix list resource must exist before deploying with terraform. Terraform will add the load generation IP to prefix list, so that the benchmarking client can upload results to the data store.
+You can optionally add the load generation machine to a [prefix list](https://docs.aws.amazon.com/vpc/latest/userguide/managed-prefix-lists.html) for IP-based access control to the data store. The prefix list resource must exist before deploying with terraform. Terraform will add the load generation IP to the prefix list, so that the benchmarking client can upload results to the data store.
 
-The prefix list used by the current data store is: [shared prefix list](https://us-east-1.console.aws.amazon.com/vpcconsole/home?region=us-east-1#PrefixListDetails:prefixListId=pl-06f77c0b59dbf70fe) (id: `pl-06f77c0b59dbf70fe`).
-  - If you are using a different prefix list, set `prefix_list_id` to the prefix list's ID.
+To use a prefix list:
+  - Set `prefix_list_id` to the prefix list's ID.
+  - Set `prefix_list_region` to the prefix list's region.
   - The workspace name is used as a description for the prefix list entry
+
+If you don't want to use a prefix list, you don't need to set `prefix_list_id` nor `prefix_list_region`.
 #### Snapshot S3 Bucket
 If you want to use snapshots for OS and ES, create an AWS S3 bucket.
 
