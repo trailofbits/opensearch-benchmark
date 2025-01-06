@@ -895,10 +895,12 @@ def dump_summary(raw: list[BenchmarkResult], results: list[Result], sheet: Sheet
                 if result.category != category:
                     continue
                 total_ops[result.category] += 1
+                # Note(brad): this assumes subtypes are empty strings for non vectorsearch workloads
+                #               and that there is only a single es_subtype being compared against.
                 if result.comparison > 1:
-                    faster_ops[category][result.operation] = result.comparison
+                    faster_ops[category][result.operation + " " + result.os_subtype] = result.comparison
                 elif result.comparison < 1:
-                    slower_ops[category][result.operation] = result.comparison
+                    slower_ops[category][result.operation + " " + result.os_subtype] = result.comparison
 
         # Workload Categories Table
         faster_categories_rows = [
