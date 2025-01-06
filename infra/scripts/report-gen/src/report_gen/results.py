@@ -741,12 +741,12 @@ class StatsCompareTable:
     class Row:
         """Single row in comparison table."""
 
-        avg: float
-        median: float
-        mmax: float
-        mmin: float
-        stdev: float
-        variance: float
+        avg: float | str
+        median: float | str
+        mmax: float | str
+        mmin: float | str
+        stdev: float | str
+        variance: float | str
 
         def __init__(self, data: list[float]) -> None:
             if len(data) > 0:
