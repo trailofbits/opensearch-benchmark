@@ -4,6 +4,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date
+from functools import cmp_to_key
 from itertools import cycle, product
 from pathlib import Path
 from statistics import mean, median, stdev, variance
@@ -217,6 +218,33 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
 
 def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
     """Fill the supplied sheet with data from Results."""
+
+    def row_sort(lhs: Result, rhs: Result) -> int:
+        """Compare two rows for sorting Results sheet."""
+        sorting = [
+            ("workload", "desc"),
+            ("os_version", "asc"),
+            ("category", "desc"),
+            ("operation", "desc"),
+            ("os_subtype", "desc"),
+            ("es_version", "asc"),
+        ]
+
+        for field, order in sorting:
+            if order == "asc":
+                result = (-1, 1)
+            elif order == "desc":
+                result = (1, -1)
+            else:
+                raise RuntimeError
+
+            if getattr(lhs, field) > getattr(rhs, field):
+                return result[0]
+            if getattr(lhs, field) < getattr(rhs, field):
+                return result[1]
+
+        return 0
+
     header = [
         [
             "Workload",
@@ -268,7 +296,7 @@ def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
             str(row.es_rsd_50),
             str(row.es_rsd_90),
         ]
-        for row in results
+        for row in sorted(results, key=cmp_to_key(row_sort))
     ]
 
     nrows = len(sheet_rows)
