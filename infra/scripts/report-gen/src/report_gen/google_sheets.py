@@ -87,7 +87,6 @@ def rate_limit(func: Callable[Concatenate[Any, P], T]) -> Callable[Concatenate[A
 class SpreadSheetBuilder:
     """Helper for building a google spreadsheet."""
 
-    # TODO(brad): wrap requests to check rate limit #noqa: FIX002, TD003
     service = Resource
     spreadsheet_id: str
 
