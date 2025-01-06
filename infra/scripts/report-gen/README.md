@@ -77,8 +77,8 @@ To run the test, the environment variable `GOOGLE_CRED` should contain the path 
 The snapshot test only checks that existing behavior is not broken. When modifying the generated sheet you should:
 
   1. Modify the test to exclude the modifications.
-  1. Pass all other tests, ensuring no existing features were broken.
-  1. Verify the new features are working correctly.
-  1. Update the data and snapshots in `test/data` with the new ground truth.
+  2. Pass all other tests, ensuring no existing features were broken.
+  3. Verify the new features are working correctly.
+  4. Update the data and snapshots in `test/data` with the new ground truth.
 
 Ground truth csv's can be downloaded from google drive directly (File -> download -> csv).
