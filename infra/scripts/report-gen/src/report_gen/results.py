@@ -187,7 +187,7 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
                             es_workload_subtype = f"{es_workload_subtype}1m"
 
                         os_subtype_data = [d for d in os_data if d.WorkloadSubType == os_workload_subtype]
-                        es_subtype_data = [d for d in os_data if d.WorkloadSubType == es_workload_subtype]
+                        es_subtype_data = [d for d in es_data if d.WorkloadSubType == es_workload_subtype]
                         if len(os_subtype_data) == 0 and len(es_subtype_data) == 0:
                             continue
                         results.append(
@@ -902,7 +902,7 @@ def dump_summary(raw: list[BenchmarkResult], results: list[Result], sheet: Sheet
 
         # Workload Categories Table
         faster_categories_rows = [
-            [f"{workload}", f"Categories: OS {latest_os} is faster"],
+            [f"{workload}", f"Categories: OS {latest_os} is Faster"],
             ["Category", "Count", "Total"],
         ] + [[c, str(len(faster_ops[c])), str(total_ops[c])] for c in categories]
         sheet.insert_rows(f"I{offset}", faster_categories_rows)
@@ -924,7 +924,7 @@ def dump_summary(raw: list[BenchmarkResult], results: list[Result], sheet: Sheet
 
         # Workload Slower Operations Table
         slower_op_rows = [
-            [f"{workload}", f"Operations: OS {latest_os} if Slower"],
+            [f"{workload}", f"Operations: OS {latest_os} is Slower"],
             ["Category", "Operation", "ES/OS"],
             *sorted([[cat, op, str(val)] for cat, ops in slower_ops.items() for op, val in ops.items()]),
         ]
