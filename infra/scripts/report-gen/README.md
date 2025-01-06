@@ -7,10 +7,10 @@ Install python >= 3.13 and [uv](https://docs.astral.sh/uv/).
 You will also need a Google API credentials file. Follow the steps below:
 
   1. [Create a project](https://developers.google.com/workspace/guides/create-project)
-  1. [Enable APIs](https://developers.google.com/workspace/guides/enable-apis). Search for and enable the Google Sheets API
-  1. [Configure OAuth Consent](https://developers.google.com/workspace/guides/configure-oauth-consent). Select "Internal" for the user type.
-  1. [Create OAth client ID credentials](https://developers.google.com/workspace/guides/create-credentials#oauth-client-id).
-  1. Download the created credentials file.
+  2. [Enable APIs](https://developers.google.com/workspace/guides/enable-apis). Search for and enable the Google Sheets API
+  3. [Configure OAuth Consent](https://developers.google.com/workspace/guides/configure-oauth-consent). Select "Internal" for the user type.
+  4. [Create OAth client ID credentials](https://developers.google.com/workspace/guides/create-credentials#oauth-client-id).
+  5. Download the created credentials file.
 
 Lastly you will need the URL and password for the shared data store.
 
