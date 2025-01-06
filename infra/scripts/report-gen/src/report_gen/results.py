@@ -720,12 +720,20 @@ class StatsCompareTable:
         variance: float
 
         def __init__(self, data: list[float]) -> None:
-            self.avg = mean(data)
-            self.median = median(data)
-            self.mmax = max(data)
-            self.mmin = min(data)
-            self.stdev = stdev(data)
-            self.variance = variance(data)
+            if len(data) > 0:
+                self.avg = mean(data)
+                self.median = median(data)
+                self.mmax = max(data)
+                self.mmin = min(data)
+                self.stdev = stdev(data)
+                self.variance = variance(data)
+            else:
+                self.avg = "N/A"
+                self.median = "N/A"
+                self.mmax = "N/A"
+                self.mmin = "N/A"
+                self.stdev = "N/A"
+                self.variance = "N/A"
 
     os_version: str
     es_version: str
