@@ -3,6 +3,7 @@
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import date
 from itertools import cycle, product
 from pathlib import Path
 from statistics import mean, median, stdev, variance
@@ -957,7 +958,9 @@ def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Pa
     logger.info("Building Overall Spread table")
     overall = build_overall(version_tables)
 
-    spreadsheet = SpreadSheetBuilder("Report", token, credentials)
+    # Create a new spreadsheet
+    current_date: str = date.today().strftime("%Y-%m-%d")  # noqa: DTZ011
+    spreadsheet = SpreadSheetBuilder(f"{current_date} | Benchmark Results", token, credentials)
 
     logger.info("Exporting Overall Spread table")
     dump_overall(overall, spreadsheet.create_sheet(f"Overall Spread - {workload}"))
