@@ -602,12 +602,12 @@ def dump_raw(data: list[BenchmarkResult], sheet: SheetBuilder) -> None:
             result.P90,
             str(result.ShardCount),
             str(result.ReplicaCount),
-            result.WorkloadParams["target_throughput"],
-            result.WorkloadParams["number_of_replicas"],
-            result.WorkloadParams["bulk_indexing_clients"],
-            result.WorkloadParams["max_num_segments"],
-            result.WorkloadParams["query_data_set_corpus"],
-            result.WorkloadParams["target_index_body"],
+            result.WorkloadParams.get("target_throughput", ""),
+            result.WorkloadParams.get("number_of_replicas", ""),
+            result.WorkloadParams.get("bulk_indexing_clients", ""),
+            result.WorkloadParams.get("max_num_segments", ""),
+            result.WorkloadParams.get("query_data_set_corpus", ""),
+            result.WorkloadParams.get("target_index_body", ""),
         ]
         for result in data
     ]
