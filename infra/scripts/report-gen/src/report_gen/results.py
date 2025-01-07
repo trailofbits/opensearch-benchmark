@@ -79,7 +79,28 @@ class Result:
         return self.es_avg_90 / self.os_avg_90
 
 
-def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -> list[Result]:  # noqa: C901, PLR0912, PLR0915
+@dataclass
+class SingleResult:
+    """Store Result for OS only workloads."""
+
+    workload: str
+    category: str
+    operation: str
+
+    os_version: str
+    os_subtype: str
+    os_std_50: float
+    os_std_90: float
+    os_avg_50: float
+    os_avg_90: float
+    os_rsd_50: float
+    os_rsd_90: float
+
+
+ResultRow = Result | SingleResult
+
+
+def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -> list[ResultRow]:  # noqa: C901, PLR0912, PLR0915
     """Build the results data from the raw benchmark results."""
     sub_groups: dict[str, dict[str, list[BenchmarkResult]]] = defaultdict(lambda: defaultdict(list))
 
@@ -109,8 +130,9 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
                 if len(os_data) == 0:
                     raise RuntimeError(f"No data for OS {compare.os_version}")  # noqa: TRY003, EM102
                 es_data = [row for row in es_rows if row.EngineVersion == compare.es_version]
-                if len(es_data) == 0:
-                    raise RuntimeError(f"No data for OS {compare.es_version}")  # noqa: TRY003, EM102
+                # HACK: ES data for noaa_semantic_search is either not present or ignored #noqa: FIX004
+                if len(es_data) == 0 and workload != "noaa_semantic_search":
+                    raise RuntimeError(f"No data for ES {compare.es_version}")  # noqa: TRY003, EM102
 
                 def verify_data(engine: str, workload: str, operation: str, data: list[BenchmarkResult]) -> None:
                     """Check assumptions about the data before reporting stats."""
@@ -125,7 +147,8 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
                             raise RuntimeError(msg)
 
                 verify_data("OS", workload, operation, os_data)
-                verify_data("ES", workload, operation, es_data)
+                if es_data:
+                    verify_data("ES", workload, operation, es_data)
 
                 def build_result(  # noqa: PLR0913
                     workload: str,
@@ -137,7 +160,7 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
                     es_data: list[BenchmarkResult],
                     os_subtype: str = "",
                     es_subtype: str = "",
-                ) -> Result:
+                ) -> ResultRow:
                     os_std_50 = stdev(float(row.P50) for row in os_data)
                     os_std_90 = stdev(float(row.P90) for row in os_data)
                     os_avg_50 = mean(float(row.P50) for row in os_data)
@@ -145,15 +168,38 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
                     os_rsd_50 = os_std_50 / os_avg_50
                     os_rsd_90 = os_std_90 / os_avg_90
 
-                    es_std_50 = stdev(float(row.P50) for row in es_data)
-                    es_std_90 = stdev(float(row.P90) for row in es_data)
-                    es_avg_50 = mean(float(row.P50) for row in es_data)
-                    es_avg_90 = mean(float(row.P90) for row in es_data)
-                    es_rsd_50 = es_std_50 / es_avg_50
-                    es_rsd_90 = es_std_90 / es_avg_90
+                    if es_data:
+                        es_std_50 = stdev(float(row.P50) for row in es_data)
+                        es_std_90 = stdev(float(row.P90) for row in es_data)
+                        es_avg_50 = mean(float(row.P50) for row in es_data)
+                        es_avg_90 = mean(float(row.P90) for row in es_data)
+                        es_rsd_50 = es_std_50 / es_avg_50
+                        es_rsd_90 = es_std_90 / es_avg_90
+                        comparison = es_avg_90 / os_avg_90
+                        return Result(
+                            workload=workload,
+                            category=category,
+                            operation=operation,
+                            os_version=os_version,
+                            os_subtype=os_subtype,
+                            os_std_50=os_std_50,
+                            os_std_90=os_std_90,
+                            os_avg_50=os_avg_50,
+                            os_avg_90=os_avg_90,
+                            os_rsd_50=os_rsd_50,
+                            os_rsd_90=os_rsd_90,
+                            es_version=es_version,
+                            es_subtype=es_subtype,
+                            es_std_50=es_std_50,
+                            es_std_90=es_std_90,
+                            es_avg_50=es_avg_50,
+                            es_avg_90=es_avg_90,
+                            es_rsd_50=es_rsd_50,
+                            es_rsd_90=es_rsd_90,
+                            comparison=comparison,
+                        )
 
-                    comparison = es_avg_90 / os_avg_90
-                    return Result(
+                    return SingleResult(
                         workload=workload,
                         category=category,
                         operation=operation,
@@ -165,15 +211,6 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
                         os_avg_90=os_avg_90,
                         os_rsd_50=os_rsd_50,
                         os_rsd_90=os_rsd_90,
-                        es_version=es_version,
-                        es_subtype=es_subtype,
-                        es_std_50=es_std_50,
-                        es_std_90=es_std_90,
-                        es_avg_50=es_avg_50,
-                        es_avg_90=es_avg_90,
-                        es_rsd_50=es_rsd_50,
-                        es_rsd_90=es_rsd_90,
-                        comparison=comparison,
                     )
 
                 # NOTE: Consider not hardcoding this in the future
@@ -216,10 +253,10 @@ def build_results(data: list[BenchmarkResult], comparisons: list[VersionPair]) -
     return results
 
 
-def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
+def dump_results(results: list[ResultRow], sheet: SheetBuilder) -> None:
     """Fill the supplied sheet with data from Results."""
 
-    def row_sort(lhs: Result, rhs: Result) -> int:
+    def row_sort(lhs: ResultRow, rhs: ResultRow) -> int:
         """Compare two rows for sorting Results sheet."""
         sorting = [
             ("workload", "desc"),
@@ -238,9 +275,12 @@ def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
             else:
                 raise RuntimeError
 
-            if getattr(lhs, field) > getattr(rhs, field):
+            lhs_field = getattr(lhs, field, "")
+            rhs_field = getattr(rhs, field, "")
+
+            if lhs_field > rhs_field:
                 return result[0]
-            if getattr(lhs, field) < getattr(rhs, field):
+            if lhs_field < rhs_field:
                 return result[1]
 
         return 0
@@ -276,7 +316,7 @@ def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
             row.workload,
             row.category,
             row.operation,
-            str(row.comparison),
+            str(row.comparison) if isinstance(row, Result) else "",
             "",
             row.os_version,
             row.os_subtype,
@@ -287,14 +327,14 @@ def dump_results(results: list[Result], sheet: SheetBuilder) -> None:
             str(row.os_rsd_50),
             str(row.os_rsd_90),
             "",
-            row.es_version,
-            row.es_subtype,
-            str(row.es_std_50),
-            str(row.es_std_90),
-            str(row.es_avg_50),
-            str(row.es_avg_90),
-            str(row.es_rsd_50),
-            str(row.es_rsd_90),
+            row.es_version if isinstance(row, Result) else "",
+            row.es_subtype if isinstance(row, Result) else "",
+            str(row.es_std_50) if isinstance(row, Result) else "",
+            str(row.es_std_90) if isinstance(row, Result) else "",
+            str(row.es_avg_50) if isinstance(row, Result) else "",
+            str(row.es_avg_90) if isinstance(row, Result) else "",
+            str(row.es_rsd_50) if isinstance(row, Result) else "",
+            str(row.es_rsd_90) if isinstance(row, Result) else "",
         ]
         for row in sorted(results, key=cmp_to_key(row_sort))
     ]
@@ -784,11 +824,14 @@ class StatsCompareTable:
         self.slower = StatsCompareTable.Row(os_slower)
 
 
-def dump_summary(raw: list[BenchmarkResult], results: list[Result], sheet: SheetBuilder) -> None:  # noqa: PLR0915
+def dump_summary(raw: list[BenchmarkResult], results: list[ResultRow], sheet: SheetBuilder) -> None:  # noqa: PLR0915
     """Fill the provided sheet with summary of Results."""
     # # # # # # # # # # # #
     #   Engine Table      #
     # # # # # # # # # # # #
+
+    comparison_results = [r for r in results if isinstance(r, Result)]
+
     engine_table = EngineTable(raw)
     fmt = sheet.format_builder()
     engine_table_rows = [["Engine", "Version", "Workload", "Number of Tests"]] + [
@@ -816,13 +859,13 @@ def dump_summary(raw: list[BenchmarkResult], results: list[Result], sheet: Sheet
         offset += count
 
     latest_os = str(max([r.os_version for r in results], key=version.parse))
-    latest_es = str(max([r.es_version for r in results], key=version.parse))
+    latest_es = str(max([r.es_version for r in comparison_results], key=version.parse))
     logger.info(f"Comparing latest versions: OS {latest_os} - ES {latest_es}")
 
     # # # # # # # # # # # #
     #   All Categories    #
     # # # # # # # # # # # #
-    fast = AllCategoriesFaster(latest_os, latest_es, results)
+    fast = AllCategoriesFaster(latest_os, latest_es, comparison_results)
     fast_rows = (
         [
             [f"All Categories: OS {latest_os} is faster than ES {latest_es}"],
@@ -852,7 +895,7 @@ def dump_summary(raw: list[BenchmarkResult], results: list[Result], sheet: Sheet
     # # # # # # # # # # # #
     #   Stats Compare     #
     # # # # # # # # # # # #
-    stats = StatsCompareTable(latest_os, latest_es, results)
+    stats = StatsCompareTable(latest_os, latest_es, comparison_results)
     stats_rows = [
         [f"Statistics comparing: OS {latest_os} and ES {latest_es}"],
         ["ES/OS", "Average", "Median", "Max", "Min", "Stdev", "Variance"],
@@ -890,10 +933,12 @@ def dump_summary(raw: list[BenchmarkResult], results: list[Result], sheet: Sheet
     # # # # # # # # # # # #
 
     offset = 1
-    for workload in sorted({r.workload for r in results}):
+    for workload in sorted({r.workload for r in comparison_results}):
         logger.info(f"Summarizing {workload}")
         workload_results = [
-            r for r in results if r.workload == workload and r.os_version == latest_os and r.es_version == latest_es
+            r
+            for r in comparison_results
+            if r.workload == workload and r.os_version == latest_os and r.es_version == latest_es
         ]
 
         # Total Tasks table
@@ -974,8 +1019,19 @@ def dump_summary(raw: list[BenchmarkResult], results: list[Result], sheet: Sheet
     fmt.apply()
 
 
+def filter_raw_data(raw: list[BenchmarkResult]) -> list[BenchmarkResult]:
+    """Filter any data that should not be included in the report."""
+
+    # Some older benchmark runs incorrectly include ES data noaa_semantic_search
+    def es_semantic_noaa(result: BenchmarkResult) -> bool:
+        return result.Engine == "ES" and result.Workload == "noaa_semantic_search"
+
+    return list(filter(lambda row: not es_semantic_noaa(row), raw))
+
+
 def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Path | None = None) -> None:
     """Export data to a google sheet."""
+    raw = filter_raw_data(raw)
     os_versions = {r.EngineVersion for r in raw if r.Engine == "OS"}
     es_versions = {r.EngineVersion for r in raw if r.Engine == "ES"}
     comparisons = [VersionPair(os_version=os, es_version=es) for os, es in product(os_versions, es_versions)]
@@ -984,8 +1040,10 @@ def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Pa
 
     logger.info("Building results table")
     results = build_results(raw, comparisons)
+    # Filter SingleResults from comparisons
+    comparison_results = [r for r in results if isinstance(r, Result)]
     logger.info("Building individual comparison tables")
-    version_tables = build_version_compare_tables(workload, results)
+    version_tables = build_version_compare_tables(workload, comparison_results)
     logger.info("Building Overall Spread table")
     overall = build_overall(version_tables)
 
