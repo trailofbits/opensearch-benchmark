@@ -475,11 +475,14 @@ class OverallSpread:
     workload: str
 
 
-def build_overall(tables: list[VersionCompareTable]) -> OverallSpread:
+def build_overall(tables: list[VersionCompareTable]) -> OverallSpread | None:
     """Create an overall spread from version comparison tables of a single workload."""
     combined = defaultdict(list)
 
     workloads = {t.workload for t in tables}
+    if len(workloads) == 0:
+        return None
+
     if len(workloads) != 1:
         msg = "Assumed only one workload is compared at a time"
         raise RuntimeError(msg)
@@ -990,15 +993,21 @@ def create_google_sheet(raw: list[BenchmarkResult], token: Path, credentials: Pa
     current_date: str = date.today().strftime("%Y-%m-%d")  # noqa: DTZ011
     spreadsheet = SpreadSheetBuilder(f"{current_date} | Benchmark Results", token, credentials)
 
-    logger.info("Exporting Overall Spread table")
-    dump_overall(overall, spreadsheet.create_sheet(f"Overall Spread - {workload}"))
+    if overall is not None:
+        logger.info("Exporting Overall Spread table")
+        dump_overall(overall, spreadsheet.create_sheet(f"Overall Spread - {workload}"))
+    else:
+        logger.info(f"Skipping Overall Spread table. No data for '{workload}'")
 
-    logger.info("Exporting individual comparison tables")
-    for table in sorted(version_tables, key=lambda t: t.comparison.os_version):
-        os_sheet_name = f"OS {table.comparison.os_version} - {table.workload}"
-        logger.info(f"\t{os_sheet_name}")
-        os_sheet = spreadsheet.create_sheet(os_sheet_name)
-        dump_version_compare_table(table, os_sheet)
+    if len(version_tables) == 0:
+        logger.info(f"Skipping individual comparison tables. No data for '{workload}'")
+    else:
+        logger.info("Exporting individual comparison tables")
+        for table in sorted(version_tables, key=lambda t: t.comparison.os_version):
+            os_sheet_name = f"OS {table.comparison.os_version} - {table.workload}"
+            logger.info(f"\t{os_sheet_name}")
+            os_sheet = spreadsheet.create_sheet(os_sheet_name)
+            dump_version_compare_table(table, os_sheet)
 
     logger.info("Exporting Summary Sheet")
     dump_summary(raw, results, spreadsheet.create_sheet("Summary"))
