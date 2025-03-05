@@ -56,7 +56,7 @@ resource "aws_instance" "target-cluster-additional-nodes" {
       os_snapshot_secret_key = var.snapshot_user_aws_secret_access_key,
       authorized_ssh_key     = var.ssh_pub_key,
       jvm_options            = yamlencode(base64gzip(file("${path.module}/jvm.options"))),
-      cluster_ips            = join(",", local.cluster_node_private_ips),
+      cluster_ips            = join(",", [for ip in local.cluster_node_private_ips : format("\\\"%s\\\"", ip)]),
       node_name              = format("node-%s", each.key),
       nodes_type             = local.nodes_type,
     }
