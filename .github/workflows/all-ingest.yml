@@ -31,7 +31,7 @@ on:
         description: 'Elasticsearch versions (comma separated)'
         required: false
         type: string
-        default: 8.15.0
+        default: 8.17.4
       snapshot_version:
         description: 'Snapshot version (`new` or `latest`)'
         required: true
@@ -41,7 +41,7 @@ on:
         description: 'OpenSearch versions (comma separated)'
         required: false
         type: string
-        default: 2.18.0
+        default: 2.19.1
       aws_region:
         description: 'AWS region'
         required: false
@@ -52,8 +52,8 @@ env:
   WORKLOADS: ${{ inputs.workloads }}
   WORKLOAD_PARAMS: ${{ inputs.workload_params }}
   CLUSTER_TYPES: ${{ inputs.cluster_types }}
-  OS_VERSIONS: ${{ inputs.os_versions || '2.16.0,2.17.1,2.18.0' }}
-  ES_VERSIONS: ${{ inputs.es_versions || '8.15.4' }}
+  ES_VERSIONS: ${{ inputs.es_versions || '8.17.4' }}
+  OS_VERSIONS: ${{ inputs.os_versions || '2.19.1' }}
 
 jobs:
   generate-matrix:

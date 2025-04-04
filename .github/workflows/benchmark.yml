@@ -52,12 +52,12 @@ on:
         description: 'Elasticsearch version'
         required: false
         type: string
-        default: 8.15.4
+        default: 8.17.4
       os_version:
         description: 'OpenSearch version'
         required: false
         type: string
-        default: 2.18.0
+        default: 2.19.1
       aws_region:
         description: 'AWS region'
         required: true
