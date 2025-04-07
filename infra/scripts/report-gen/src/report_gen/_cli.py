@@ -8,8 +8,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from report_gen.diff import diff_folders
-from report_gen.download import Source, download, dump_csv_files
-from report_gen.sheets import create_report
+from report_gen.download import Source, download, dump_csv_files, read_csv_files
+from report_gen.results import create_google_sheet
 
 from . import __version__
 
@@ -227,10 +227,14 @@ def create_command(args: argparse.Namespace) -> bool:
             print(f"token path '{credential_path}' is not a file")
             return False
 
-    return create_report(benchmark_data, token_path, credential_path) is not None
+    bench_results = read_csv_files(benchmark_data)
+    create_google_sheet(bench_results, token_path, credential_path)
+    return True
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO)
+
     arg_parser = argparse.ArgumentParser(description="Tool to help download benchmark data and generate reports")
     subparser = arg_parser.add_subparsers(dest="command", help="Available Commands")
 
@@ -255,8 +259,6 @@ def main() -> None:
     build_diff_args(diff_parser)
 
     args = arg_parser.parse_args()
-
-    logging.basicConfig(level=logging.INFO)
 
     if args.command == "download":
         download_command(args)
