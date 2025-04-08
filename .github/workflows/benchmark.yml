@@ -271,7 +271,7 @@ jobs:
     if: ${{ inputs.perform_benchmark && needs.ingest-data.result == 'success' }}
     name: run-osb-${{ needs.prepare_workspace.outputs.now_run_group_id }}
     # Almost 17h; the longest benchmark (big5 on OS) should take ~15h
-    timeout-minutes: 1000
+    timeout-minutes: 1200
 
     steps:
       - uses: actions/checkout@v4
