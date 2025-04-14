@@ -217,9 +217,9 @@ class OverallSheet:
     def get(self) -> bool:
         """Retrieve data to fill in OS Version sheets."""
         workload_str = "big5"
-        es_version = "8.15.4"
+        es_version = "8.17.4"
         # NOTE(Evan): These correspond to the OS version sheet names in _create_spreadsheet() in __init__.py
-        os_versions = ["2.16.0", "2.17.1", "2.18.0"]
+        os_versions = ["2.17.1", "2.18.0", "2.19.1"]
 
         # Retrieve workload to process and compare
         workloads: dict[str, dict[str, list[str]]] = get_workloads(self.service, self.spreadsheet_id)
