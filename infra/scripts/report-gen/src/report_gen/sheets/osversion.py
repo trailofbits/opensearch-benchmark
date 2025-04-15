@@ -291,7 +291,7 @@ class OSVersion:
 
                 es_st_cell = f"$C{operation_index}"
                 os_st_cell = f"$E{operation_index}"
-                relative_difference = f"=({es_st_cell}-{os_st_cell})/AVERAGE({es_st_cell},{os_st_cell})"
+                relative_difference = f"=({es_st_cell}-{os_st_cell})/MEDIAN({es_st_cell},{os_st_cell})"
                 ratio = f"={es_st_cell}/{os_st_cell}"
 
                 row: list[str] = [
