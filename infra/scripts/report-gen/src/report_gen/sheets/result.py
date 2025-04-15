@@ -151,8 +151,8 @@ class Result:
                 os_workload_subtype,  # OS workload subtype column
                 f"=STDEV.S(FILTER({raw_sheet}!$K$2:$K, {os_stat}))",  # p50 stdev
                 f"=STDEV.S(FILTER({raw_sheet}!$L$2:$L, {os_stat}))",  # p90 stdev
-                f"=AVERAGE(FILTER({raw_sheet}!$K$2:$K, {os_stat}))",  # p50 avg
-                f"=AVERAGE(FILTER({raw_sheet}!$L$2:$L, {os_stat}))",  # p90 avg
+                f"=MEDIAN(FILTER({raw_sheet}!$K$2:$K, {os_stat}))",  # p50 median
+                f"=MEDIAN(FILTER({raw_sheet}!$L$2:$L, {os_stat}))",  # p90 median
                 f"={cell_os_p50_stdev}/{cell_os_p50_avg}",  # p50 rsd
                 f"={cell_os_p90_stdev}/{cell_os_p90_avg}",  # p50 rsd
                 "",  # Blank column
@@ -165,8 +165,8 @@ class Result:
                         es_workload_subtype,  # ES workload subtype column
                         f"=STDEV.S(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p50 stdev
                         f"=STDEV.S(FILTER({raw_sheet}!$L$2:$L, {es_stat}))",  # p90 stdev
-                        f"=AVERAGE(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p50 avg
-                        f"=AVERAGE(FILTER({raw_sheet}!$L$2:$L, {es_stat}))",  # p90 avg
+                        f"=MEDIAN(FILTER({raw_sheet}!$K$2:$K, {es_stat}))",  # p50 median
+                        f"=MEDIAN(FILTER({raw_sheet}!$L$2:$L, {es_stat}))",  # p90 median
                         f"={cell_es_p50_stdev}/{cell_es_p50_avg}",  # p50 rsd
                         f"={cell_es_p90_stdev}/{cell_es_p90_avg}",  # p50 rsd
                     ]
