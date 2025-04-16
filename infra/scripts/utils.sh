@@ -137,7 +137,6 @@ register_snapshot_repo() {
   }
 }
 ")
-    echo "$response"
     echo "$response" | jq -e '.error' > /dev/null && {
         echo "Error in response from cluster"
         echo "$response"
