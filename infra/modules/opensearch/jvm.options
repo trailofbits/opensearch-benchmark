@@ -76,9 +76,6 @@
 # JDK 9+ GC logging
 9-:-Xlog:gc*,gc+age=trace,safepoint:file=logs/gc.log:utctime,pid,tags:filecount=32,filesize=64m
 
-# Explicitly allow security manager (https://bugs.openjdk.java.net/browse/JDK-8270380)
-18-:-Djava.security.manager=allow
-
 # JDK 20+ Incubating Vector Module for SIMD optimizations;
 # disabling may reduce performance on vector optimized lucene
 20-:--add-modules=jdk.incubator.vector
@@ -89,5 +86,6 @@
 ## OpenSearch Performance Analyzer
 -Dclk.tck=100
 -Djdk.attach.allowAttachSelf=true
--Djava.security.policy=/mnt/opensearch/opensearch-2.16.0/config/opensearch-performance-analyzer/opensearch_security.policy
 --add-opens=jdk.attach/sun.tools.attach=ALL-UNNAMED
+
+21-:-javaagent:agent/opensearch-agent.jar

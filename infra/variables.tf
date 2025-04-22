@@ -34,7 +34,7 @@ variable "target_cluster_type" {
 variable "es_version" {
   description = "Version of ElasticSearch to deploy"
   type        = string
-  default     = "8.15.0"
+  default     = "9.0.0"
 }
 
 variable "os_version" {
@@ -46,7 +46,7 @@ variable "os_version" {
 variable "distribution_version" {
   description = "OSB distribution-version to use"
   type        = string
-  default     = "2.18.0"
+  default     = "3.0.0"
 }
 
 variable "s3_bucket_name" {
@@ -127,5 +127,5 @@ variable "snapshot_version" {
 variable "osb_version" {
   description = "OpenSearch Benchmark version"
   type        = string
-  default     = "1.11.0"
+  default     = "1.12.0"
 }
