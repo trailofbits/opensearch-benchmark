@@ -25,10 +25,22 @@ write_files:
       ${big5_es_index_8}
     owner: root:root
     permissions: '0644'
+  - path: /es_indexes/big5/es_index_9.json
+    encoding: gz+b64
+    content: |
+      ${big5_es_index_9}
+    owner: root:root
+    permissions: '0644'
   - path: /es_indexes/vectorsearch/es_index_8.json
     encoding: gz+b64
     content: |
       ${vectorsearch_es_index_8}
+    owner: root:root
+    permissions: '0644'
+  - path: /es_indexes/vectorsearch/es_index_9.json
+    encoding: gz+b64
+    content: |
+      ${vectorsearch_es_index_9}
     owner: root:root
     permissions: '0644'
   - path: /es_files/osb-1.11.0-knn.patch
