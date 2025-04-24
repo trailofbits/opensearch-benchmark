@@ -15,7 +15,7 @@ def get_category_operation_map() -> list[dict]:
             "workload": "big5",
             "categories": {
                 "General Operations": [
-                    "default",
+                    "match-all",
                     "scroll",
                 ],
                 "Date Histogram": [

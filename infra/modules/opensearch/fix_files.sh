@@ -6,6 +6,6 @@ PATCH_FILE="/os_files/osb-1.11.0-knn.patch"
 patch -p0 -d "$OSB_INSTALL_DIR" < "$PATCH_FILE"
 
 # Fix OSB vectorsearch workload to pass extra OS KNN API parameters
-OSB_WORKLOAD_DIR="/mnt/.benchmark/benchmarks/workloads/default"
+OSB_WORKLOAD_DIR="/mnt/.osb/benchmarks/workloads/default"
 PATCH_FILE="/os_files/vectorsearch-task.patch"
 patch -p0 -d "$OSB_WORKLOAD_DIR" < "$PATCH_FILE"
