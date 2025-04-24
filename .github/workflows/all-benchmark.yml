@@ -35,12 +35,12 @@ on:
         description: 'Elasticsearch versions (comma separated)'
         required: false
         type: string
-        default: '8.15.5,8.16.6,8.17.4'
+        default: '9.0.0'
       os_versions:
         description: 'OpenSearch versions (comma separated)'
         required: false
         type: string
-        default: '2.17.1,2.18.0,2.19.1'
+        default: '3.0.0-beta1-nightly-11006'
       aws_region:
         description: 'AWS region'
         required: false
@@ -57,8 +57,8 @@ env:
   WORKLOADS: ${{ inputs.workloads || 'big5,pmc,noaa,nyc_taxis,vectorsearch,noaa_semantic_search' }}
   WORKLOAD_PARAMS: ${{ inputs.workload_params || '{}' }}
   CLUSTER_TYPES: ${{ inputs.cluster_types || 'OpenSearch,ElasticSearch' }}
-  OS_VERSIONS: ${{ inputs.os_versions || '2.19.1' }}
-  ES_VERSIONS: ${{ inputs.es_versions || '8.17.4' }}
+  OS_VERSIONS: ${{ inputs.os_versions || '3.0.0-beta1-nightly-11006' }}
+  ES_VERSIONS: ${{ inputs.es_versions || '9.0.0' }}
   BENCHMARK_TYPE: ${{ inputs.benchmark_type ||  'official' }}
   SNAPSHOT_VERSION: ${{ inputs.snapshot_version || 'latest' }}
 

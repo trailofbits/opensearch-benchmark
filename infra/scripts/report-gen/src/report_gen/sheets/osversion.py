@@ -165,7 +165,14 @@ class OSVersion:
         # Add second row
         rows = []
         rows.append(
-            ["Category", "Operation", f"ES {es_version} P90 ST (Median)", "RSD", f"OS {os_version} P90 ST (Median)", "RSD"]
+            [
+                "Category",
+                "Operation",
+                f"ES {es_version} P90 ST (Median)",
+                "RSD",
+                f"OS {os_version} P90 ST (Median)",
+                "RSD",
+            ]
         )
         request_properties: dict = {
             "majorDimension": "ROWS",
