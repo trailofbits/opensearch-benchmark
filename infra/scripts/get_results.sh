@@ -8,7 +8,7 @@ OUTPUT_DIR=$1
 
 mkdir -p "$OUTPUT_DIR"
 
-REMOTE_PATH="/mnt/.benchmark/benchmarks/test_executions/cluster*"
+REMOTE_PATH="/mnt/.osb/benchmarks/test_executions/cluster*"
 TMP_DIR="$(mktemp -d)"
 rsync -r --ignore-existing "ubuntu@$(terraform output -raw load-generation-ip):$REMOTE_PATH" "$TMP_DIR"
 
