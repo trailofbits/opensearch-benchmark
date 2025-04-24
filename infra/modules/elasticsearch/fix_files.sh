@@ -32,12 +32,12 @@ echo "Using index.json file for Workload $WORKLOAD ES version $CURRENT_ES_VERSIO
 cp "$SCRIPT_DIR/es_indexes/$WORKLOAD/es_index_$CURRENT_ES_VERSION.json" "$BENCHMARK_HOME/.osb/benchmarks/workloads/default/$WORKLOAD/index.json"
 echo "Fixing index.json for Workload $WORKLOAD ES version $CURRENT_ES_VERSION"
 
-# Fix OSB to be compatible with the ES KNN API
-OSB_INSTALL_DIR="$(pip list -v | grep opensearch-benchmark | awk '{print $3}')"
-PATCH_FILE="/es_files/osb-1.11.0-knn.patch"
-patch -p0 -d "$OSB_INSTALL_DIR" < "$PATCH_FILE"
+#   # Fix OSB to be compatible with the ES KNN API
+#   OSB_INSTALL_DIR="$(pip list -v | grep opensearch-benchmark | awk '{print $3}')"
+#   PATCH_FILE="/es_files/osb-1.11.0-knn.patch"
+#   patch -p0 -d "$OSB_INSTALL_DIR" < "$PATCH_FILE"
 
-# Fix OSB vectorsearch workload to pass extra ES KNN API parameters
-OSB_WORKLOAD_DIR="/mnt/.osb/benchmarks/workloads/default"
-PATCH_FILE="/es_files/vectorsearch-task.patch"
-patch -p0 -d "$OSB_WORKLOAD_DIR" < "$PATCH_FILE"
+#   # Fix OSB vectorsearch workload to pass extra ES KNN API parameters
+#   OSB_WORKLOAD_DIR="/mnt/.osb/benchmarks/workloads/default"
+#   PATCH_FILE="/es_files/vectorsearch-task.patch"
+#   patch -p0 -d "$OSB_WORKLOAD_DIR" < "$PATCH_FILE"
