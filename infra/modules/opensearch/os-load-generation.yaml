@@ -77,8 +77,8 @@ runcmd:
   - [ chown, ubuntu:ubuntu, /mnt/utils.sh ]
   - [ sudo, -u, ubuntu, /load_generation.sh, ${os_cluster}, admin, ${os_password}, ${distribution_version}, ${os_version}, "OS", ${instance_type}, ${cluster_instance_id}]
   - [ sudo, -u, ubuntu, /fix_files.sh ]
-  - [sed, -i, '/^env.name =/c\env.name = ${benchmark_environment}', /mnt/.benchmark/benchmark.ini]
-  - [sed, -i, '/^datastore\./s/^/# /',  /mnt/.benchmark/benchmark.ini]
+  - [sed, -i, '/^env.name =/c\env.name = ${benchmark_environment}', /mnt/.osb/benchmark.ini]
+  - [sed, -i, '/^datastore\./s/^/# /',  /mnt/.osb/benchmark.ini]
   - |
     sed -i '/^\[results_publishing\]/a\
     # config using remote data store\
@@ -91,4 +91,4 @@ runcmd:
     datastore.password = ${datastore_password}\
     datastore.number_of_replicas = 1\
     datastore.number_of_shards = 3\
-    # default config using local memory data store' /mnt/.benchmark/benchmark.ini
+    # default config using local memory data store' /mnt/.osb/benchmark.ini

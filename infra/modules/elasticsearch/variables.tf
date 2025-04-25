@@ -21,7 +21,7 @@ variable "loadgen_ami_id" {
 variable "es_version" {
   description = "Version of ElasticSearch to deploy"
   type        = string
-  default     = "8.15.0"
+  default     = "9.0.0"
 }
 
 variable "distribution_version" {

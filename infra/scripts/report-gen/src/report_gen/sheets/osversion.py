@@ -165,7 +165,14 @@ class OSVersion:
         # Add second row
         rows = []
         rows.append(
-            ["Category", "Operation", f"ES {es_version} P90 ST (AVG)", "RSD", f"OS {os_version} P90 ST (AVG)", "RSD"]
+            [
+                "Category",
+                "Operation",
+                f"ES {es_version} P90 ST (Median)",
+                "RSD",
+                f"OS {os_version} P90 ST (Median)",
+                "RSD",
+            ]
         )
         request_properties: dict = {
             "majorDimension": "ROWS",
@@ -348,9 +355,9 @@ class OSVersion:
     def get(self) -> bool:
         """Retrieve data to fill in OS Version sheets."""
         workload_str = "big5"
-        es_version = "8.17.4"
+        es_version = "9.0.0"
         # NOTE(Evan): These correspond to the OS version sheet names in _create_spreadsheet() in __init__.py
-        os_versions = ["2.17.1", "2.18.0", "2.19.1"]
+        os_versions = ["3.0.0-beta1"]
 
         # Retrieve workload to process and compare
         workloads: dict[str, dict[str, list[str]]] = get_workloads(self.service, self.spreadsheet_id)

@@ -138,7 +138,7 @@ register_snapshot_repo() {
 }
 ")
     echo "$response" | jq -e '.error' > /dev/null && {
-        echo "Error in response from Elasticsearch"
+        echo "Error in response from cluster"
         echo "$response"
         exit 3
     }
