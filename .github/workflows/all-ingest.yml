@@ -41,7 +41,7 @@ on:
         description: 'OpenSearch versions (comma separated)'
         required: false
         type: string
-        default: 3.0.0-beta1-nightly-11006
+        default: 3.0.0-beta1-nightly-11019
       aws_region:
         description: 'AWS region'
         required: false
@@ -53,7 +53,7 @@ env:
   WORKLOAD_PARAMS: ${{ inputs.workload_params }}
   CLUSTER_TYPES: ${{ inputs.cluster_types }}
   ES_VERSIONS: ${{ inputs.es_versions || '9.0.0' }}
-  OS_VERSIONS: ${{ inputs.os_versions || '3.0.0-beta1-nightly-11006' }}
+  OS_VERSIONS: ${{ inputs.os_versions || '3.0.0-beta1-nightly-11019' }}
 
 jobs:
   generate-matrix:
