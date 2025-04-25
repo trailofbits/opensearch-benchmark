@@ -40,13 +40,13 @@ variable "es_version" {
 variable "os_version" {
   description = "Version of OpenSearch to deploy"
   type        = string
-  default     = "3.0.0-beta1-nightly-11006"
+  default     = "3.0.0-beta1-nightly-11019"
 }
 
 variable "distribution_version" {
   description = "OSB distribution-version to use"
   type        = string
-  default     = "3.0.0-beta1-nightly-11006"
+  default     = "3.0.0-beta1-nightly-11019"
 }
 
 variable "s3_bucket_name" {

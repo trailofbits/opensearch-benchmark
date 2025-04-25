@@ -52,6 +52,9 @@ class OverallSheet:
         """Format header rows."""
         requests: list[dict] = []
         for range_str in range_list:
+            expected_range_count = 2
+            if len(range_str.split(":")) != expected_range_count:
+                continue
             range_dict = convert_range_to_dict(range_str)
             range_dict["sheetId"] = self.sheet_id
             requests.append(format_font_bold(range_dict))
@@ -217,9 +220,9 @@ class OverallSheet:
     def get(self) -> bool:
         """Retrieve data to fill in OS Version sheets."""
         workload_str = "big5"
-        es_version = "8.17.4"
+        es_version = "9.0.0"
         # NOTE(Evan): These correspond to the OS version sheet names in _create_spreadsheet() in __init__.py
-        os_versions = ["2.17.1", "2.18.0", "2.19.1"]
+        os_versions = ["3.0.0-beta1"]
 
         # Retrieve workload to process and compare
         workloads: dict[str, dict[str, list[str]]] = get_workloads(self.service, self.spreadsheet_id)
