@@ -2,6 +2,5 @@
     "number_of_replicas": 0,
     "max_num_segments": 10,
     "bulk_indexing_clients": 1,
-    "target_throughput": 0,
-    "cardinality_agg_high_field": "agent.name"
+    "target_throughput": 0
 }
