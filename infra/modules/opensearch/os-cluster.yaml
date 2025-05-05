@@ -18,10 +18,16 @@ write_files:
     content: ${authorized_ssh_key}
     owner: root:root
     permissions: '0644'
-  - path: /jvm.options
+  - path: /jvm.v2.options
     encoding: gz+b64
     content: |
-      ${jvm_options}
+      ${jvm_options_2}
+    owner: root:root
+    permissions: '0644'
+  - path: /jvm.v3.options
+    encoding: gz+b64
+    content: |
+      ${jvm_options_3}
     owner: root:root
     permissions: '0644'
 
@@ -46,5 +52,4 @@ runcmd:
   - [ chown, -R, ubuntu:ubuntu, /mnt ]
   - [ mv, /ssh_pub_key, /home/ubuntu/.ssh/authorized_keys ]
   - [ chown, ubuntu:ubuntu, /home/ubuntu/.ssh/authorized_keys ]
-  - [ mv, /jvm.options, /mnt/jvm.options ]
   - [ sudo, -u, ubuntu, /os_cluster.sh, ${os_password}, ${os_version}, ${os_arch}, ${os_snapshot_access_key}, ${os_snapshot_secret_key}, "${cluster_ips}", ${node_name}, "${nodes_type}" ]

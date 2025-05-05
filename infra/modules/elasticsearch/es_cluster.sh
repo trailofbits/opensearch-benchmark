@@ -51,8 +51,12 @@ else
     echo "discovery.type: single-node" >> $CONFIG_FILE
 fi
 
+# Replace the JVM options file with the correct one for the ES version
 JVM_CONFIG=config/jvm.options
-cp /mnt/jvm.options $JVM_CONFIG
+CURRENT_ES_VERSION=$(echo "$CLUSTER_VERSION" | cut -d. -f1)
+JVM_VERSION_CONFIG="/jvm.v$CURRENT_ES_VERSION.options"
+echo "Copying JVM options file $JVM_VERSION_CONFIG to $JVM_CONFIG"
+cp $JVM_VERSION_CONFIG $JVM_CONFIG
 
 sudo mkdir /mnt/backup && sudo chmod ugo+rwx /mnt/backup
 sudo mkdir /mnt/data && sudo chmod ugo+rwx /mnt/data

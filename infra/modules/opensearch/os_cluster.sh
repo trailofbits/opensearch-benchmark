@@ -65,7 +65,11 @@ else
     echo "discovery.type: single-node" >> $CONFIG_FILE
 fi
 
-cp /mnt/jvm.options $JVM_CONFIG
+# Replace the JVM options file with the correct one for the OS version
+CURRENT_OS_VERSION=$(echo "$CLUSTER_VERSION" | cut -d. -f1)
+JVM_VERSION_CONFIG="/jvm.v$CURRENT_OS_VERSION.options"
+echo "Copying JVM options file $JVM_VERSION_CONFIG to $JVM_CONFIG"
+cp $JVM_VERSION_CONFIG $JVM_CONFIG
 
 sudo mkdir /mnt/backup && sudo chmod ugo+rwx /mnt/backup
 sudo mkdir /mnt/data && sudo chmod ugo+rwx /mnt/data
