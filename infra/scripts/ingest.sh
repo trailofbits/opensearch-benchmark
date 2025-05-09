@@ -22,6 +22,10 @@ WORKLOAD_PARAMS=/mnt/workload_params.json
 
 # Based on the workload, we can figure out the index name. It is mostly the same, but somtimes not.
 INDEX_NAME=$(workload_index_name $WORKLOAD)
+if [ "$INDEX_NAME" == "" ]; then
+    echo "Index name not found for workload $WORKLOAD"
+    exit 1
+fi
 
 CLIENT_OPTIONS=$(join_by , "basic_auth_user:$CLUSTER_USER,basic_auth_password:$CLUSTER_PASSWORD,use_ssl:true,verify_certs:false" $EXTRA_CLIENT_OPTIONS)
 SNAPSHOT_NAME=$(snapshot_name "$WORKLOAD" "$WORKLOAD_PARAMS")

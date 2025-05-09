@@ -1,0 +1,16 @@
+diff --git a/vectorsearch/test_procedures/common/search-only-schedule.json b/vectorsearch/test_procedures/common/search-only-schedule.json
+index c2897f5..b4df000 100644
+--- a/vectorsearch/test_procedures/common/search-only-schedule.json
++++ b/vectorsearch/test_procedures/common/search-only-schedule.json
+@@ -21,7 +21,8 @@
+         "id-field-name": "{{ id_field_name }}",
+         "body": {{ query_body | default ({}) | tojson }},
+         "filter_body": {{ filter_body | default ({}) | tojson }},
+-        "filter_type": {{filter_type  | default ({}) | tojson }}
++        "filter_type": {{filter_type  | default ({}) | tojson }},
++       "extra_query_params": {{extra_query_params | default ({}) | tojson }}
+     },
+     "clients": {{ search_clients | default(1)}}
+-}
+\ No newline at end of file
++}

@@ -207,8 +207,8 @@ resource "aws_instance" "load-generation" {
       vectorsearch_es_index_8 = yamlencode(base64gzip(file("${path.module}/es_indexes/vectorsearch/es_index_8.json"))),
       big5_es_index_9         = yamlencode(base64gzip(file("${path.module}/es_indexes/big5/es_index_9.json"))),
       vectorsearch_es_index_9 = yamlencode(base64gzip(file("${path.module}/es_indexes/vectorsearch/es_index_9.json"))),
-      osb_knn_patch           = yamlencode(base64gzip(file("${path.module}/es_files/osb-1.11.0-knn.patch"))),
-      vectorsearch_task_patch = yamlencode(base64gzip(file("${path.module}/../common_files/vectorsearch-task.patch"))),
+      osb_knn_patch_1_12_0    = yamlencode(base64gzip(file("${path.module}/es_files/osb-1.12.0-knn.patch"))),
+      vectorsearch_task_patch_1_12_0 = yamlencode(base64gzip(file("${path.module}/../common_files/vectorsearch-task-1.12.0.patch"))),
       benchmark_environment   = var.benchmark_environment
       datastore_host          = var.datastore_host
       datastore_username      = var.datastore_username
