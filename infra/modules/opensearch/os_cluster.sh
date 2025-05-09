@@ -52,6 +52,7 @@ path.data: /mnt/data
 path.logs: /mnt/logs
 s3.client.default.region: us-east-1
 indices.recovery.max_bytes_per_sec: 2048mb
+search.concurrent_segment_search.mode: auto
 EOF
 
 if [[ "$NODES_TYPE" == "multi" ]]; then
