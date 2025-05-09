@@ -19,16 +19,16 @@ write_files:
     content: ${fix_files_script}
     owner: root:root
     permissions: '0755'
-  - path: /os_files/osb-1.11.0-knn.patch
+  - path: /os_files/osb-1.12.0-knn.patch
     encoding: gz+b64
     content: |
-      ${osb_knn_patch}
+      ${osb_knn_patch_1_12_0}
     owner: root:root
     permissions: '0644'
-  - path: /os_files/vectorsearch-task.patch
+  - path: /os_files/vectorsearch-task-1.12.0.patch
     encoding: gz+b64
     content: |
-      ${vectorsearch_task_patch}
+      ${vectorsearch_task_patch_1_12_0}
     owner: root:root
     permissions: '0644'
   - path: /id_rsa

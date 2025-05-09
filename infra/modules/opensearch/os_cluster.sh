@@ -97,10 +97,12 @@ fi
 echo "$OS_SNAPSHOT_AWS_ACCESS_KEY_ID" | $INSTALL_PATH/bin/opensearch-keystore add -s -f -x s3.client.default.access_key
 echo "$OS_SNAPSHOT_AWS_SECRET_ACCESS_KEY" | $INSTALL_PATH/bin/opensearch-keystore add -s -f -x s3.client.default.secret_key
 
-# Manually run security demo config to modify it
-OPENSEARCH_INITIAL_ADMIN_PASSWORD=$CLUSTER_PASSWORD bash $INSTALL_PATH/plugins/opensearch-security/tools/install_demo_configuration.sh -y -i -s || exit 1
-# Set allowed TLS protocols to fix: https://github.com/opensearch-project/security/issues/3299
-echo 'plugins.security.ssl.http.enabled_protocols: ["TLSv1.2"]' >> $CONFIG_FILE
+if [[ "$CURRENT_OS_VERSION" == "2" ]]; then
+    # Manually run security demo config to modify it
+    OPENSEARCH_INITIAL_ADMIN_PASSWORD=$CLUSTER_PASSWORD bash $INSTALL_PATH/plugins/opensearch-security/tools/install_demo_configuration.sh -y -i -s || exit 1
+    # Set allowed TLS protocols to fix: https://github.com/opensearch-project/security/issues/3299
+    echo 'plugins.security.ssl.http.enabled_protocols: ["TLSv1.2"]' >> $CONFIG_FILE
+fi
 
 # Run opensearch startup script with security demo configuration
 OPENSEARCH_INITIAL_ADMIN_PASSWORD=$CLUSTER_PASSWORD $INSTALL_PATH/opensearch-tar-install.sh &> opensearch.log &
