@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 import sys
 import logging
+from packaging.version import Version
 
 logger = logging.getLogger(__name__)
 
@@ -113,11 +114,16 @@ def main() -> None:
 
             # We should still set the os_version even for ES because it is used
             # to determine the distribution_version in OSB
-            os_version = os_versions[0] if os_versions else "2.18.0"
+            os_version = os_versions[0] if os_versions else "3.0.0"
             if version_key != cluster_versions["OpenSearch"][0]:
                 extra_params["os_version"] = os_version
 
             for version in versions:
+                # NMSLIB is deprecated for OS >= 3.0.0
+                # https://github.com/opensearch-project/k-NN/issues/2551
+                if cluster_type == "OpenSearch" and workload_name == "vectorsearch-nmslib" and Version(version) >= Version("3.0.0"):
+                    continue
+
                 params = get_workload_params(
                     cluster_type, version, workload_name, overwrite_workload_params
                 )
