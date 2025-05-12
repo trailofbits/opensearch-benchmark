@@ -355,9 +355,12 @@ class OSVersion:
     def get(self) -> bool:
         """Retrieve data to fill in OS Version sheets."""
         workload_str = "big5"
-        es_version = "9.0.0"
+
         # NOTE(Evan): These correspond to the OS version sheet names in _create_spreadsheet() in __init__.py
-        os_versions = ["3.0.0-beta1"]
+        os_versions = ["2.19.1", "3.0.0"]
+
+        # Map between OS version and ES version to compare
+        es_version = {"2.19.1": "8.18.1", "3.0.0": "9.0.1"}
 
         # Retrieve workload to process and compare
         workloads: dict[str, dict[str, list[str]]] = get_workloads(self.service, self.spreadsheet_id)
@@ -391,7 +394,7 @@ class OSVersion:
                 continue
 
             # Fill OS version sheet
-            requests = self.fill(osv, es_version, workload_str)
+            requests = self.fill(osv, es_version[osv], workload_str)
 
             # Format sheet
             self.format(requests)

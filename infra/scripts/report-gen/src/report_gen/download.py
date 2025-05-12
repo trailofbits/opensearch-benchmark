@@ -31,7 +31,6 @@ FIELDS_SORT_PRIORITY = [
     "Workload",
     "WorkloadSubType",
     "TestProcedure",
-    "WorkloadParams",
     "Run",
     "MetricName",
 ]
