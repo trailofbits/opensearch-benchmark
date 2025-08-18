@@ -127,5 +127,5 @@ variable "snapshot_version" {
 variable "osb_version" {
   description = "OpenSearch Benchmark version"
   type        = string
-  default     = "1.12.0"
+  default     = "1.15.0"
 }
