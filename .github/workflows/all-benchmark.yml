@@ -5,9 +5,10 @@ permissions:
   contents: read
 
 on:
-  schedule:
-    # Run every day at 00:00
-    - cron: "0 0 * * *"
+# NOTE: Disable for now
+# schedule:
+#   # Run every day at 00:00
+#   - cron: "0 0 * * *"
 
   workflow_dispatch:
     inputs:
