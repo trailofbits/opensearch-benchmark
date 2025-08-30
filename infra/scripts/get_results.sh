@@ -10,7 +10,11 @@ mkdir -p "$OUTPUT_DIR"
 
 REMOTE_PATH="/mnt/.osb/benchmarks/test_executions/cluster*"
 TMP_DIR="$(mktemp -d)"
-rsync -r --ignore-existing "ubuntu@$(terraform output -raw load-generation-ip):$REMOTE_PATH" "$TMP_DIR"
+rsync -r \
+    -e "ssh -i $(terraform output -raw ssh_private_key_file)" \
+    --ignore-existing \
+    "ubuntu@$(terraform output -raw load-generation-ip):$REMOTE_PATH" \
+    "$TMP_DIR"
 
 # Move all files from the temporary directory to the output directory but rename
 # them to "res-0", "res-1", etc.
