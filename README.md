@@ -34,6 +34,8 @@ You can run a benchmark manually by deploying infrastructure with Terraform and 
 To run a benchmark manually, see: [infra/README.md](infra/README.md)
 
 # Benchmark with Github Actions
+**IMPORTANT**: For security, you must run Github Actions benchmarks in a private fork. The workflows use self-hosted runners which [should be used in private repositories](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners). Additionally, the workflows upload artifacts with sensitive information.
+
 You can also run benchmarks with Github Actions. Actions automate all steps of a manual benchmark. Actions are configured to run nightly benchmarks.
 
 To configure and run Github actions, see [README-actions.md](README-actions.md)
