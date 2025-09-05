@@ -1,4 +1,6 @@
 # OpenSearch Benchmarking Actions
+**IMPORTANT**: For security, you must run Github Actions benchmarks in a private fork. The workflows use self-hosted runners which [should be used in private repositories](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/add-runners). Additionally, the workflows upload artifacts with sensitive information.
+
 You can run benchmarks automatically with Github Actions.
 
 ## Setup
