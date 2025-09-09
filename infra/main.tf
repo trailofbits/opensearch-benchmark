@@ -176,8 +176,6 @@ data "external" "latest_snapshot_version" {
   program = ["python3", "${path.module}/get_latest_snapshot_version.py"]
   query = {
     s3_bucket_name        = var.s3_bucket_name
-    aws_access_key_id     = var.snapshot_user_aws_access_key_id
-    aws_secret_access_key = var.snapshot_user_aws_secret_access_key
     cluster_type          = var.target_cluster_type == "ElasticSearch" ? "ES" : "OS"
     cluster_version       = var.target_cluster_type == "ElasticSearch" ? var.es_version : var.os_version
     workload              = var.workload
